@@ -33,6 +33,12 @@ export default async function AccountLayout({ children }: { children: React.Reac
               Contracts &amp; Invoices
             </Link>
             <Link
+              href="/account/settings"
+              className="text-sm text-slate-300 hover:text-white px-3 py-2 rounded-md hover:bg-white/10 transition-all duration-150"
+            >
+              Settings
+            </Link>
+            <Link
               href="/book"
               className="text-sm bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-150 ml-2 cursor-pointer"
             >

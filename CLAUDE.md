@@ -88,14 +88,17 @@ app/
   api/availability/route.ts    # GET ?month=YYYY-MM → { byDate: { [date]: { booked: TimeSlot[], blockedSlots: (TimeSlot|null)[] } } }
   api/admin/ac-catalog/route.ts   # GET/POST/PATCH ?kind=unit_types|brands — admin CRUD for ac_unit_types and ac_brands
   api/contracts/route.ts       # POST: create contract + auto-generate service dates; GET: list
+  api/contracts/request/route.ts  # POST: customer self-signup (status=PENDING_REVIEW, no price)
+  api/contracts/[id]/activate/route.ts  # PATCH: admin activates PENDING_REVIEW → ACTIVE + generates service dates + emails customer
   api/contracts/[id]/link-booking/route.ts  # PATCH: link booking to service date
   api/invoices/route.ts        # POST: create invoice; GET: list with filters
   api/invoices/[id]/pay/route.ts  # PATCH: mark invoice paid
   api/geocode/route.ts         # POST: geocode address → lat/lng
   api/geocode/reverse/route.ts # POST: { lat, lng } → { address, postalCode } (reverse geocode via Google)
   api/optimize/route.ts        # POST: run single-route VRP for selected booking IDs
-  api/cron/reminders/route.ts  # GET: day-before reminder cron
-  api/cron/contracts/route.ts  # GET: flip reminder_sent flags; surface expiring contracts
+  api/availability/suggest/route.ts  # GET ?from=YYYY-MM-DD&slot=S10_12&days=14 → top 5 (date,slot) suggestions
+  api/cron/reminders/route.ts  # GET: day-before reminder cron (uses booking_date, not confirmed_date)
+  api/cron/contracts/route.ts  # GET: quarterly service due emails + contract expiry emails (uses expiry_reminder_sent)
 
 components/
   ui/section.tsx               # <Section> full-width wrapper + <SectionInner> max-w-6xl centered
@@ -118,8 +121,9 @@ components/
 lib/
   supabase/client.ts           # Browser Supabase client — exports createClient()
   supabase/server.ts           # Server Supabase client — exports async createClient()
-  supabase/admin.ts            # Service role client — used for auth.admin.getUserById()
+  supabase/admin.ts            # Service role client — exports createAdminClient(); used for auth.admin.getUserById()
   booking/slots.ts             # Pure functions: isDayFullyBlocked, isSlotBlocked, getSlotsForDate, resolveContractTierPrice
+  utils/paynow.ts              # buildPayNowPayload() + crc16ccitt() — EMVCo SGQR format for Singapore PayNow
   booking/__tests__/slots.test.ts
   vrp/optimizer.ts             # Single-route nearest-neighbour VRP; uses timeSlot (not preferredSlot); DAY_START=10*60; SLOT_WINDOWS keyed by TimeSlot
   vrp/__tests__/optimizer.test.ts
@@ -145,6 +149,9 @@ supabase/migrations/011_phase2_ac_locations.sql  # ac_unit_locations, booking_un
 supabase/migrations/012_phase2_app_settings.sql  # paynow_mobile, contract_pricing_tiers on app_settings ✅ applied
 supabase/migrations/013_phase2_blocked_slots.sql # blocked_slots table with full-day + slot-level unique indexes ✅ applied
 supabase/migrations/016_phase2_rls.sql           # RLS for all Phase 2 new tables ✅ applied
+supabase/migrations/017_profile_address.sql      # address, address_lat, address_lng, postal_code on profiles ✅ applied
+supabase/migrations/018_contract_pending.sql     # price_sgd nullable; PENDING_REVIEW status; expiry_reminder_sent ✅ applied
+supabase/migrations/019_contracts_customer_insert.sql  # RLS INSERT for customer self-signup ✅ applied
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -169,9 +176,10 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 
 - `service_type_id` is NOT NULL on all bookings — fault repair types (e.g. "AC Not Cooling") are also rows in `service_types`
 - Booking statuses: `PENDING | APPROVED | REJECTED | COMPLETED`
-- Contract statuses: `ACTIVE | EXPIRED | CANCELLED`
+- Contract statuses: `PENDING_REVIEW | ACTIVE | EXPIRED | CANCELLED` — PENDING_REVIEW = customer self-request awaiting admin activation
 - Invoice statuses: `UNPAID | PAID`
 - `contract_pricing_tiers` format: `[{min_units, max_units: number|null, price_sgd}]` — `max_units: null` = per-unit rate
+- `contracts.price_sgd` is **nullable** (NULL for PENDING_REVIEW contracts, set on activation). Guard with `price_sgd != null ? ... : 'TBD'` before rendering.
 
 ## Key flows
 
@@ -239,11 +247,12 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 - **Phase 1F** — search, filters, and bidirectional map sync ✅ complete (2026-05-08)
 - **Phase 2 — Subsystem H** — landing page copy refresh ✅ complete (2026-05-14)
 - **Phase 2 — Subsystem A** — slot model + booking calendar + AC locations + availability API ✅ complete (2026-05-14)
-  - Roadmap: `C:\Users\Klot\.claude\plans\1-confirmation-suggestion-on-binary-hinton.md`
-  - Sub-plan: `docs/superpowers/plans/2026-05-14-phase2-A-foundation.md`
-- **Phase 2 — Subsystem B** — profile address at registration — next to implement
-- **Phase 2 — Subsystem C** — admin date/slot blocking UI — next after B
-- **Phase 2 — Subsystems D–G** — contracts self-signup, invoices, reminders, alternative dates — planned
+- **Phase 2 — Subsystem B** — profile address at registration + account settings ✅ complete (2026-05-14)
+- **Phase 2 — Subsystem C** — admin date/slot blocking UI ✅ complete (2026-05-14)
+- **Phase 2 — Subsystem D** — customer contract self-signup ✅ complete (2026-05-14)
+- **Phase 2 — Subsystem E** — invoice PayNow QR display ✅ complete (2026-05-14)
+- **Phase 2 — Subsystem F** — wire up automated reminder emails ✅ complete (2026-05-14)
+- **Phase 2 — Subsystem G** — alternative slot suggestions on 409 ✅ complete (2026-05-14)
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -273,4 +282,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Phase 2 Subsystems H and A complete (2026-05-14). All migrations through 016 applied to Supabase. See `docs/superpowers/NEXT-SESSION.md`.
+- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Migrations through 019 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present. See `docs/superpowers/NEXT-SESSION.md`.
+- **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.

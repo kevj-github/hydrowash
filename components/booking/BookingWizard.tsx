@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { StepServiceDetails } from './StepServiceDetails'
 import { StepScheduleLocation } from './StepScheduleLocation'
 import { StepReview } from './StepReview'
-import type { ServiceType } from '@/lib/types'
+import type { ServiceType, TimeSlot } from '@/lib/types'
+import { SLOT_LABELS } from '@/lib/types'
 
 interface Props {
   serviceTypes: ServiceType[]
+  profileAddress?: { address: string; postal_code: string; lat: number; lng: number } | null
 }
 
 const STEPS = ['Service', 'Schedule & Location', 'Review']
@@ -35,6 +37,11 @@ type BookingData = {
   media_urls?: string[]
 }
 
+interface Suggestion {
+  date: string
+  slot: TimeSlot
+}
+
 const initial: BookingData = {
   service_type_id: '',
   category: '',
@@ -48,11 +55,17 @@ const initial: BookingData = {
   media_urls: [],
 }
 
-export function BookingWizard({ serviceTypes }: Props) {
+function formatSuggestionDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+export function BookingWizard({ serviceTypes, profileAddress }: Props) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<BookingData>(initial)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const router = useRouter()
 
   function update(updates: Partial<BookingData>) {
@@ -74,6 +87,7 @@ export function BookingWizard({ serviceTypes }: Props) {
   async function handleSubmit() {
     setSubmitting(true)
     setError('')
+    setSuggestions([])
     try {
       const addressParts = [data.unit_floor, data.building_name, data.address].filter(Boolean)
       const fullAddress = addressParts.join(', ')
@@ -88,6 +102,23 @@ export function BookingWizard({ serviceTypes }: Props) {
           notes: combinedNotes || undefined,
         }),
       })
+
+      if (res.status === 409) {
+        setError('That slot was just taken.')
+        // Fetch alternative suggestions
+        const params = new URLSearchParams({
+          from: data.booking_date,
+          slot: data.time_slot,
+          days: '14',
+        })
+        const suggestRes = await fetch(`/api/availability/suggest?${params}`)
+        if (suggestRes.ok) {
+          const json = await suggestRes.json()
+          setSuggestions(json.suggestions ?? [])
+        }
+        return
+      }
+
       if (!res.ok) {
         const body = await res.json()
         setError(body.error ?? 'Submission failed. Please try again.')
@@ -129,14 +160,39 @@ export function BookingWizard({ serviceTypes }: Props) {
         <h2 className="font-heading font-semibold text-lg text-primary mb-5">{STEPS[step]}</h2>
 
         {step === 0 && <StepServiceDetails serviceTypes={serviceTypes} data={data} onChange={update} />}
-        {step === 1 && <StepScheduleLocation data={data} onChange={update} />}
+        {step === 1 && <StepScheduleLocation data={data} onChange={update} profileAddress={profileAddress} />}
         {step === 2 && <StepReview data={data} serviceTypes={serviceTypes} />}
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
-          {error}
-        </p>
+        <div className="mb-4 space-y-3">
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            {error}
+          </p>
+          {suggestions.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-primary">Available alternatives:</p>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={`${s.date}|${s.slot}`}
+                    onClick={() => {
+                      update({ booking_date: s.date, time_slot: s.slot })
+                      setError('')
+                      setSuggestions([])
+                      setStep(1)
+                    }}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/30 hover:bg-accent hover:text-white transition-colors"
+                  >
+                    {formatSuggestionDate(s.date)} · {SLOT_LABELS[s.slot]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : error === 'That slot was just taken.' ? (
+            <p className="text-xs text-muted-foreground">No nearby slots available — please pick another date from the calendar.</p>
+          ) : null}
+        </div>
       )}
 
       {/* Navigation */}

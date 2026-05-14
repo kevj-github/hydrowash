@@ -36,11 +36,21 @@ export async function middleware(request: NextRequest) {
     const redirect = await requireRole('admin')
     if (redirect) return redirect
   }
+
   if (pathname.startsWith('/account') || pathname.startsWith('/book')) {
     if (!user) {
       return NextResponse.redirect(
         new URL(`/auth/login?redirect=${encodeURIComponent(pathname)}`, request.url)
       )
+    }
+
+    // Customers must have an address on file before they can book
+    if (pathname.startsWith('/book')) {
+      const { data: profile } = await supabase
+        .from('profiles').select('address').eq('id', user.id).single()
+      if (!profile?.address) {
+        return NextResponse.redirect(new URL('/account/settings?reason=address', request.url))
+      }
     }
   }
 

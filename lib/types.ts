@@ -19,6 +19,10 @@ export interface Profile {
   name: string
   phone: string
   role: UserRole
+  address: string | null
+  address_lat: number | null
+  address_lng: number | null
+  postal_code: string | null
   created_at: string
 }
 
@@ -92,19 +96,20 @@ export interface AppSettings {
 // Phase 1B — Contracts & Invoices
 // ============================================================
 
-export type ContractStatus = 'ACTIVE' | 'EXPIRED' | 'CANCELLED'
+export type ContractStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED'
 
 export interface Contract {
   id: string
   customer_id: string
   num_units: number
-  price_sgd: number
+  price_sgd: number | null
   start_date: string
   end_date: string
   service_interval_months: number
   address: string | null
   notes: string | null
   status: ContractStatus
+  expiry_reminder_sent: boolean
   created_at: string
 }
 

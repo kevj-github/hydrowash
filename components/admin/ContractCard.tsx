@@ -37,11 +37,20 @@ export default function ContractCard({ contract }: Props) {
   const nextDue = getNextServiceDue(contract.contract_service_dates)
   const dueBadge = isServiceDueThisMonth(contract.contract_service_dates)
   const expiringSoon = contract.status === 'ACTIVE' && isExpiringSoon(contract.end_date)
+  const isPending = contract.status === 'PENDING_REVIEW'
 
   const statusColors: Record<string, string> = {
+    PENDING_REVIEW: 'bg-amber-100 text-amber-800',
     ACTIVE: 'bg-green-100 text-green-800',
     EXPIRED: 'bg-muted text-muted-foreground',
     CANCELLED: 'bg-red-100 text-red-700',
+  }
+
+  const statusLabels: Record<string, string> = {
+    PENDING_REVIEW: 'Pending Review',
+    ACTIVE: 'ACTIVE',
+    EXPIRED: 'EXPIRED',
+    CANCELLED: 'CANCELLED',
   }
 
   return (
@@ -57,7 +66,7 @@ export default function ContractCard({ contract }: Props) {
           </div>
           <div className="flex flex-wrap gap-1 justify-end">
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[contract.status]}`}>
-              {contract.status}
+              {statusLabels[contract.status] ?? contract.status}
             </span>
             {dueBadge && (
               <Badge className="bg-amber-100 text-amber-800 text-xs">Service Due</Badge>
@@ -69,7 +78,7 @@ export default function ContractCard({ contract }: Props) {
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-1 text-sm text-foreground">
-        <p>{contract.num_units} unit{contract.num_units !== 1 ? 's' : ''} · S${contract.price_sgd.toFixed(2)}/yr</p>
+        <p>{contract.num_units} unit{contract.num_units !== 1 ? 's' : ''} · {contract.price_sgd != null ? `S$${Number(contract.price_sgd).toFixed(2)}/yr` : 'Price TBD'}</p>
         <p>
           {contract.start_date} → {contract.end_date}
         </p>

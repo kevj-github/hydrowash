@@ -1,12 +1,15 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useJsApiLoader } from '@react-google-maps/api'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Wind } from 'lucide-react'
+import { MapPin, Wind } from 'lucide-react'
 import Link from 'next/link'
+
+const LIBRARIES: ('places')[] = ['places']
 
 const fields = [
   { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Jane Tan' },
@@ -17,13 +20,47 @@ const fields = [
 
 type FormKey = typeof fields[number]['key']
 
+interface AddressData {
+  address: string
+  postal_code: string
+  lat: number
+  lng: number
+}
+
 export default function RegisterPage() {
   const [form, setForm] = useState<Record<FormKey, string>>({ name: '', phone: '', email: '', password: '' })
+  const [addressData, setAddressData] = useState<AddressData | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [verifyEmail, setVerifyEmail] = useState('')
   const router = useRouter()
   const supabase = createClient()
+  const addressInputRef = useRef<HTMLInputElement>(null)
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
+    libraries: LIBRARIES,
+  })
+
+  useEffect(() => {
+    if (!isLoaded || !addressInputRef.current) return
+    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+      componentRestrictions: { country: 'sg' },
+      fields: ['formatted_address', 'geometry', 'address_components'],
+    })
+    const listener = ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (!place.geometry?.location) return
+      const postalComp = place.address_components?.find(c => c.types.includes('postal_code'))
+      setAddressData({
+        address: place.formatted_address ?? '',
+        postal_code: postalComp?.short_name ?? '',
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+      })
+    })
+    return () => { window.google.maps.event.removeListener(listener) }
+  }, [isLoaded])
 
   function set(field: FormKey) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -53,6 +90,14 @@ export default function RegisterPage() {
     if (!data.session) {
       setVerifyEmail(form.email)
     } else {
+      if (addressData) {
+        await supabase.from('profiles').update({
+          address: addressData.address,
+          address_lat: addressData.lat,
+          address_lng: addressData.lng,
+          postal_code: addressData.postal_code,
+        }).eq('id', data.user.id)
+      }
       router.push('/')
     }
     setLoading(false)
@@ -147,6 +192,31 @@ export default function RegisterPage() {
                 />
               </div>
             ))}
+
+            {/* Optional address field */}
+            <div className="space-y-1.5">
+              <Label htmlFor="address" className="text-sm font-medium text-primary">
+                Home Address{' '}
+                <span className="text-muted-foreground font-normal text-xs">(optional — needed to book)</span>
+              </Label>
+              <div className="relative">
+                <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="address"
+                  ref={addressInputRef}
+                  placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
+                  disabled={!isLoaded}
+                  onChange={() => setAddressData(null)}
+                  autoComplete="off"
+                  className="h-11 pl-9"
+                />
+              </div>
+              {addressData ? (
+                <p className="text-xs text-green-700">✓ Address confirmed</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Select an address from the dropdown.</p>
+              )}
+            </div>
 
             {error && (
               <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">

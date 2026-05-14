@@ -57,3 +57,48 @@ export async function sendDayBeforeReminder(booking: BookingWithRelations, email
     react: DayBeforeReminder({ booking }),
   })
 }
+
+export async function sendContractServiceDue(
+  data: { customerName: string; numUnits: number; dueDate: string; bookUrl: string },
+  email: string
+) {
+  const { ContractServiceDue } = await import('./templates/ContractServiceDue')
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: 'Your quarterly aircon service is due — HydroWash',
+    react: ContractServiceDue(data),
+  })
+}
+
+export async function sendContractExpiring(
+  data: { customerName: string; numUnits: number; endDate: string },
+  email: string
+) {
+  const { ContractExpiring } = await import('./templates/ContractExpiring')
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: 'Your maintenance contract expires soon — HydroWash',
+    react: ContractExpiring(data),
+  })
+}
+
+export async function sendContractActivated(
+  data: {
+    customerName: string
+    numUnits: number
+    priceSgd: number
+    startDate: string
+    firstServiceDate: string
+  },
+  email: string
+) {
+  const { ContractActivated } = await import('./templates/ContractActivated')
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: 'Your maintenance contract is now active — HydroWash',
+    react: ContractActivated(data),
+  })
+}

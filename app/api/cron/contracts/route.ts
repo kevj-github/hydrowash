@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { sendContractServiceDue, sendContractExpiring } from '@/lib/email/send'
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hydrowash.sg'
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -7,20 +10,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const supabase = createAdminClient()
 
   const today = new Date()
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    .toISOString().split('T')[0]
-  const lastOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-    .toISOString().split('T')[0]
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  // ── F1: Quarterly service due reminders ──────────────────────────────────
 
   const { data: dueDates, error: fetchError } = await supabase
     .from('contract_service_dates')
-    .select('id')
+    .select('id, contract_id, due_date, contracts(customer_id, num_units, customer:profiles!contracts_customer_id_fkey(name))')
     .gte('due_date', firstOfMonth)
     .lte('due_date', lastOfMonth)
     .is('booking_id', null)
@@ -40,13 +40,36 @@ export async function GET(req: NextRequest) {
       .update({ reminder_sent: true })
       .in('id', ids)
 
-    if (updateError) {
-      console.error('[cron/contracts] update error:', updateError.message)
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
-    }
+    if (!updateError) {
+      remindersFlipped = ids.length
 
-    remindersFlipped = ids.length
+      // Send service due emails
+      await Promise.all(
+        dueDates.map(async (sd) => {
+          const contract = sd.contracts as unknown as {
+            customer_id: string
+            num_units: number
+            customer: { name: string } | null
+          } | null
+          if (!contract) return
+          const { data } = await supabase.auth.admin.getUserById(contract.customer_id)
+          const email = data?.user?.email
+          if (!email) return
+          await sendContractServiceDue(
+            {
+              customerName: contract.customer?.name ?? 'Customer',
+              numUnits: contract.num_units,
+              dueDate: sd.due_date,
+              bookUrl: `${APP_URL}/book`,
+            },
+            email
+          ).catch(() => null)
+        })
+      )
+    }
   }
+
+  // ── F2: Contract expiry reminders ────────────────────────────────────────
 
   const in30Days = new Date(today)
   in30Days.setDate(in30Days.getDate() + 30)
@@ -55,25 +78,55 @@ export async function GET(req: NextRequest) {
 
   const { data: expiring, error: expiryError } = await supabase
     .from('contracts')
-    .select('id, end_date, customer_id')
+    .select('id, end_date, customer_id, num_units, customer:profiles!contracts_customer_id_fkey(name)')
     .eq('status', 'ACTIVE')
     .lte('end_date', in30DaysStr)
     .gte('end_date', todayStr)
+    .eq('expiry_reminder_sent', false)
 
   if (expiryError) {
     console.error('[cron/contracts] expiry query error:', expiryError.message)
   }
 
-  const expiringCount = expiring?.length ?? 0
+  let expiryEmailsSent = 0
+
+  if (expiring && expiring.length > 0) {
+    await Promise.all(
+      expiring.map(async (c) => {
+        const contract = c as unknown as {
+          id: string
+          end_date: string
+          customer_id: string
+          num_units: number
+          customer: { name: string } | null
+        }
+        const { data } = await supabase.auth.admin.getUserById(contract.customer_id)
+        const email = data?.user?.email
+        if (!email) return
+        const sent = await sendContractExpiring(
+          {
+            customerName: contract.customer?.name ?? 'Customer',
+            numUnits: contract.num_units,
+            endDate: contract.end_date,
+          },
+          email
+        ).catch(() => null)
+        if (sent) {
+          await supabase.from('contracts').update({ expiry_reminder_sent: true }).eq('id', contract.id)
+          expiryEmailsSent++
+        }
+      })
+    )
+  }
 
   console.log(
-    `[cron/contracts] done — reminders flipped: ${remindersFlipped}, expiring contracts: ${expiringCount}`
+    `[cron/contracts] done — service reminders: ${remindersFlipped}, expiry emails: ${expiryEmailsSent}`
   )
 
   return NextResponse.json({
     ok: true,
-    reminders_flipped: remindersFlipped,
-    expiring_contracts: expiringCount,
+    service_reminders_sent: remindersFlipped,
+    expiry_emails_sent: expiryEmailsSent,
     run_at: new Date().toISOString(),
   })
 }

@@ -114,27 +114,33 @@ export default function AdminContractsPage() {
 
   const hasFilters = search || startFrom || startTo || endFrom || endTo || serviceDueFrom || serviceDueTo || statusFilter !== 'ALL'
 
-  const filteredContracts = contracts.filter(c => {
-    if (statusFilter !== 'ALL' && c.status !== statusFilter) return false
-    if (search) {
-      const q = search.toLowerCase()
-      if (!c.customer.name.toLowerCase().includes(q) && !c.customer.phone.includes(search)) return false
-    }
-    if (startFrom && c.start_date < startFrom) return false
-    if (startTo && c.start_date > startTo) return false
-    if (endFrom && c.end_date < endFrom) return false
-    if (endTo && c.end_date > endTo) return false
-    if (serviceDueFrom || serviceDueTo) {
-      const nextDue = (c.contract_service_dates ?? [])
-        .filter((sd: { booking_id: string | null; due_date: string }) => !sd.booking_id)
-        .map((sd: { due_date: string }) => sd.due_date)
-        .sort()[0] ?? null
-      if (!nextDue) return false
-      if (serviceDueFrom && nextDue < serviceDueFrom) return false
-      if (serviceDueTo && nextDue > serviceDueTo) return false
-    }
-    return true
-  })
+  const filteredContracts = contracts
+    .filter(c => {
+      if (statusFilter !== 'ALL' && c.status !== statusFilter) return false
+      if (search) {
+        const q = search.toLowerCase()
+        if (!c.customer.name.toLowerCase().includes(q) && !c.customer.phone.includes(search)) return false
+      }
+      if (startFrom && c.start_date < startFrom) return false
+      if (startTo && c.start_date > startTo) return false
+      if (endFrom && c.end_date < endFrom) return false
+      if (endTo && c.end_date > endTo) return false
+      if (serviceDueFrom || serviceDueTo) {
+        const nextDue = (c.contract_service_dates ?? [])
+          .filter((sd: { booking_id: string | null; due_date: string }) => !sd.booking_id)
+          .map((sd: { due_date: string }) => sd.due_date)
+          .sort()[0] ?? null
+        if (!nextDue) return false
+        if (serviceDueFrom && nextDue < serviceDueFrom) return false
+        if (serviceDueTo && nextDue > serviceDueTo) return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      if (a.status === 'PENDING_REVIEW' && b.status !== 'PENDING_REVIEW') return -1
+      if (b.status === 'PENDING_REVIEW' && a.status !== 'PENDING_REVIEW') return 1
+      return 0
+    })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -360,7 +366,7 @@ export default function AdminContractsPage() {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {['ALL', 'ACTIVE', 'EXPIRED', 'CANCELLED'].map((s) => (
+            {['ALL', 'PENDING_REVIEW', 'ACTIVE', 'EXPIRED', 'CANCELLED'].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
@@ -370,7 +376,7 @@ export default function AdminContractsPage() {
                     : 'bg-white text-muted-foreground border-border hover:border-accent'
                 }`}
               >
-                {s}
+                {s === 'PENDING_REVIEW' ? 'Pending Review' : s}
               </button>
             ))}
           </div>

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     .from('bookings')
     .select('*, customer:profiles(name,phone), service_type:service_types(name,duration_minutes,price_sgd)')
     .eq('status', 'APPROVED')
-    .eq('confirmed_date', tomorrowStr)
+    .eq('booking_date', tomorrowStr)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
