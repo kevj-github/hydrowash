@@ -1,0 +1,91 @@
+<h2>Data Model</h2>
+<p class="subtitle">Key database tables and how they relate — Supabase / Postgres</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
+
+  <div style="border:1px solid #3b82f6;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#3b82f6;margin-bottom:8px;">users (Supabase Auth)</div>
+    <div style="color:#94a3b8;margin-bottom:6px;font-size:0.85em;">Managed by Supabase — extended via profiles table</div>
+    <div><span style="color:#f59e0b;">id</span> UUID (PK)</div>
+    <div>email</div>
+    <div>name</div>
+    <div>phone</div>
+    <div><span style="color:#f59e0b;">role</span> 'customer' | 'admin'</div>
+  </div>
+
+  <div style="border:1px solid #8b5cf6;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#8b5cf6;margin-bottom:8px;">service_types</div>
+    <div style="color:#94a3b8;margin-bottom:6px;font-size:0.85em;">Owner configures these in Settings</div>
+    <div><span style="color:#f59e0b;">id</span> UUID (PK)</div>
+    <div>name — e.g. "Chemical Wash"</div>
+    <div>description</div>
+    <div>duration_minutes — e.g. 90</div>
+    <div>price_sgd — e.g. 80.00</div>
+    <div>active boolean</div>
+  </div>
+
+  <div style="border:1px solid #22c55e;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#22c55e;margin-bottom:8px;">service_cars</div>
+    <div style="color:#94a3b8;margin-bottom:6px;font-size:0.85em;">Each car = one team + vehicle</div>
+    <div><span style="color:#f59e0b;">id</span> UUID (PK)</div>
+    <div>label — e.g. "Car A", "Team 1"</div>
+    <div>active boolean</div>
+  </div>
+
+  <div style="border:2px solid #ef4444;border-radius:10px;padding:14px;font-size:0.82em;grid-column:span 2;">
+    <div class="label" style="color:#ef4444;margin-bottom:8px;">bookings ← core table</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+      <div><span style="color:#f59e0b;">id</span> UUID (PK)</div>
+      <div><span style="color:#f59e0b;">customer_id</span> → users</div>
+      <div><span style="color:#f59e0b;">service_type_id</span> → service_types</div>
+      <div>address, postal_code</div>
+      <div>lat, lng (geocoded)</div>
+      <div>preferred_date</div>
+      <div>preferred_slot: MORNING | AFTERNOON | EVENING</div>
+      <div>num_units (int, e.g. 3 aircons)</div>
+      <div>notes (text)</div>
+      <div><span style="color:#f59e0b;">status</span>: PENDING | APPROVED | REJECTED | COMPLETED</div>
+      <div>rejection_reason (nullable)</div>
+      <div>created_at</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #f59e0b;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#f59e0b;margin-bottom:8px;">daily_car_availability</div>
+    <div style="color:#94a3b8;margin-bottom:6px;font-size:0.85em;">Owner sets which cars are available per day</div>
+    <div><span style="color:#f59e0b;">service_car_id</span> → service_cars</div>
+    <div><span style="color:#f59e0b;">date</span></div>
+    <div>is_available boolean</div>
+    <div style="color:#64748b;margin-top:6px;font-size:0.85em;">Unique on (car, date)</div>
+  </div>
+
+  <div style="border:1px solid #06b6d4;border-radius:10px;padding:14px;font-size:0.82em;grid-column:span 2;">
+    <div class="label" style="color:#06b6d4;margin-bottom:8px;">scheduled_jobs</div>
+    <div style="color:#94a3b8;margin-bottom:6px;font-size:0.85em;">Created when owner confirms optimized schedule</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+      <div><span style="color:#f59e0b;">booking_id</span> → bookings</div>
+      <div><span style="color:#f59e0b;">service_car_id</span> → service_cars</div>
+      <div>scheduled_date</div>
+      <div>scheduled_start_time</div>
+      <div>sequence_order (int)</div>
+      <div>optimized_at (timestamp)</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #475569;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#94a3b8;margin-bottom:8px;">app_settings (singleton)</div>
+    <div style="color:#94a3b8;margin-bottom:6px;font-size:0.85em;">One row — global config</div>
+    <div>depot_address</div>
+    <div>depot_lat, depot_lng</div>
+    <div>company_name</div>
+    <div>contact_email</div>
+  </div>
+
+</div>
+
+<div style="border:1px solid #1e293b;border-radius:10px;padding:14px;font-size:0.85em;background:#0f172a;">
+  <strong style="color:#94a3b8;">Key relationships:</strong>
+  <span style="color:#64748b;margin:0 8px;">booking → customer (many-to-one)</span>
+  <span style="color:#64748b;margin:0 8px;">booking → service_type (many-to-one)</span>
+  <span style="color:#64748b;margin:0 8px;">scheduled_job → booking + car (many-to-one each)</span>
+</div>

@@ -1,0 +1,43 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: HydroWash Admin
+        - navigation [ref=e6]:
+          - link "Overview" [ref=e7] [cursor=pointer]:
+            - /url: /admin
+          - link "Bookings" [ref=e8] [cursor=pointer]:
+            - /url: /admin/bookings
+          - link "Settings" [ref=e9] [cursor=pointer]:
+            - /url: /admin/settings
+          - link "← Public Site" [ref=e10] [cursor=pointer]:
+            - /url: /
+    - main [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - heading "Overview" [level=1] [ref=e14]
+          - paragraph [ref=e15]: Friday, 8 May 2026
+        - generic [ref=e16]:
+          - link "Pending Bookings 5" [ref=e17] [cursor=pointer]:
+            - /url: /admin/bookings
+            - paragraph [ref=e18]: Pending Bookings
+            - paragraph [ref=e19]: "5"
+          - link "Today's Jobs 0" [ref=e20] [cursor=pointer]:
+            - /url: /admin/schedule/2026-05-07
+            - paragraph [ref=e21]: Today's Jobs
+            - paragraph [ref=e22]: "0"
+          - link "Active Cars 1" [ref=e23] [cursor=pointer]:
+            - /url: /admin/settings
+            - paragraph [ref=e24]: Active Cars
+            - paragraph [ref=e25]: "1"
+        - generic [ref=e26]:
+          - link "Manage Bookings Approve, reject, and cluster maintenance bookings" [ref=e27] [cursor=pointer]:
+            - /url: /admin/bookings
+            - heading "Manage Bookings" [level=3] [ref=e28]
+            - paragraph [ref=e29]: Approve, reject, and cluster maintenance bookings
+          - link "Route Optimiser Run VRP and confirm today's schedule" [ref=e30] [cursor=pointer]:
+            - /url: /admin/schedule/2026-05-07
+            - heading "Route Optimiser" [level=3] [ref=e31]
+            - paragraph [ref=e32]: Run VRP and confirm today's schedule
+  - button "Open Next.js Dev Tools" [ref=e38] [cursor=pointer]:
+    - img [ref=e39]

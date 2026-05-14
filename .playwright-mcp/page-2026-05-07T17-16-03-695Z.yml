@@ -1,0 +1,52 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: ✓
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: ✓
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: "3"
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Location" [level=2] [ref=e113]
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - generic [ref=e116]:
+              - text: Street Address
+              - generic [ref=e117]: "*"
+            - textbox "Start typing your address…" [ref=e118]: 1 Orchard Road, Singapore
+            - paragraph [ref=e119]: ✓ Location confirmed
+          - generic [ref=e141]:
+            - generic [ref=e142]: Unit / Floor
+            - 'textbox "e.g. #04-05" [ref=e143]'
+          - generic [ref=e144]:
+            - generic [ref=e145]: Building Name
+            - textbox "e.g. Watergate Condominium (optional)" [ref=e146]
+          - generic [ref=e147]:
+            - generic [ref=e148]: Landmark / Access Notes
+            - textbox "e.g. Gate code 1234, ring buzzer for unit (optional)" [ref=e149]
+      - generic [ref=e45]:
+        - button "Back" [ref=e112]
+        - button "Next" [ref=e93]
+  - generic [ref=e50] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e51]:
+      - img [ref=e52]
+    - generic [ref=e150]:
+      - button "Open issues overlay" [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153]: "0"
+          - generic [ref=e154]: "1"
+        - generic [ref=e155]: Issue
+      - button "Collapse issues badge" [ref=e156]:
+        - img [ref=e157]
+  - alert [ref=e55]

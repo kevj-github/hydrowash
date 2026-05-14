@@ -1,0 +1,49 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: ✓
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: ✓
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: "3"
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Location" [level=2] [ref=e118]
+        - generic [ref=e120]:
+          - generic [ref=e121]:
+            - text: Street Address
+            - generic [ref=e122]: "*"
+          - textbox "Start typing your address…" [active] [ref=e123]: Tampines Street 41 Singapore
+          - paragraph [ref=e124]: Select an address from the dropdown suggestions.
+      - generic [ref=e45]:
+        - button "Back" [ref=e117]
+        - button "Next" [disabled]
+  - button "Open Next.js Dev Tools" [ref=e51] [cursor=pointer]:
+    - img [ref=e52]
+  - alert [ref=e55]
+  - generic [ref=e125]:
+    - generic [ref=e126]:
+      - generic [ref=e128]: Tampines Street 41
+      - generic [ref=e129]: Singapore
+    - generic [ref=e130]:
+      - generic [ref=e132]: 41 Tampines Lane
+      - generic [ref=e133]: Singapore
+    - generic [ref=e134]:
+      - generic [ref=e136]: 41 Tampines Road
+      - generic [ref=e137]: Singapore
+    - generic [ref=e138]:
+      - generic [ref=e140]: SingHealth Polyclinics - Tampines
+      - generic [ref=e141]: Tampines Street 41, Singapore
+    - generic [ref=e142]:
+      - generic [ref=e144]: 41 Tampines Street 21
+      - generic [ref=e145]: Singapore

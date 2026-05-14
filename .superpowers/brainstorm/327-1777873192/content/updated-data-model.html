@@ -1,0 +1,106 @@
+<h2>Updated Data Model — Phase 1 Changes</h2>
+<p class="subtitle">Three service categories + date range booking</p>
+
+<div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
+
+  <!-- bookings table -->
+  <div style="border:2px solid #ef4444;border-radius:10px;padding:16px;font-size:0.82em;">
+    <div class="label" style="color:#ef4444;margin-bottom:8px;">bookings — updated columns</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+      <div><span style="color:#f59e0b;">id</span> UUID (PK)</div>
+      <div><span style="color:#f59e0b;">customer_id</span> → profiles</div>
+      <div><span style="color:#f59e0b;">category</span> ← NEW</div>
+      <div><span style="color:#f59e0b;">service_type_id</span> → service_types</div>
+      <div>address, postal_code, lat, lng</div>
+      <div>num_units (nullable)</div>
+      <div style="background:rgba(34,197,94,0.08);padding:3px 6px;border-radius:4px;"><span style="color:#22c55e;">earliest_date</span> (nullable) ← replaces preferred_date</div>
+      <div style="background:rgba(34,197,94,0.08);padding:3px 6px;border-radius:4px;"><span style="color:#22c55e;">latest_date</span> (nullable)</div>
+      <div>preferred_slot: MORNING | AFTERNOON | EVENING (nullable)</div>
+      <div style="background:rgba(34,197,94,0.08);padding:3px 6px;border-radius:4px;"><span style="color:#22c55e;">fault_description</span> (nullable)</div>
+      <div style="background:rgba(34,197,94,0.08);padding:3px 6px;border-radius:4px;"><span style="color:#22c55e;">urgency</span>: HIGH | MEDIUM | LOW (nullable)</div>
+      <div style="background:rgba(34,197,94,0.08);padding:3px 6px;border-radius:4px;"><span style="color:#22c55e;">ac_brand, ac_model</span> (nullable)</div>
+      <div>notes (text, nullable)</div>
+      <div><span style="color:#f59e0b;">status</span> (updated — see below)</div>
+      <div>rejection_reason (nullable)</div>
+    </div>
+    <div style="margin-top:10px;padding:8px;background:rgba(239,68,68,0.06);border-radius:6px;font-size:0.88em;">
+      <strong style="color:#fca5a5;">category enum:</strong>
+      <span style="color:#64748b;margin-left:8px;">'MAINTENANCE' | 'FAULT_REPAIR' | 'INSTALLATION'</span><br>
+      <strong style="color:#fca5a5;">status enum (updated):</strong>
+      <span style="color:#64748b;margin-left:8px;">'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'INQUIRY'</span><br>
+      <span style="color:#64748b;font-size:0.9em;">INQUIRY = fault repair submitted (no schedule, owner calls customer directly)</span>
+    </div>
+  </div>
+
+  <!-- service_types table -->
+  <div style="border:1px solid #8b5cf6;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#8b5cf6;margin-bottom:8px;">service_types — updated</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+      <div>id, name, description</div>
+      <div style="background:rgba(34,197,94,0.08);padding:3px 6px;border-radius:4px;"><span style="color:#22c55e;">category</span>: 'MAINTENANCE' | 'FAULT_REPAIR' | 'INSTALLATION' ← NEW</div>
+      <div>duration_minutes (nullable for fault repair)</div>
+      <div>price_sgd (nullable — fault/install may be quoted)</div>
+      <div>active boolean</div>
+    </div>
+    <div style="margin-top:8px;font-size:0.85em;color:#64748b;">
+      Example services: "General Cleaning" (MAINTENANCE), "Chemical Wash" (MAINTENANCE),
+      "AC Fault Diagnosis" (FAULT_REPAIR), "Split AC Installation" (INSTALLATION)
+    </div>
+  </div>
+
+  <!-- NEW: contracts table -->
+  <div style="border:2px solid #06b6d4;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#06b6d4;margin-bottom:8px;">contracts ← NEW (Phase 1B)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+      <div><span style="color:#f59e0b;">id</span> UUID (PK)</div>
+      <div><span style="color:#f59e0b;">customer_id</span> → profiles</div>
+      <div>num_units int</div>
+      <div>price_sgd numeric (negotiated total for 1 year)</div>
+      <div>start_date date</div>
+      <div>end_date date (= start_date + 1 year)</div>
+      <div>service_interval_months int (default 3)</div>
+      <div>notes text (nullable)</div>
+      <div>status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED'</div>
+      <div>created_at timestamptz</div>
+    </div>
+  </div>
+
+  <!-- NEW: contract_service_dates -->
+  <div style="border:1px solid #06b6d4;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#06b6d4;margin-bottom:8px;">contract_service_dates ← NEW (Phase 1B)</div>
+    <div style="color:#94a3b8;font-size:0.85em;margin-bottom:6px;">Auto-generated when contract is created — one row per scheduled service visit</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+      <div><span style="color:#f59e0b;">contract_id</span> → contracts</div>
+      <div>due_date date (start + 3 months, + 6 months, + 9 months, + 12 months)</div>
+      <div>reminder_sent boolean (default false)</div>
+      <div><span style="color:#f59e0b;">booking_id</span> → bookings (nullable — set when service is booked)</div>
+    </div>
+  </div>
+
+  <!-- NEW: invoices table -->
+  <div style="border:1px solid #f59e0b;border-radius:10px;padding:14px;font-size:0.82em;">
+    <div class="label" style="color:#f59e0b;margin-bottom:8px;">invoices ← NEW (Phase 1B)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+      <div><span style="color:#f59e0b;">id</span> UUID (PK)</div>
+      <div><span style="color:#f59e0b;">customer_id</span> → profiles</div>
+      <div>booking_id (nullable) → bookings</div>
+      <div>contract_id (nullable) → contracts</div>
+      <div>amount_sgd numeric</div>
+      <div>description text</div>
+      <div>status: 'UNPAID' | 'PAID'</div>
+      <div>paid_at timestamptz (nullable)</div>
+      <div>payment_method text (nullable) — e.g. "PayNow", "Cash"</div>
+      <div>created_at timestamptz</div>
+    </div>
+  </div>
+
+</div>
+
+<div style="border:1px solid #1e3a2e;border-radius:10px;padding:14px;font-size:0.85em;background:rgba(34,197,94,0.04);">
+  <strong style="color:#22c55e;">Key design decisions:</strong>
+  <div style="margin-top:6px;color:#64748b;font-size:0.88em;line-height:1.8;">
+    • All category-specific fields (fault_description, ac_brand, etc.) live in the <code>bookings</code> table as nullable columns — no separate tables, simpler queries<br>
+    • Fault repairs create a booking with status <code>INQUIRY</code> — they never enter the scheduling flow unless the owner manually converts them<br>
+    • Contracts and invoices are Phase 1B — the schema is shown here so we design them together but implement separately
+  </div>
+</div>

@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings — HydroWash</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{font-family:'Open Sans',sans-serif;padding-top:32px;}h1,h2,h3{font-family:'Poppins',sans-serif;}</style>
+</head>
+<body class="bg-slate-50">
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:5px 12px;font-size:11px;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;font-family:sans-serif;">
+  <strong style="color:#92400e;margin-right:4px;">Preview:</strong>
+  <a href="index.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Landing</a>
+  <a href="services.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Services</a>
+  <a href="login.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Login</a>
+  <a href="register.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Register</a>
+  <a href="book.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Book</a>
+  <a href="account-bookings.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:#dbeafe;text-decoration:none;border:1px solid #93c5fd;font-weight:600;">My Bookings</a>
+  <span style="color:#94a3b8;">|</span>
+  <a href="admin-overview.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Home</a>
+  <a href="admin-bookings.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Bookings</a>
+  <a href="admin-schedule.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Schedule</a>
+  <a href="admin-settings.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Settings</a>
+  <span style="color:#94a3b8;">|</span>
+  <a href="technician-jobs.html" style="color:#059669;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Technician</a>
+</div>
+
+<nav class="bg-white shadow-sm sticky top-8 z-40">
+  <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-[#0F172A] rounded-lg flex items-center justify-center">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      </div>
+      <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;">HydroWash</span>
+    </a>
+    <div class="flex items-center gap-4">
+      <span class="text-sm text-slate-500">Hi, <span class="font-semibold text-[#0F172A]">John Tan</span></span>
+      <a href="login.html" class="text-sm text-slate-500 hover:text-red-600 transition-colors">Sign out</a>
+    </div>
+  </div>
+</nav>
+
+<div class="max-w-4xl mx-auto px-6 py-10">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-[#0F172A] mb-1">My Bookings</h1>
+      <p class="text-slate-500">Track all your service requests and appointments.</p>
+    </div>
+    <a href="book.html" class="flex items-center gap-2 bg-[#0369A1] hover:bg-[#0284c7] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors" style="font-family:'Poppins',sans-serif;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Booking
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex gap-3 mb-6 flex-wrap">
+    <select class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:border-[#0369A1] cursor-pointer">
+      <option>All statuses</option>
+      <option>Pending</option>
+      <option>Approved</option>
+      <option>Completed</option>
+      <option>Rejected</option>
+    </select>
+    <select class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:border-[#0369A1] cursor-pointer">
+      <option>All types</option>
+      <option>Maintenance</option>
+      <option>Fault Repair</option>
+      <option>Installation</option>
+    </select>
+  </div>
+
+  <!-- Booking Cards -->
+  <div class="space-y-4">
+
+    <!-- APPROVED + scheduled -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs font-bold text-slate-400">#BK-00121</span>
+              <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full">MAINTENANCE</span>
+              <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full">APPROVED</span>
+            </div>
+            <h3 class="font-semibold text-[#0F172A] text-lg mb-1">Chemical Wash — 3 units</h3>
+            <div class="flex items-center gap-4 text-sm text-slate-500">
+              <span class="flex items-center gap-1.5">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Confirmed: Wed, 8 May 2026 · 9:00 AM
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 text-sm text-slate-500 mt-1">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              123 Tampines Street 45 #08-12, S(520123)
+            </div>
+          </div>
+          <button onclick="toggleDetail('d1')" class="text-slate-400 hover:text-slate-600 transition-colors mt-1 cursor-pointer flex-shrink-0">
+            <svg id="arr-d1" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="d1" class="hidden mt-4 pt-4 border-t border-slate-100">
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2" class="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+            <div class="text-sm text-emerald-800">
+              <div class="font-semibold mb-0.5">Appointment confirmed!</div>
+              Your technician will arrive on <strong>Wednesday, 8 May 2026 at 9:00 AM</strong>. You'll receive a reminder the day before.
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm text-slate-600">
+            <div><span class="font-semibold text-[#0F172A]">Requested range:</span><br>5 May – 12 May 2026</div>
+            <div><span class="font-semibold text-[#0F172A]">Preferred slot:</span><br>Morning</div>
+            <div><span class="font-semibold text-[#0F172A]">Submitted:</span><br>3 May 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PENDING -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs font-bold text-slate-400">#BK-00122</span>
+              <span class="text-xs font-bold bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full">FAULT REPAIR</span>
+              <span class="text-xs font-bold bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full">PENDING</span>
+            </div>
+            <h3 class="font-semibold text-[#0F172A] text-lg mb-1">AC Not Cooling — HIGH urgency</h3>
+            <div class="flex items-center gap-1.5 text-sm text-slate-500">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Requested: 6 May – 10 May 2026
+            </div>
+            <div class="flex items-center gap-1.5 text-sm text-slate-500 mt-1">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              45 Bedok Reservoir Rd #12-34, S(470045)
+            </div>
+          </div>
+          <button onclick="toggleDetail('d2')" class="text-slate-400 hover:text-slate-600 transition-colors mt-1 cursor-pointer flex-shrink-0">
+            <svg id="arr-d2" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="d2" class="hidden mt-4 pt-4 border-t border-slate-100">
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#B45309" stroke-width="2" class="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div class="text-sm text-amber-800">
+              <div class="font-semibold mb-0.5">Awaiting confirmation</div>
+              Our team is reviewing your request. We'll confirm a date within your selected range shortly.
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm text-slate-600">
+            <div><span class="font-semibold text-[#0F172A]">Fault type:</span><br>AC Not Cooling</div>
+            <div><span class="font-semibold text-[#0F172A]">Urgency:</span><br><span class="text-red-600 font-semibold">HIGH</span></div>
+            <div class="col-span-2"><span class="font-semibold text-[#0F172A]">Description:</span><br>Unit blows warm air even at 18°C. Started about 3 days ago.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPLETED -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden opacity-75">
+      <div class="p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs font-bold text-slate-400">#BK-00118</span>
+              <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full">MAINTENANCE</span>
+              <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">COMPLETED</span>
+            </div>
+            <h3 class="font-semibold text-[#0F172A] text-lg mb-1">General Cleaning — 2 units</h3>
+            <div class="flex items-center gap-1.5 text-sm text-slate-500">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Completed: Fri, 19 Apr 2026
+            </div>
+          </div>
+          <button onclick="toggleDetail('d3')" class="text-slate-400 hover:text-slate-600 transition-colors mt-1 cursor-pointer flex-shrink-0">
+            <svg id="arr-d3" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="d3" class="hidden mt-4 pt-4 border-t border-slate-100">
+          <div class="grid grid-cols-2 gap-4 text-sm text-slate-600">
+            <div><span class="font-semibold text-[#0F172A]">Service:</span><br>General Cleaning</div>
+            <div><span class="font-semibold text-[#0F172A]">Units:</span><br>2 units</div>
+            <div><span class="font-semibold text-[#0F172A]">Address:</span><br>123 Tampines Street 45</div>
+            <div><span class="font-semibold text-[#0F172A]">Technician:</span><br>Car A Team</div>
+          </div>
+          <div class="mt-4">
+            <a href="book.html" class="inline-flex items-center gap-1.5 text-sm text-[#0369A1] font-semibold hover:underline">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78z"/></svg>
+              Book same service again
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REJECTED -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden opacity-75">
+      <div class="p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs font-bold text-slate-400">#BK-00115</span>
+              <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full">INSTALLATION</span>
+              <span class="text-xs font-bold bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full">REJECTED</span>
+            </div>
+            <h3 class="font-semibold text-[#0F172A] text-lg mb-1">New Installation — 1 unit (Daikin)</h3>
+            <div class="flex items-center gap-1.5 text-sm text-slate-500">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Requested: 1 Apr – 5 Apr 2026
+            </div>
+          </div>
+          <button onclick="toggleDetail('d4')" class="text-slate-400 hover:text-slate-600 transition-colors mt-1 cursor-pointer flex-shrink-0">
+            <svg id="arr-d4" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="d4" class="hidden mt-4 pt-4 border-t border-slate-100">
+          <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#B91C1C" stroke-width="2" class="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <div class="text-sm text-red-800">
+              <div class="font-semibold mb-0.5">Booking rejected</div>
+              Reason: The requested Daikin model is currently out of stock. Please contact us to discuss alternative models or rebook with a later date range.
+            </div>
+          </div>
+          <a href="book.html" class="inline-flex items-center gap-1.5 text-sm text-[#0369A1] font-semibold hover:underline">Rebook with new dates →</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function toggleDetail(id) {
+    var el = document.getElementById(id);
+    var arr = document.getElementById('arr-' + id);
+    var hidden = el.classList.contains('hidden');
+    el.classList.toggle('hidden');
+    arr.style.transform = hidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    arr.style.transition = 'transform 200ms';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: "1"
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: "2"
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: "3"
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Service" [level=2] [ref=e29]
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - text: Service Type
+              - generic [ref=e33]: "*"
+            - combobox [ref=e34]:
+              - generic [ref=e35]: New Unit Installation
+              - img: ▼
+            - textbox [ref=e36]: 52c5edbc-67ae-48c1-b2cc-62055f1b3609
+          - generic [ref=e89]:
+            - generic [ref=e90]: AC Brand
+            - textbox "e.g. Daikin, Mitsubishi, Panasonic…" [ref=e91]
+          - generic [ref=e92]:
+            - generic [ref=e93]: AC Model
+            - textbox "e.g. FTKF35D" [ref=e94]
+          - generic [ref=e95]:
+            - generic [ref=e96]: Room Type
+            - combobox [ref=e97]:
+              - generic [ref=e98]: Select room type…
+              - img: ▼
+            - textbox [ref=e99]
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - text: Number of Units
+              - generic [ref=e102]: "*"
+            - spinbutton [ref=e103]
+          - generic [ref=e37]:
+            - generic [ref=e38]: Additional Notes
+            - textbox "Any additional information for our team…" [ref=e39]
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - text: Photos / Videos
+              - generic [ref=e42]: (up to 5 files, 20 MB each)
+            - generic [ref=e43] [cursor=pointer]:
+              - button "Click to add photos or videos (0/5)" [ref=e44]
+              - text: Click to add photos or videos (0/5)
+      - generic [ref=e45]:
+        - button "Back" [disabled]
+        - button "Next" [ref=e104]
+  - button "Open Next.js Dev Tools" [ref=e51] [cursor=pointer]:
+    - img [ref=e52]
+  - alert [ref=e55]
+  - generic:
+    - generic:
+      - generic:
+        - img
+      - listbox:
+        - generic:
+          - generic: Maintenance
+          - option "General Service — S$80.00":
+            - generic: General Service — S$80.00
+          - option "Chemical Wash — S$120.00":
+            - generic: Chemical Wash — S$120.00
+          - option "Chemical Overhaul — S$180.00":
+            - generic: Chemical Overhaul — S$180.00
+        - generic:
+          - generic: Fault Repair
+          - option "AC Not Cooling":
+            - generic: AC Not Cooling
+          - option "Water Leaking":
+            - generic: Water Leaking
+          - option "Unusual Noise":
+            - generic: Unusual Noise
+          - option "Not Turning On":
+            - generic: Not Turning On
+          - option "Other Fault":
+            - generic: Other Fault
+        - generic:
+          - generic: Installation
+          - option "New Unit Installation" [active] [selected]:
+            - generic: New Unit Installation
+            - generic:
+              - img

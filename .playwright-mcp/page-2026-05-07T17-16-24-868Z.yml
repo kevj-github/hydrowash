@@ -1,0 +1,68 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: ✓
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: ✓
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: ✓
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Review" [level=2] [ref=e159]
+        - generic [ref=e160]:
+          - paragraph [ref=e161]: Please review your booking details before submitting.
+          - generic [ref=e162]:
+            - heading "Service" [level=3] [ref=e163]
+            - generic [ref=e164]:
+              - generic [ref=e165]: Service
+              - generic [ref=e166]: General Service
+            - generic [ref=e167]:
+              - generic [ref=e168]: Category
+              - generic [ref=e169]: MAINTENANCE
+            - generic [ref=e170]:
+              - generic [ref=e171]: Units
+              - generic [ref=e172]: "2"
+            - generic [ref=e173]:
+              - generic [ref=e174]: Notes
+              - generic [ref=e175]: Please service units in master bedroom and living room.
+          - generic [ref=e176]:
+            - heading "Schedule" [level=3] [ref=e177]
+            - generic [ref=e178]:
+              - generic [ref=e179]: Earliest Date
+              - generic [ref=e180]: 2026-05-20
+            - generic [ref=e181]:
+              - generic [ref=e182]: Latest Date
+              - generic [ref=e183]: 2026-05-25
+          - generic [ref=e184]:
+            - heading "Location" [level=3] [ref=e185]
+            - generic [ref=e186]:
+              - generic [ref=e187]: Address
+              - generic [ref=e188]: 1 Orchard Rd, Singapore 238824
+            - generic [ref=e189]:
+              - generic [ref=e190]: Postal Code
+              - generic [ref=e191]: "238824"
+      - generic [ref=e45]:
+        - button "Back" [ref=e112]
+        - button "Submit Booking" [active] [ref=e192]
+  - generic [ref=e50] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e51]:
+      - img [ref=e52]
+    - generic [ref=e150]:
+      - button "Open issues overlay" [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153]: "0"
+          - generic [ref=e154]: "1"
+        - generic [ref=e155]: Issue
+      - button "Collapse issues badge" [ref=e156]:
+        - img [ref=e157]
+  - alert [ref=e55]

@@ -1,0 +1,36 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]: HydroWash
+      - generic [ref=e5]: · Technician
+    - main [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - heading "Today's Jobs" [level=1] [ref=e9]
+          - paragraph [ref=e10]: 2026-05-07 · 2 jobs
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - generic [ref=e13]:
+              - generic [ref=e14]: "1"
+              - generic [ref=e15]:
+                - paragraph [ref=e16]: 08:36:00
+                - paragraph [ref=e17]: Car A
+            - paragraph [ref=e18]: General Service
+            - paragraph [ref=e19]: Kevin
+            - paragraph [ref=e20]: 30A Hoot Kiam Rd
+            - paragraph [ref=e21]: 📞 85867574
+            - paragraph [ref=e22]: test
+          - generic [ref=e23]:
+            - generic [ref=e24]:
+              - generic [ref=e25]: "2"
+              - generic [ref=e26]:
+                - paragraph [ref=e27]: 09:57:00
+                - paragraph [ref=e28]: Car A
+            - paragraph [ref=e29]: General Service
+            - paragraph [ref=e30]: Kevin
+            - paragraph [ref=e31]: 2510, ada, 1 Stadium Pl, Singapore 397628
+            - paragraph [ref=e32]: 📞 85867574
+            - paragraph [ref=e33]: aad
+  - button "Open Next.js Dev Tools" [ref=e39] [cursor=pointer]:
+    - img [ref=e40]
+  - alert [ref=e43]

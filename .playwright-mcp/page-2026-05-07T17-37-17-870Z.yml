@@ -1,0 +1,55 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: HydroWash Admin
+        - navigation [ref=e6]:
+          - link "Overview" [ref=e7] [cursor=pointer]:
+            - /url: /admin
+          - link "Bookings" [ref=e8] [cursor=pointer]:
+            - /url: /admin/bookings
+          - link "Settings" [ref=e9] [cursor=pointer]:
+            - /url: /admin/settings
+          - link "← Public Site" [ref=e10] [cursor=pointer]:
+            - /url: /
+    - main [ref=e11]:
+      - generic [ref=e12]:
+        - heading "Bookings" [level=1] [ref=e14]
+        - generic [ref=e15]:
+          - button "Maintenance 3" [ref=e16]:
+            - text: Maintenance
+            - generic [ref=e17]: "3"
+          - button "Fault Repair 1" [ref=e18]:
+            - text: Fault Repair
+            - generic [ref=e19]: "1"
+          - button "Installation" [ref=e20]
+          - button "All 4" [ref=e21]:
+            - text: All
+            - generic [ref=e22]: "4"
+        - generic [ref=e23]:
+          - generic [ref=e25]: Loading map…
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - paragraph [ref=e28]: 0 of 3 selected
+              - button "Select all" [ref=e29]
+            - generic [ref=e30]:
+              - generic [ref=e31]:
+                - text: Confirmed Date
+                - generic [ref=e32]: "*"
+              - textbox [ref=e33]
+            - button "Approve 0 Bookings" [disabled]
+            - generic [ref=e34]:
+              - button "Test Customer QA 1 Orchard Rd, Singapore 238824 2026-05-20 – 2026-05-25" [ref=e35]:
+                - paragraph [ref=e36]: Test Customer QA
+                - paragraph [ref=e37]: 1 Orchard Rd, Singapore 238824
+                - paragraph [ref=e38]: 2026-05-20 – 2026-05-25
+              - button "Kevin 2510, ada, 1 Stadium Pl, Singapore 397628 2026-05-08 – 2026-05-09" [ref=e39]:
+                - paragraph [ref=e40]: Kevin
+                - paragraph [ref=e41]: 2510, ada, 1 Stadium Pl, Singapore 397628
+                - paragraph [ref=e42]: 2026-05-08 – 2026-05-09
+              - button "Kevin 30A Hoot Kiam Rd 2026-05-07 – 2026-05-08" [ref=e43]:
+                - paragraph [ref=e44]: Kevin
+                - paragraph [ref=e45]: 30A Hoot Kiam Rd
+                - paragraph [ref=e46]: 2026-05-07 – 2026-05-08
+  - button "Open Next.js Dev Tools" [ref=e52] [cursor=pointer]:
+    - img [ref=e53]

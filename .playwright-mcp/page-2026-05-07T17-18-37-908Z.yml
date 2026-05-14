@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e50] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e51]:
+      - img [ref=e52]
+    - generic [ref=e155]:
+      - button "Open issues overlay" [ref=e156]:
+        - generic [ref=e157]:
+          - generic [ref=e158]: "0"
+          - generic [ref=e159]: "1"
+        - generic [ref=e160]: Issue
+      - button "Collapse issues badge" [ref=e161]:
+        - img [ref=e162]
+  - alert [ref=e55]
+  - banner [ref=e189]:
+    - generic [ref=e190]:
+      - link "HydroWash" [ref=e191] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e192]:
+        - link "My Bookings" [ref=e193] [cursor=pointer]:
+          - /url: /account/bookings
+        - link "Book Now" [ref=e194] [cursor=pointer]:
+          - /url: /book
+        - button "Sign Out" [ref=e195]
+  - main [ref=e196]:
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - generic [ref=e199]:
+          - heading "My Bookings" [level=1] [ref=e200]
+          - paragraph [ref=e201]: Track all your service bookings.
+        - link "New Booking" [ref=e202] [cursor=pointer]:
+          - /url: /book
+      - generic [ref=e203]: Booking submitted! We will review and confirm your date shortly.
+      - generic [ref=e204]:
+        - generic [ref=e205]:
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - heading "AC Not Cooling" [level=3] [ref=e208]
+              - paragraph [ref=e209]: Tampines Street 41, Singapore
+            - generic [ref=e210]: PENDING
+          - generic [ref=e212]: "Requested: 2026-05-15 – 2026-05-18"
+        - generic [ref=e213]:
+          - generic [ref=e214]:
+            - generic [ref=e215]:
+              - heading "General Service" [level=3] [ref=e216]
+              - paragraph [ref=e217]: 1 Orchard Rd, Singapore 238824
+            - generic [ref=e218]: PENDING
+          - generic [ref=e220]: "Requested: 2026-05-20 – 2026-05-25"

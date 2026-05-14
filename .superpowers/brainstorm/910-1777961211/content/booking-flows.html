@@ -1,0 +1,114 @@
+<h2>Three Booking Flows</h2>
+<p class="subtitle">Customer sees a different form depending on which category they select first</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
+
+  <!-- Maintenance -->
+  <div style="border:2px solid #3b82f6;border-radius:12px;padding:16px;">
+    <div class="label" style="color:#3b82f6;margin-bottom:10px;">🔧 MAINTENANCE</div>
+    <div style="font-size:0.82em;color:#94a3b8;margin-bottom:12px;">General cleaning, chemical wash, etc. Contract-eligible.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82em;">
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#60a5fa;font-size:0.8em;margin-bottom:2px;">Step 1</div>
+        Select service type (filtered to MAINTENANCE only)<br>
+        Number of units
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#60a5fa;font-size:0.8em;margin-bottom:2px;">Step 2</div>
+        <strong>Date range</strong> — earliest + latest acceptable date<br>
+        Preferred time slot (Morning / Afternoon / Evening)
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#60a5fa;font-size:0.8em;margin-bottom:2px;">Step 3</div>
+        Address + postal code (geocoded + map pin)
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#60a5fa;font-size:0.8em;margin-bottom:2px;">Step 4</div>
+        Notes (optional) + Review + Submit
+      </div>
+      <div style="padding:8px;background:rgba(59,130,246,0.08);border-radius:6px;">
+        → Status: <strong>PENDING</strong><br>
+        → Admin sees on map, groups with nearby bookings, approves with confirmed date
+      </div>
+    </div>
+  </div>
+
+  <!-- Fault Repair -->
+  <div style="border:2px solid #ef4444;border-radius:12px;padding:16px;">
+    <div class="label" style="color:#ef4444;margin-bottom:10px;">⚠️ FAULT REPAIR</div>
+    <div style="font-size:0.82em;color:#94a3b8;margin-bottom:12px;">AC not cooling, leaking, noisy. Urgent. No date picker.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82em;">
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#fca5a5;font-size:0.8em;margin-bottom:2px;">Step 1</div>
+        Select fault type (e.g. "Not Cooling", "Water Leaking", "Strange Noise", "Other")<br>
+        Urgency: 🔴 High / 🟡 Medium / 🟢 Low
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#fca5a5;font-size:0.8em;margin-bottom:2px;">Step 2</div>
+        Describe the fault in detail<br>
+        Best time to call (Morning / Afternoon / Evening)
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#fca5a5;font-size:0.8em;margin-bottom:2px;">Step 3</div>
+        Address + postal code
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#fca5a5;font-size:0.8em;margin-bottom:2px;">Step 4</div>
+        Review + Submit
+      </div>
+      <div style="padding:8px;background:rgba(239,68,68,0.08);border-radius:6px;">
+        → Status: <strong>INQUIRY</strong><br>
+        → Admin sees under "Fault Inquiries" tab, calls customer directly<br>
+        → No scheduling flow — owner handles ad-hoc
+      </div>
+    </div>
+  </div>
+
+  <!-- Installation -->
+  <div style="border:2px solid #22c55e;border-radius:12px;padding:16px;">
+    <div class="label" style="color:#22c55e;margin-bottom:10px;">📦 INSTALLATION</div>
+    <div style="font-size:0.82em;color:#94a3b8;margin-bottom:12px;">New AC unit install. Needs more detail. One-off job.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82em;">
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#86efac;font-size:0.8em;margin-bottom:2px;">Step 1</div>
+        Number of units to install<br>
+        AC brand + model (optional if customer doesn't know yet)<br>
+        Room type (Bedroom / Living Room / Office)
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#86efac;font-size:0.8em;margin-bottom:2px;">Step 2</div>
+        <strong>Date range</strong> — earliest + latest acceptable date<br>
+        Preferred time slot
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#86efac;font-size:0.8em;margin-bottom:2px;">Step 3</div>
+        Address + postal code (geocoded)
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:6px;padding:8px;">
+        <div style="color:#86efac;font-size:0.8em;margin-bottom:2px;">Step 4</div>
+        Notes + Review + Submit
+      </div>
+      <div style="padding:8px;background:rgba(34,197,94,0.08);border-radius:6px;">
+        → Status: <strong>PENDING</strong><br>
+        → Admin reviews details, may call customer to confirm unit specs before approving
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Admin view update -->
+<div style="border:1px solid #334155;border-radius:12px;padding:16px;background:#0f172a;">
+  <div class="label" style="color:#94a3b8;margin-bottom:12px;">Admin — updated bookings view</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <div style="padding:4px 12px;border-radius:20px;background:#1e3a5f;color:#93c5fd;font-size:0.82em;">🗺 Maintenance (map view)</div>
+    <div style="padding:4px 12px;border-radius:20px;background:#3b1a1a;color:#fca5a5;font-size:0.82em;">⚠️ Fault Inquiries</div>
+    <div style="padding:4px 12px;border-radius:20px;background:#1a3a2e;color:#86efac;font-size:0.82em;">📦 Installation</div>
+    <div style="padding:4px 12px;border-radius:20px;background:#1e293b;color:#94a3b8;font-size:0.82em;">All Bookings</div>
+  </div>
+  <div style="font-size:0.85em;color:#64748b;line-height:1.8;">
+    <strong style="color:#93c5fd;">Maintenance tab:</strong> Map of pins. Owner visually clusters nearby requests. Selects a group → sets one confirmed date for all of them → bulk-approves. Each customer's date must fall within their requested range.<br>
+    <strong style="color:#fca5a5;">Fault Inquiries tab:</strong> List of inquiries with urgency badge. Owner clicks to see details + customer phone. No approve/reject — just "Mark Contacted" and "Mark Resolved".<br>
+    <strong style="color:#86efac;">Installation tab:</strong> Standard card list. Owner reviews specs, approves with a confirmed date within the customer's range.
+  </div>
+</div>

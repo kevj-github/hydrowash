@@ -1,0 +1,156 @@
+'use client'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { SLOT_LABELS } from '@/lib/types'
+import type { BookingWithRelations } from '@/lib/types'
+
+interface Props {
+  booking: BookingWithRelations
+  onUpdate: () => void
+  highlighted?: boolean
+  onCardClick?: () => void
+}
+
+const urgencyColor: Record<string, string> = {
+  HIGH: 'bg-red-100 text-red-800',
+  MEDIUM: 'bg-amber-100 text-amber-800',
+  LOW: 'bg-green-100 text-green-800',
+}
+
+const statusColor: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-800',
+  APPROVED: 'bg-blue-100 text-blue-800',
+  COMPLETED: 'bg-green-100 text-green-800',
+  REJECTED: 'bg-slate-100 text-slate-600',
+}
+
+export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Props) {
+  const [confirmedDate, setConfirmedDate] = useState(booking.confirmed_date ?? '')
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [showReject, setShowReject] = useState(false)
+  const [loading, setLoading] = useState<'approve' | 'reject' | 'complete' | null>(null)
+
+  async function act(action: 'approve' | 'reject' | 'complete') {
+    setLoading(action)
+    try {
+      await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, confirmed_date: confirmedDate || undefined, rejection_reason: rejectionReason || undefined }),
+      })
+    } finally {
+      setLoading(null)
+      setShowReject(false)
+      onUpdate()
+    }
+  }
+
+  return (
+    <div
+      className={`bg-white rounded-xl border p-4 transition-colors ${highlighted ? 'border-accent bg-blue-50' : 'border-[#E2E8F0]'} ${onCardClick ? 'cursor-pointer' : ''}`}
+      onClick={() => onCardClick?.()}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div>
+          <p className="font-heading font-semibold text-primary text-sm">{booking.customer.name}</p>
+          <p className="text-xs text-slate-500">{booking.customer.phone}</p>
+        </div>
+        <div className="flex flex-wrap gap-1 justify-end">
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor[booking.status] ?? 'bg-slate-100 text-slate-600'}`}>
+            {booking.status}
+          </span>
+          {booking.urgency && (
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${urgencyColor[booking.urgency]}`}>
+              {booking.urgency}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <p className="text-sm font-medium text-accent mb-1">{booking.service_type.name}</p>
+      <p className="text-xs text-slate-500 mb-1">{booking.address}, S{booking.postal_code}</p>
+      <p className="text-xs text-slate-500 mb-1">
+        {booking.booking_date
+          ? new Date(booking.booking_date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
+          : '—'}
+        {booking.time_slot ? ` · ${SLOT_LABELS[booking.time_slot as import('@/lib/types').TimeSlot] ?? booking.time_slot}` : ''}
+      </p>
+
+      {booking.confirmed_date && (
+        <p className="text-xs font-semibold text-accent mb-2">
+          Confirmed: {booking.confirmed_date}
+        </p>
+      )}
+
+      {booking.fault_description && (
+        <p className="text-xs bg-slate-50 rounded p-2 mb-3 text-slate-600">{booking.fault_description}</p>
+      )}
+
+      {booking.status === 'PENDING' && (
+        <div className="space-y-2">
+          <div>
+            <Label className="text-xs">Confirmed Date</Label>
+            <Input
+              type="date"
+              value={confirmedDate}
+              defaultValue={booking.booking_date ?? ''}
+              onChange={e => setConfirmedDate(e.target.value)}
+              className="h-7 text-xs mt-1"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs"
+              onClick={() => act('approve')}
+              disabled={!confirmedDate || !!loading}
+            >
+              {loading === 'approve' ? '…' : 'Approve'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 text-xs border-red-300 text-red-600 hover:bg-red-50"
+              onClick={() => setShowReject(v => !v)}
+              disabled={!!loading}
+            >
+              Reject
+            </Button>
+          </div>
+          {showReject && (
+            <div className="space-y-1.5">
+              <Input
+                placeholder="Reason (optional)"
+                value={rejectionReason}
+                onChange={e => setRejectionReason(e.target.value)}
+                className="text-xs h-7"
+              />
+              <Button
+                size="sm"
+                className="w-full bg-red-600 hover:bg-red-700 text-white text-xs"
+                onClick={() => act('reject')}
+                disabled={!!loading}
+              >
+                {loading === 'reject' ? '…' : 'Confirm Rejection'}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {booking.status === 'APPROVED' && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full text-xs"
+          onClick={() => act('complete')}
+          disabled={!!loading}
+        >
+          {loading === 'complete' ? '…' : 'Mark Complete'}
+        </Button>
+      )}
+    </div>
+  )
+}

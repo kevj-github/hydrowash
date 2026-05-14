@@ -1,0 +1,49 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: ✓
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: ✓
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: "3"
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Location" [level=2] [ref=e124]
+        - generic [ref=e126]:
+          - generic [ref=e127]:
+            - text: Street Address
+            - generic [ref=e128]: "*"
+          - textbox "Start typing your address…" [active] [ref=e129]: Jurong West Street 52 Singapore
+          - paragraph [ref=e130]: Select an address from the dropdown suggestions.
+      - generic [ref=e45]:
+        - button "Back" [ref=e123]
+        - button "Next" [disabled]
+  - button "Open Next.js Dev Tools" [ref=e51] [cursor=pointer]:
+    - img [ref=e52]
+  - alert [ref=e55]
+  - generic [ref=e131]:
+    - generic [ref=e132]:
+      - generic [ref=e134]: Jurong West Street 52
+      - generic [ref=e135]: Singapore
+    - generic [ref=e136]:
+      - generic [ref=e138]: Singapore Pools Jurong West N5 Branch
+      - generic [ref=e139]: Jurong West Street 52, Singapore
+    - generic [ref=e140]:
+      - generic [ref=e142]: Diabetes Singapore
+      - generic [ref=e143]: Jurong West Street 52, Singapore
+    - generic [ref=e144]:
+      - generic [ref=e146]: Accredit Licensed Money Lender Jurong | Personal Loan Singapore
+      - generic [ref=e147]: Jurong West Street 52, Singapore
+    - generic [ref=e148]:
+      - generic [ref=e150]: SG Digital Office
+      - generic [ref=e151]: Jurong West Street 52, Jurong Spring Community Club, Singapore

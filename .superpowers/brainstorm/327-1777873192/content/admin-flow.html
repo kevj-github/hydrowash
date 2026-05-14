@@ -1,0 +1,132 @@
+<h2>Admin Dashboard Flow</h2>
+<p class="subtitle">What the owner sees and does — from pending requests to confirmed daily schedules</p>
+
+<div style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px;">
+
+  <!-- Section A: Bookings -->
+  <div style="border:1px solid #334155;border-radius:12px;padding:16px;background:#0f172a;">
+    <div class="label" style="color:#f59e0b;margin-bottom:12px;">A — Manage Bookings &nbsp;/admin/bookings</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;border:1px solid #1e293b;border-radius:8px;padding:12px;font-size:0.85em;">
+        <div style="color:#94a3b8;margin-bottom:6px;font-size:0.8em;">PENDING tab (default)</div>
+        <div>List of new requests, newest first</div>
+        <div style="margin-top:6px;color:#64748b;">Each card shows: customer name, service type, preferred date &amp; slot, address, num units, notes</div>
+        <div style="margin-top:8px;display:flex;gap:6px;">
+          <div style="padding:3px 10px;border-radius:6px;background:#1a3a2e;color:#86efac;font-size:0.8em;cursor:pointer;">✅ Approve</div>
+          <div style="padding:3px 10px;border-radius:6px;background:#3b1a1a;color:#fca5a5;font-size:0.8em;cursor:pointer;">❌ Reject</div>
+        </div>
+        <div style="margin-top:6px;color:#64748b;font-size:0.8em;">Rejecting opens a text box for a reason (sent to customer via email)</div>
+      </div>
+      <div style="flex:1;min-width:200px;border:1px solid #1e293b;border-radius:8px;padding:12px;font-size:0.85em;">
+        <div style="color:#94a3b8;margin-bottom:6px;font-size:0.8em;">ALL BOOKINGS tab</div>
+        <div>Filterable by status, date range, service type</div>
+        <div style="margin-top:6px;color:#64748b;">Owner can also manually mark a job as COMPLETED after the technician finishes on-site</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section B: Daily Schedule -->
+  <div style="border:1px solid #334155;border-radius:12px;padding:16px;background:#0f172a;">
+    <div class="label" style="color:#3b82f6;margin-bottom:12px;">B — Daily Schedule &nbsp;/admin/schedule/[date]</div>
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:0.85em;">
+
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:0.8em;flex-shrink:0;">1</div>
+        <div><strong>Set car availability</strong> — Owner toggles which cars are available for the selected day. e.g. "Car A ✅, Car B ✅, Car C ❌ (in workshop)". Can be set in advance for the whole week.</div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:0.8em;flex-shrink:0;">2</div>
+        <div><strong>View approved bookings for the day</strong> — All APPROVED bookings for that date shown as unassigned job cards. Each shows: address, service type, duration, preferred time slot.</div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:0.8em;flex-shrink:0;">3</div>
+        <div>
+          <strong>Click "Auto-Optimize Routes" button</strong>
+          <div style="margin-top:6px;padding:10px;background:rgba(59,130,246,0.06);border-radius:8px;border:1px solid #1e3a5f;">
+            <div style="color:#60a5fa;font-size:0.88em;margin-bottom:6px;">What happens under the hood:</div>
+            <div style="color:#64748b;font-size:0.82em;line-height:1.8;">
+              → Fetch all job lat/lng + depot lat/lng<br>
+              → Call Google Maps Distance Matrix API (travel times between all pairs)<br>
+              → Run nearest-neighbour VRP: distribute jobs across available cars, sequence each car's jobs to minimize total travel time<br>
+              → Respect preferred time slots where possible (Morning jobs before Afternoon jobs)<br>
+              → Calculate estimated start time per job (prev end time + travel time)<br>
+              → Return suggested schedule
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:0.8em;flex-shrink:0;">4</div>
+        <div><strong>Review suggested schedule</strong> — Owner sees each car's job list in order, with estimated times and a summary (total jobs, total travel distance). Can manually drag a job to a different car or reorder within a car if needed.</div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#1a3a2e;display:flex;align-items:center;justify-content:center;font-size:0.8em;flex-shrink:0;">5</div>
+        <div>
+          <strong style="color:#22c55e;">Confirm Schedule</strong>
+          <div style="margin-top:4px;color:#64748b;font-size:0.85em;">
+            → Writes rows to <code>scheduled_jobs</code> with exact times<br>
+            → Sends email to each customer: <em>"Your appointment is confirmed for [time]."</em><br>
+            → Technicians can now see their job list when they log in
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Section C: Technician view -->
+  <div style="border:1px solid #334155;border-radius:12px;padding:16px;background:#0f172a;">
+    <div class="label" style="color:#22c55e;margin-bottom:12px;">C — Technician View &nbsp;/technician/jobs</div>
+    <div style="font-size:0.85em;color:#94a3b8;margin-bottom:10px;">Technician logs in → sees only their car's jobs for today (and upcoming days). Read-only.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="border:1px solid #1e293b;border-radius:8px;padding:10px;display:flex;gap:12px;align-items:center;">
+        <div style="text-align:center;min-width:50px;">
+          <div style="font-size:1.1em;font-weight:700;color:#3b82f6;">9:00</div>
+          <div style="font-size:0.75em;color:#64748b;">~1.5 hrs</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:600;">Chemical Wash — 2 units</div>
+          <div style="color:#64748b;font-size:0.85em;">123 Tampines Ave 4, #05-12, S528523</div>
+          <div style="color:#94a3b8;font-size:0.82em;margin-top:2px;">Note: Unit is on 5th floor, lift available</div>
+        </div>
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:8px;padding:10px;display:flex;gap:12px;align-items:center;">
+        <div style="text-align:center;min-width:50px;">
+          <div style="font-size:1.1em;font-weight:700;color:#3b82f6;">11:10</div>
+          <div style="font-size:0.75em;color:#64748b;">~1 hr</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:600;">General Cleaning — 1 unit</div>
+          <div style="color:#64748b;font-size:0.85em;">45 Bedok North St 1, #03-88, S460045</div>
+        </div>
+      </div>
+      <div style="border:1px solid #1e293b;border-radius:8px;padding:10px;display:flex;gap:12px;align-items:center;">
+        <div style="text-align:center;min-width:50px;">
+          <div style="font-size:1.1em;font-weight:700;color:#3b82f6;">14:30</div>
+          <div style="font-size:0.75em;color:#64748b;">~3 hrs</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:600;">Installation — 1 unit</div>
+          <div style="color:#64748b;font-size:0.85em;">88 Marine Parade Rd, #12-01, S449269</div>
+          <div style="color:#94a3b8;font-size:0.82em;margin-top:2px;">Note: Customer will be home from 2pm onwards</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="border:1px solid #1e293b;border-radius:10px;padding:14px;font-size:0.85em;background:#0f172a;">
+  <strong style="color:#94a3b8;">Admin pages summary:</strong>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px;font-size:0.85em;color:#64748b;">
+    <div>/admin — Overview: pending count, today's schedule status</div>
+    <div>/admin/bookings — All bookings, approve/reject</div>
+    <div>/admin/schedule/[date] — Daily planner + route optimizer</div>
+    <div>/admin/settings — Service types, cars, depot address</div>
+    <div>/technician/jobs — Technician read-only job list</div>
+  </div>
+</div>

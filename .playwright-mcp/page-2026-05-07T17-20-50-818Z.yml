@@ -1,0 +1,54 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e50] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e51]:
+      - img [ref=e52]
+    - generic [ref=e161]:
+      - button "Open issues overlay" [ref=e162]:
+        - generic [ref=e163]:
+          - generic [ref=e164]: "0"
+          - generic [ref=e165]: "1"
+        - generic [ref=e166]: Issue
+      - button "Collapse issues badge" [ref=e167]:
+        - img [ref=e168]
+  - alert [ref=e55]
+  - banner [ref=e195]:
+    - generic [ref=e196]:
+      - link "HydroWash" [ref=e197] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e198]:
+        - link "My Bookings" [ref=e199] [cursor=pointer]:
+          - /url: /account/bookings
+        - link "Book Now" [ref=e200] [cursor=pointer]:
+          - /url: /book
+        - button "Sign Out" [ref=e201]
+  - main [ref=e202]:
+    - generic [ref=e203]:
+      - generic [ref=e204]:
+        - generic [ref=e205]:
+          - heading "My Bookings" [level=1] [ref=e206]
+          - paragraph [ref=e207]: Track all your service bookings.
+        - link "New Booking" [ref=e208] [cursor=pointer]:
+          - /url: /book
+      - generic [ref=e209]: Booking submitted! We will review and confirm your date shortly.
+      - generic [ref=e210]:
+        - generic [ref=e211]:
+          - generic [ref=e212]:
+            - generic [ref=e213]:
+              - heading "New Unit Installation" [level=3] [ref=e214]
+              - paragraph [ref=e215]: Jurong West Street 52, Singapore
+            - generic [ref=e216]: PENDING
+          - generic [ref=e218]: "Requested: 2026-06-01 – 2026-06-07"
+        - generic [ref=e219]:
+          - generic [ref=e220]:
+            - generic [ref=e221]:
+              - heading "AC Not Cooling" [level=3] [ref=e222]
+              - paragraph [ref=e223]: Tampines Street 41, Singapore
+            - generic [ref=e224]: PENDING
+          - generic [ref=e226]: "Requested: 2026-05-15 – 2026-05-18"
+        - generic [ref=e227]:
+          - generic [ref=e228]:
+            - generic [ref=e229]:
+              - heading "General Service" [level=3] [ref=e230]
+              - paragraph [ref=e231]: 1 Orchard Rd, Singapore 238824
+            - generic [ref=e232]: PENDING
+          - generic [ref=e234]: "Requested: 2026-05-20 – 2026-05-25"

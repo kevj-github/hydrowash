@@ -1,0 +1,92 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: HydroWash Admin
+        - navigation [ref=e6]:
+          - link "Overview" [ref=e7] [cursor=pointer]:
+            - /url: /admin
+          - link "Bookings" [ref=e8] [cursor=pointer]:
+            - /url: /admin/bookings
+          - link "Settings" [ref=e9] [cursor=pointer]:
+            - /url: /admin/settings
+          - link "← Public Site" [ref=e10] [cursor=pointer]:
+            - /url: /
+    - main [ref=e11]:
+      - generic [ref=e12]:
+        - heading "Bookings" [level=1] [ref=e14]
+        - generic [ref=e15]:
+          - button "Maintenance 3" [ref=e16]:
+            - text: Maintenance
+            - generic [ref=e17]: "3"
+          - button "Fault Repair 1" [ref=e18]:
+            - text: Fault Repair
+            - generic [ref=e19]: "1"
+          - button "Installation 1" [ref=e20]:
+            - text: Installation
+            - generic [ref=e21]: "1"
+          - button "All 5" [ref=e22]:
+            - text: All
+            - generic [ref=e23]: "5"
+        - generic [ref=e24]:
+          - generic [ref=e58]:
+            - generic:
+              - button "Keyboard shortcuts"
+            - region "Map" [ref=e59]
+            - generic [ref=e60]:
+              - generic [ref=e92]:
+                - generic:
+                  - generic:
+                    - button "Test Customer QA — General Service" [ref=e94] [cursor=pointer]
+                    - button "Kevin — General Service" [ref=e95] [cursor=pointer]
+                    - button "Kevin — General Service" [ref=e96] [cursor=pointer]
+              - iframe [ref=e97]:
+                
+              - menubar [ref=e98] [cursor=pointer]:
+                - menuitemradio "Show street map" [checked] [ref=e100]: Map
+                - menuitemradio "Show satellite imagery" [ref=e102]: Satellite
+              - button "Toggle fullscreen view" [ref=e103] [cursor=pointer]
+              - generic:
+                - generic:
+                  - button "Map camera controls" [ref=e105] [cursor=pointer]
+                  - button "Drag Pegman onto the map to open Street View" [ref=e106] [cursor=pointer]:
+                    - generic:
+                      - img "Street View Pegman Control"
+              - link "Open this area in Google Maps (opens a new window)" [ref=e108] [cursor=pointer]:
+                - /url: https://maps.google.com/maps?ll=1.3521,103.8198&z=11&t=m&hl=en&gl=US&mapclient=apiv3
+                - img "Google" [ref=e110]
+              - generic [ref=e111]:
+                - button "Keyboard shortcuts" [ref=e117] [cursor=pointer]
+                - generic [ref=e122]: Map data ©2026 Google
+                - link "Terms (opens in new tab)" [ref=e127] [cursor=pointer]:
+                  - /url: https://www.google.com/intl/en_US/help/terms_maps.html
+                  - text: Terms
+                - link "Report a map error" [ref=e132] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/@1.3521,103.8198,11z/data=!10m1!1e1!12b1?source=apiv3&rapsrc=apiv3
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - paragraph [ref=e29]: 1 of 3 selected
+              - button "Select all" [ref=e30]
+            - generic [ref=e31]:
+              - generic [ref=e32]:
+                - text: Confirmed Date
+                - generic [ref=e33]: "*"
+              - textbox [ref=e34]
+              - paragraph [ref=e137]: "Valid range: 2026-05-20 – 2026-05-25"
+            - button "Approve 1 Booking" [disabled]
+            - generic [ref=e35]:
+              - button "Test Customer QA 1 Orchard Rd, Singapore 238824 2026-05-20 – 2026-05-25" [active] [ref=e36]:
+                - paragraph [ref=e37]: Test Customer QA
+                - paragraph [ref=e38]: 1 Orchard Rd, Singapore 238824
+                - paragraph [ref=e39]: 2026-05-20 – 2026-05-25
+              - button "Kevin 2510, ada, 1 Stadium Pl, Singapore 397628 2026-05-08 – 2026-05-09" [ref=e40]:
+                - paragraph [ref=e41]: Kevin
+                - paragraph [ref=e42]: 2510, ada, 1 Stadium Pl, Singapore 397628
+                - paragraph [ref=e43]: 2026-05-08 – 2026-05-09
+              - button "Kevin 30A Hoot Kiam Rd 2026-05-07 – 2026-05-08" [ref=e44]:
+                - paragraph [ref=e45]: Kevin
+                - paragraph [ref=e46]: 30A Hoot Kiam Rd
+                - paragraph [ref=e47]: 2026-05-07 – 2026-05-08
+  - button "Open Next.js Dev Tools" [ref=e53] [cursor=pointer]:
+    - img [ref=e54]
+  - alert [ref=e133]

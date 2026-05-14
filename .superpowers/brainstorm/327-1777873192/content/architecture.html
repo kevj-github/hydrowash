@@ -1,0 +1,59 @@
+<h2>System Architecture</h2>
+<p class="subtitle">Ko Gil Aircon — Phase 1: Booking + Admin</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+
+  <div style="border:2px solid #3b82f6;border-radius:12px;padding:16px;background:rgba(59,130,246,0.06);">
+    <div class="label" style="color:#3b82f6;margin-bottom:8px;">Customer Portal</div>
+    <div style="font-size:0.9em;line-height:1.8;">
+      <div>🔑 Register / Login</div>
+      <div>📋 Browse services</div>
+      <div>📅 Submit booking request</div>
+      <div>📬 View booking status</div>
+      <div>🔔 Email notifications</div>
+    </div>
+  </div>
+
+  <div style="border:2px solid #8b5cf6;border-radius:12px;padding:16px;background:rgba(139,92,246,0.06);">
+    <div class="label" style="color:#8b5cf6;margin-bottom:8px;">Admin Dashboard</div>
+    <div style="font-size:0.9em;line-height:1.8;">
+      <div>📥 Review pending bookings</div>
+      <div>✅ Approve / ❌ Reject</div>
+      <div>🗓️ Daily schedule view</div>
+      <div>🚗 Manage service cars</div>
+      <div>🗺️ Auto-optimize routes</div>
+      <div>⚙️ Settings (depot, services)</div>
+    </div>
+  </div>
+
+  <div style="border:2px solid #f59e0b;border-radius:12px;padding:16px;background:rgba(245,158,11,0.06);">
+    <div class="label" style="color:#f59e0b;margin-bottom:8px;">External Services</div>
+    <div style="font-size:0.9em;line-height:1.8;">
+      <div>🗺️ Google Maps (geocoding + distance matrix)</div>
+      <div style="margin-top:8px;">📧 Resend (transactional email)</div>
+      <div style="margin-top:8px;">🔐 Supabase Auth</div>
+      <div style="margin-top:8px;">🐘 Supabase Postgres</div>
+    </div>
+  </div>
+</div>
+
+<div style="border:1px solid #334155;border-radius:12px;padding:20px;background:#0f172a;margin-bottom:16px;">
+  <div class="label" style="color:#94a3b8;margin-bottom:12px;">Tech Stack</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.88em;">
+    <div><span style="color:#60a5fa;">Framework</span> &nbsp;Next.js 15 (App Router, TypeScript)</div>
+    <div><span style="color:#60a5fa;">Database</span> &nbsp;Supabase (Postgres + Row Level Security)</div>
+    <div><span style="color:#60a5fa;">Auth</span> &nbsp;Supabase Auth (customers + admin roles)</div>
+    <div><span style="color:#60a5fa;">Maps</span> &nbsp;Google Maps Platform (Geocoding + Distance Matrix)</div>
+    <div><span style="color:#60a5fa;">Email</span> &nbsp;Resend (React Email templates)</div>
+    <div><span style="color:#60a5fa;">UI</span> &nbsp;Tailwind CSS + shadcn/ui</div>
+    <div><span style="color:#60a5fa;">Optimization</span> &nbsp;Custom VRP (nearest-neighbour, runs on server)</div>
+    <div><span style="color:#60a5fa;">Deployment</span> &nbsp;Vercel</div>
+  </div>
+</div>
+
+<div style="border:1px solid #1e3a2e;border-radius:12px;padding:16px;background:rgba(34,197,94,0.04);font-size:0.9em;">
+  <strong style="color:#22c55e;">Why one codebase works here:</strong>
+  Singapore's typical load is 2–5 service cars, 5–15 jobs per day. The route optimization
+  runs as a Next.js server action — no separate Python backend needed at this scale.
+  Supabase handles auth for both customers and the admin owner, with role-based access via Row Level Security.
+</div>

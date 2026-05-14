@@ -1,0 +1,59 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: ✓
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: ✓
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: ✓
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Review" [level=2] [ref=e164]
+        - generic [ref=e165]:
+          - paragraph [ref=e166]: Please review your booking details before submitting.
+          - generic [ref=e167]:
+            - heading "Service" [level=3] [ref=e168]
+            - generic [ref=e169]:
+              - generic [ref=e170]: Service
+              - generic [ref=e171]: AC Not Cooling
+            - generic [ref=e172]:
+              - generic [ref=e173]: Category
+              - generic [ref=e174]: FAULT_REPAIR
+          - generic [ref=e175]:
+            - heading "Schedule" [level=3] [ref=e176]
+            - generic [ref=e177]:
+              - generic [ref=e178]: Earliest Date
+              - generic [ref=e179]: 2026-05-15
+            - generic [ref=e180]:
+              - generic [ref=e181]: Latest Date
+              - generic [ref=e182]: 2026-05-18
+          - generic [ref=e183]:
+            - heading "Location" [level=3] [ref=e184]
+            - generic [ref=e185]:
+              - generic [ref=e186]: Address
+              - generic [ref=e187]: Tampines Street 41, Singapore
+      - generic [ref=e45]:
+        - button "Back" [ref=e117]
+        - button "Submit Booking" [active] [ref=e188]
+  - generic [ref=e50] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e51]:
+      - img [ref=e52]
+    - generic [ref=e155]:
+      - button "Open issues overlay" [ref=e156]:
+        - generic [ref=e157]:
+          - generic [ref=e158]: "0"
+          - generic [ref=e159]: "1"
+        - generic [ref=e160]: Issue
+      - button "Collapse issues badge" [ref=e161]:
+        - img [ref=e162]
+  - alert [ref=e55]

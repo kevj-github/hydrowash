@@ -1,0 +1,56 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "HydroWash" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e5]:
+        - link "Sign In" [ref=e6] [cursor=pointer]:
+          - /url: /auth/login
+        - link "Book Now" [ref=e7] [cursor=pointer]:
+          - /url: /book
+  - main [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: Singapore's Trusted Aircon Service
+        - heading "Book Your Aircon Service Online in Minutes" [level=1] [ref=e13]:
+          - text: Book Your Aircon Service
+          - text: Online in Minutes
+        - paragraph [ref=e14]: No more WhatsApp back-and-forth. Select a service, pick your preferred dates, and our team comes to you.
+        - link "Book a Service" [ref=e16] [cursor=pointer]:
+          - /url: /auth/register
+      - generic [ref=e18]:
+        - heading "What We Offer" [level=2] [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: 🛠️
+            - heading "General Maintenance" [level=3] [ref=e23]
+            - paragraph [ref=e24]: Regular servicing, chemical wash, and overhaul to keep your AC running at peak performance.
+          - generic [ref=e25]:
+            - generic [ref=e26]: 🔧
+            - heading "Fault Repair" [level=3] [ref=e27]
+            - paragraph [ref=e28]: Fast diagnosis and repair for all aircon faults — from leaks to no cooling.
+          - generic [ref=e29]:
+            - generic [ref=e30]: 📦
+            - heading "Installation" [level=3] [ref=e31]
+            - paragraph [ref=e32]: Professional installation of new AC units with proper setup and testing.
+      - generic [ref=e34]:
+        - heading "How It Works" [level=2] [ref=e35]
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: "1"
+            - paragraph [ref=e39]: Choose your service
+          - generic [ref=e41]:
+            - generic [ref=e42]: "2"
+            - paragraph [ref=e43]: Pick a date range
+          - generic [ref=e45]:
+            - generic [ref=e46]: "3"
+            - paragraph [ref=e47]: We confirm and arrive
+      - generic [ref=e48]:
+        - heading "Ready to book?" [level=2] [ref=e49]
+        - paragraph [ref=e50]: Create an account and schedule your first service today.
+        - link "Get Started" [ref=e51] [cursor=pointer]:
+          - /url: /auth/register
+  - contentinfo [ref=e52]:
+    - generic [ref=e53]: © 2026 HydroWash. All rights reserved.
+  - button "Open Next.js Dev Tools" [ref=e59] [cursor=pointer]:
+    - img [ref=e60]

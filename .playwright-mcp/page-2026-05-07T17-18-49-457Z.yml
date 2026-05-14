@@ -1,0 +1,73 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: "1"
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: "2"
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: "3"
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Service" [level=2] [ref=e29]
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - text: Service Type
+              - generic [ref=e33]: "*"
+            - combobox [expanded] [active] [ref=e34]:
+              - generic [ref=e35]: Select a service…
+              - img: ▼
+            - generic [ref=e58]:
+              - listbox [ref=e59]:
+                - generic [ref=e60]:
+                  - generic [ref=e61]: Maintenance
+                  - option "General Service — S$80.00" [ref=e62]:
+                    - generic [ref=e63]: General Service — S$80.00
+                  - option "Chemical Wash — S$120.00" [ref=e64]:
+                    - generic [ref=e65]: Chemical Wash — S$120.00
+                  - option "Chemical Overhaul — S$180.00" [ref=e66]:
+                    - generic [ref=e67]: Chemical Overhaul — S$180.00
+                - generic [ref=e68]:
+                  - generic [ref=e69]: Fault Repair
+                  - option "AC Not Cooling" [ref=e70]:
+                    - generic [ref=e71]: AC Not Cooling
+                  - option "Water Leaking" [ref=e72]:
+                    - generic [ref=e73]: Water Leaking
+                  - option "Unusual Noise" [ref=e74]:
+                    - generic [ref=e75]: Unusual Noise
+                  - option "Not Turning On" [ref=e76]:
+                    - generic [ref=e77]: Not Turning On
+                  - option "Other Fault" [ref=e78]:
+                    - generic [ref=e79]: Other Fault
+                - generic [ref=e80]:
+                  - generic [ref=e81]: Installation
+                  - option "New Unit Installation" [ref=e82]:
+                    - generic [ref=e83]: New Unit Installation
+              - img [ref=e85]
+            - textbox [ref=e36]
+          - generic [ref=e37]:
+            - generic [ref=e38]: Additional Notes
+            - textbox "Any additional information for our team…" [ref=e39]
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - text: Photos / Videos
+              - generic [ref=e42]: (up to 5 files, 20 MB each)
+            - generic [ref=e43] [cursor=pointer]:
+              - button "Click to add photos or videos (0/5)" [ref=e44]
+              - text: Click to add photos or videos (0/5)
+      - generic [ref=e45]:
+        - button "Back" [disabled]
+        - button "Next" [disabled]
+  - button "Open Next.js Dev Tools" [ref=e51] [cursor=pointer]:
+    - img [ref=e52]
+  - alert [ref=e55]

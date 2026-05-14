@@ -1,0 +1,52 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: ✓
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: ✓
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: "3"
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Location" [level=2] [ref=e118]
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - text: Street Address
+              - generic [ref=e122]: "*"
+            - textbox "Start typing your address…" [ref=e123]: Tampines Street 41, Singapore
+            - paragraph [ref=e124]: ✓ Location confirmed
+          - generic [ref=e146]:
+            - generic [ref=e147]: Unit / Floor
+            - 'textbox "e.g. #04-05" [ref=e148]'
+          - generic [ref=e149]:
+            - generic [ref=e150]: Building Name
+            - textbox "e.g. Watergate Condominium (optional)" [ref=e151]
+          - generic [ref=e152]:
+            - generic [ref=e153]: Landmark / Access Notes
+            - textbox "e.g. Gate code 1234, ring buzzer for unit (optional)" [ref=e154]
+      - generic [ref=e45]:
+        - button "Back" [ref=e117]
+        - button "Next" [ref=e98]
+  - generic [ref=e50] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e51]:
+      - img [ref=e52]
+    - generic [ref=e155]:
+      - button "Open issues overlay" [ref=e156]:
+        - generic [ref=e157]:
+          - generic [ref=e158]: "0"
+          - generic [ref=e159]: "1"
+        - generic [ref=e160]: Issue
+      - button "Collapse issues badge" [ref=e161]:
+        - img [ref=e162]
+  - alert [ref=e55]

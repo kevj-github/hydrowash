@@ -1,0 +1,65 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "HydroWash" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e5]:
+        - button "Close menu" [active] [ref=e64]:
+          - img [ref=e7]
+        - generic [ref=e65]:
+          - link "Services" [ref=e66] [cursor=pointer]:
+            - /url: /services
+          - link "Sign In" [ref=e67] [cursor=pointer]:
+            - /url: /auth/login
+          - link "Book Now" [ref=e68] [cursor=pointer]:
+            - /url: /book
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e12]:
+        - paragraph [ref=e13]: Singapore's Trusted Aircon Service
+        - heading "Book Your Aircon Service Online in Minutes" [level=1] [ref=e14]:
+          - text: Book Your Aircon Service
+          - text: Online in Minutes
+        - paragraph [ref=e15]: No more WhatsApp back-and-forth. Select a service, pick your preferred dates, and our team comes to you.
+        - generic [ref=e16]:
+          - link "Book a Service" [ref=e17] [cursor=pointer]:
+            - /url: /auth/register
+          - link "View Services" [ref=e18] [cursor=pointer]:
+            - /url: /services
+      - generic [ref=e20]:
+        - heading "What We Offer" [level=2] [ref=e21]
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]: 🧊
+            - heading "Chemical Wash" [level=3] [ref=e25]
+            - paragraph [ref=e26]: Deep clean your AC unit to restore cooling efficiency and air quality.
+          - generic [ref=e27]:
+            - generic [ref=e28]: 🔧
+            - heading "Fault Repair" [level=3] [ref=e29]
+            - paragraph [ref=e30]: Fast diagnosis and repair for all aircon faults — from leaks to no cooling.
+          - generic [ref=e31]:
+            - generic [ref=e32]: 📦
+            - heading "Installation" [level=3] [ref=e33]
+            - paragraph [ref=e34]: Professional installation of new AC units with proper setup and testing.
+      - generic [ref=e36]:
+        - heading "How It Works" [level=2] [ref=e37]
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - generic [ref=e40]: "1"
+            - paragraph [ref=e41]: Choose your service
+          - generic [ref=e42]:
+            - generic [ref=e43]: "2"
+            - paragraph [ref=e44]: Pick a date range
+          - generic [ref=e45]:
+            - generic [ref=e46]: "3"
+            - paragraph [ref=e47]: We confirm and arrive
+      - generic [ref=e48]:
+        - heading "Ready to book?" [level=2] [ref=e49]
+        - paragraph [ref=e50]: Create an account and schedule your first service today.
+        - link "Get Started" [ref=e51] [cursor=pointer]:
+          - /url: /auth/register
+  - contentinfo [ref=e52]:
+    - generic [ref=e53]: © 2026 HydroWash. All rights reserved.
+  - button "Open Next.js Dev Tools" [ref=e59] [cursor=pointer]:
+    - img [ref=e60]
+  - alert [ref=e63]

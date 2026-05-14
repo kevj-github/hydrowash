@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technician: Today's Jobs — HydroWash</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{font-family:'Open Sans',sans-serif;padding-top:32px;}
+    h1,h2,h3{font-family:'Poppins',sans-serif;}
+    .job-card{background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:14px;transition:all 0.15s;}
+    .job-number{width:36px;height:36px;background:#0F172A;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:'Poppins',sans-serif;flex-shrink:0;}
+    .maps-btn{display:inline-flex;align-items:center;gap:6px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.15s;cursor:pointer;}
+    .maps-btn:hover{background:#dbeafe;}
+    .status-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;}
+    .divider-line{border:none;border-top:1px solid #f1f5f9;margin:14px 0;}
+    @media(max-width:520px){
+      body{background:#f8fafc;}
+      .job-card{border-radius:12px;padding:16px;}
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:5px 12px;font-size:11px;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;font-family:sans-serif;">
+  <strong style="color:#92400e;margin-right:4px;">Preview:</strong>
+  <a href="index.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Landing</a>
+  <a href="services.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Services</a>
+  <a href="login.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Login</a>
+  <a href="register.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Register</a>
+  <a href="book.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Book</a>
+  <a href="account-bookings.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">My Bookings</a>
+  <span style="color:#94a3b8;">|</span>
+  <a href="admin-overview.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Home</a>
+  <a href="admin-bookings.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Bookings</a>
+  <a href="admin-schedule.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Schedule</a>
+  <a href="admin-settings.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Settings</a>
+  <span style="color:#94a3b8;">|</span>
+  <a href="technician-jobs.html" style="color:#059669;padding:2px 7px;border-radius:99px;background:#d1fae5;text-decoration:none;border:1px solid #6ee7b7;font-weight:600;">Technician</a>
+</div>
+
+<!-- Technician Navbar -->
+<nav style="background:#0F172A;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:32px;z-index:50;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="width:30px;height:30px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#0F172A" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span style="font-family:'Poppins',sans-serif;font-weight:700;color:white;font-size:15px;">HydroWash</span>
+  </div>
+  <a href="login.html" style="color:#94a3b8;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Logout
+  </a>
+</nav>
+
+<!-- Page Content -->
+<div style="max-width:540px;margin:0 auto;padding:20px 16px 40px;">
+
+  <!-- Date + Car Header -->
+  <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div>
+        <p class="text-xs text-slate-400 mb-0.5 uppercase tracking-wider font-semibold">Today</p>
+        <h2 style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;font-size:18px;">Wednesday, 6 May 2026</h2>
+      </div>
+      <div style="text-align:right;">
+        <div style="background:#0F172A;color:white;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Poppins',sans-serif;display:inline-block;">Car A</div>
+        <p class="text-xs text-slate-400 mt-1">Ahmad Karim</p>
+      </div>
+    </div>
+    <hr class="divider-line">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="text-sm text-slate-500"><strong class="text-[#0F172A]">4 jobs</strong> scheduled</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="text-sm text-slate-500">Start: <strong class="text-[#0F172A]">08:00 AM</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2"><path d="M3 12h18M3 6l9 6 9-6"/></svg>
+        <span class="text-sm text-slate-500">Est. finish: <strong class="text-[#0F172A]">1:15 PM</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job 1 -->
+  <div class="job-card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div class="job-number">1</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;font-size:16px;">08:00 AM</span>
+            <span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Maintenance</span>
+          </div>
+          <span class="text-xs text-slate-400">~90 min</span>
+        </div>
+
+        <h3 style="font-family:'Poppins',sans-serif;font-weight:600;color:#0F172A;font-size:15px;">Chemical Wash</h3>
+        <p class="text-sm text-slate-500 mt-0.5">3 units</p>
+
+        <hr class="divider-line">
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="text-sm text-slate-700">123 Tampines St, Singapore 520123</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="text-sm text-slate-700">Alice Tan</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.13 7.83a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <a href="tel:+6591234567" style="color:#0369A1;font-size:14px;font-weight:600;text-decoration:none;">+65 9123 4567</a>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <a href="https://maps.google.com/maps?daddr=123+Tampines+St+Singapore+520123" target="_blank" class="maps-btn">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Open in Google Maps
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job 2 -->
+  <div class="job-card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div class="job-number">2</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;font-size:16px;">09:30 AM</span>
+            <span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Maintenance</span>
+          </div>
+          <span class="text-xs text-slate-400">~60 min</span>
+        </div>
+
+        <h3 style="font-family:'Poppins',sans-serif;font-weight:600;color:#0F172A;font-size:15px;">General Cleaning</h3>
+        <p class="text-sm text-slate-500 mt-0.5">2 units</p>
+
+        <hr class="divider-line">
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="text-sm text-slate-700">45 Bedok Reservoir Rd, Singapore 470045</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="text-sm text-slate-700">Bob Lim</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.13 7.83a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <a href="tel:+6598765432" style="color:#0369A1;font-size:14px;font-weight:600;text-decoration:none;">+65 9876 5432</a>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <a href="https://maps.google.com/maps?daddr=45+Bedok+Reservoir+Rd+Singapore+470045" target="_blank" class="maps-btn">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Open in Google Maps
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job 3 -->
+  <div class="job-card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div class="job-number">3</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;font-size:16px;">10:45 AM</span>
+            <span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Maintenance</span>
+          </div>
+          <span class="text-xs text-slate-400">~45 min</span>
+        </div>
+
+        <h3 style="font-family:'Poppins',sans-serif;font-weight:600;color:#0F172A;font-size:15px;">General Cleaning</h3>
+        <p class="text-sm text-slate-500 mt-0.5">1 unit</p>
+
+        <hr class="divider-line">
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="text-sm text-slate-700">12 Ang Mo Kio Ave 3, Singapore 560012</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="text-sm text-slate-700">David Koh</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.13 7.83a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <a href="tel:+6582345678" style="color:#0369A1;font-size:14px;font-weight:600;text-decoration:none;">+65 8234 5678</a>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <a href="https://maps.google.com/maps?daddr=12+Ang+Mo+Kio+Ave+3+Singapore+560012" target="_blank" class="maps-btn">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Open in Google Maps
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job 4 -->
+  <div class="job-card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div class="job-number">4</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;font-size:16px;">11:45 AM</span>
+            <span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Maintenance</span>
+          </div>
+          <span class="text-xs text-slate-400">~60 min</span>
+        </div>
+
+        <h3 style="font-family:'Poppins',sans-serif;font-weight:600;color:#0F172A;font-size:15px;">Chemical Wash</h3>
+        <p class="text-sm text-slate-500 mt-0.5">2 units</p>
+
+        <hr class="divider-line">
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="text-sm text-slate-700">34 Yishun Ring Rd, Singapore 760034</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="text-sm text-slate-700">Eve Tan</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="2" style="flex-shrink:0;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.13 7.83a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <a href="tel:+6593456789" style="color:#0369A1;font-size:14px;font-weight:600;text-decoration:none;">+65 9345 6789</a>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <a href="https://maps.google.com/maps?daddr=34+Yishun+Ring+Rd+Singapore+760034" target="_blank" class="maps-btn">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Open in Google Maps
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- End of jobs marker -->
+  <div style="text-align:center;padding:20px 0 10px;border-top:1px dashed #e2e8f0;margin-top:6px;">
+    <div style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:99px;padding:6px 16px;">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <span style="font-size:13px;font-weight:600;color:#059669;">That's all for today</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

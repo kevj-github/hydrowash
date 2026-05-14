@@ -1,0 +1,588 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin: Settings — HydroWash</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{font-family:'Open Sans',sans-serif;padding-top:32px;}
+    h1,h2,h3{font-family:'Poppins',sans-serif;}
+    .sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;color:#475569;font-size:14px;font-weight:500;text-decoration:none;transition:all 0.15s;position:relative;}
+    .sidebar-link:hover{background:#f1f5f9;color:#0F172A;}
+    .sidebar-link.active{background:#e8ecf1;color:#0F172A;font-weight:600;}
+    .sidebar-link.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:#0369A1;border-radius:0 2px 2px 0;}
+    .tab-btn{padding:10px 20px;font-size:14px;font-weight:600;border-bottom:2px solid transparent;color:#64748b;cursor:pointer;transition:all 0.15s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;}
+    .tab-btn.active{color:#0369A1;border-bottom-color:#0369A1;}
+    .tab-btn:hover{color:#0F172A;}
+    .toggle-switch{position:relative;width:40px;height:22px;display:inline-block;cursor:pointer;flex-shrink:0;}
+    .toggle-switch input{opacity:0;width:0;height:0;}
+    .toggle-slider{position:absolute;inset:0;background:#cbd5e1;border-radius:99px;transition:0.2s;}
+    .toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:white;border-radius:50%;transition:0.2s;}
+    input:checked + .toggle-slider{background:#0369A1;}
+    input:checked + .toggle-slider::before{transform:translateX(18px);}
+    .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;}
+    .sheet-overlay.open{display:block;}
+    .sheet-panel{position:fixed;top:0;right:-420px;bottom:0;width:420px;background:white;z-index:201;box-shadow:-4px 0 24px rgba(0,0,0,0.15);transition:right 0.3s ease;overflow-y:auto;padding:28px;}
+    .sheet-panel.open{right:0;}
+    .form-label{display:block;font-size:13px;font-weight:600;color:#0F172A;margin-bottom:6px;}
+    .form-input{width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;color:#0F172A;outline:none;box-sizing:border-box;font-family:'Open Sans',sans-serif;}
+    .form-input:focus{border-color:#0369A1;}
+    .form-select{width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;color:#0F172A;outline:none;box-sizing:border-box;background:white;cursor:pointer;}
+    .map-placeholder{background:linear-gradient(rgba(203,213,225,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(203,213,225,0.3) 1px,transparent 1px);background-size:30px 30px;background-color:#e2e8f0;border-radius:10px;position:relative;}
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:5px 12px;font-size:11px;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;font-family:sans-serif;">
+  <strong style="color:#92400e;margin-right:4px;">Preview:</strong>
+  <a href="index.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Landing</a>
+  <a href="services.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Services</a>
+  <a href="login.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Login</a>
+  <a href="register.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Register</a>
+  <a href="book.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Book</a>
+  <a href="account-bookings.html" style="color:#0369a1;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">My Bookings</a>
+  <span style="color:#94a3b8;">|</span>
+  <a href="admin-overview.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Home</a>
+  <a href="admin-bookings.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Bookings</a>
+  <a href="admin-schedule.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Admin: Schedule</a>
+  <a href="admin-settings.html" style="color:#7c3aed;padding:2px 7px;border-radius:99px;background:#ede9fe;text-decoration:none;border:1px solid #c4b5fd;font-weight:600;">Admin: Settings</a>
+  <span style="color:#94a3b8;">|</span>
+  <a href="technician-jobs.html" style="color:#059669;padding:2px 7px;border-radius:99px;background:white;text-decoration:none;border:1px solid #e2e8f0;">Technician</a>
+</div>
+
+<!-- Sidebar -->
+<aside style="position:fixed;top:32px;left:0;bottom:0;width:240px;background:#0F172A;padding:24px 12px;display:flex;flex-direction:column;z-index:100;overflow-y:auto;">
+  <div style="display:flex;align-items:center;gap:10px;padding:0 8px;margin-bottom:32px;">
+    <div style="width:32px;height:32px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#0F172A" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-weight:700;color:white;font-size:14px;line-height:1.2;">HydroWash</div>
+      <div style="font-size:10px;color:#64748b;font-weight:600;letter-spacing:0.05em;">ADMIN</div>
+    </div>
+  </div>
+
+  <nav style="display:flex;flex-direction:column;gap:2px;flex:1;">
+    <a href="admin-overview.html" class="sidebar-link" style="color:#94a3b8;">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Overview
+    </a>
+    <a href="admin-bookings.html" class="sidebar-link" style="color:#94a3b8;">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Bookings
+      <span style="margin-left:auto;background:#f59e0b;color:#0F172A;border-radius:99px;font-size:10px;font-weight:700;padding:1px 7px;">17</span>
+    </a>
+    <a href="admin-schedule.html" class="sidebar-link" style="color:#94a3b8;">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l9 6 9-6"/></svg>
+      Schedule
+    </a>
+    <a href="admin-settings.html" class="sidebar-link active" style="color:white;">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </a>
+  </nav>
+
+  <div style="border-top:1px solid #1e293b;padding-top:12px;margin-top:12px;">
+    <a href="login.html" class="sidebar-link" style="color:#94a3b8;">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main style="margin-left:240px;min-height:calc(100vh - 32px);" class="flex flex-col">
+
+  <!-- Header -->
+  <div class="bg-white border-b border-slate-200 px-8 py-5">
+    <h1 style="font-family:'Poppins',sans-serif;" class="text-2xl font-bold text-[#0F172A]">Settings</h1>
+    <p class="text-slate-500 text-sm mt-0.5">Manage service types, cars, technicians, and depot location.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="bg-white border-b border-slate-200 px-8">
+    <div class="flex gap-0 overflow-x-auto">
+      <button class="tab-btn active" onclick="switchTab('services',this)">Service Types</button>
+      <button class="tab-btn" onclick="switchTab('cars',this)">Cars</button>
+      <button class="tab-btn" onclick="switchTab('technicians',this)">Technicians</button>
+      <button class="tab-btn" onclick="switchTab('depot',this)">Depot</button>
+    </div>
+  </div>
+
+  <div class="flex-1 p-6">
+
+    <!-- SERVICE TYPES TAB -->
+    <div id="tab-services">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-500">Active service types appear in the customer booking form.</p>
+        <button onclick="openSheet('service')" style="background:#0369A1;color:white;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Service Type
+        </button>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Service Name</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Category</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Price</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Duration</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Active</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;font-weight:500;color:#0F172A;">General Cleaning</td>
+              <td style="padding:12px 16px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Maintenance</span></td>
+              <td style="padding:12px 16px;color:#0F172A;">$40 / unit</td>
+              <td style="padding:12px 16px;color:#64748b;">45 min</td>
+              <td style="padding:12px 16px;">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;font-weight:500;color:#0F172A;">Chemical Wash</td>
+              <td style="padding:12px 16px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Maintenance</span></td>
+              <td style="padding:12px 16px;color:#0F172A;">$80 / unit</td>
+              <td style="padding:12px 16px;color:#64748b;">60 min</td>
+              <td style="padding:12px 16px;">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;font-weight:500;color:#0F172A;">Chemical Overhaul</td>
+              <td style="padding:12px 16px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Maintenance</span></td>
+              <td style="padding:12px 16px;color:#0F172A;">$150 / unit</td>
+              <td style="padding:12px 16px;color:#64748b;">90 min</td>
+              <td style="padding:12px 16px;">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;font-weight:500;color:#0F172A;">AC Not Cooling</td>
+              <td style="padding:12px 16px;"><span style="background:#fee2e2;color:#b91c1c;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Fault Repair</span></td>
+              <td style="padding:12px 16px;color:#64748b;">Quote on-site</td>
+              <td style="padding:12px 16px;color:#64748b;">60 min</td>
+              <td style="padding:12px 16px;">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;font-weight:500;color:#0F172A;">Water Leaking</td>
+              <td style="padding:12px 16px;"><span style="background:#fee2e2;color:#b91c1c;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Fault Repair</span></td>
+              <td style="padding:12px 16px;color:#64748b;">Quote on-site</td>
+              <td style="padding:12px 16px;color:#64748b;">60 min</td>
+              <td style="padding:12px 16px;">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;font-weight:500;color:#0F172A;">Strange Noise</td>
+              <td style="padding:12px 16px;"><span style="background:#fee2e2;color:#b91c1c;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Fault Repair</span></td>
+              <td style="padding:12px 16px;color:#64748b;">Quote on-site</td>
+              <td style="padding:12px 16px;color:#64748b;">60 min</td>
+              <td style="padding:12px 16px;">
+                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px;font-weight:500;color:#0F172A;">New AC Installation</td>
+              <td style="padding:12px 16px;"><span style="background:#f0fdf4;color:#166534;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;">Installation</span></td>
+              <td style="padding:12px 16px;color:#64748b;">Quote on-site</td>
+              <td style="padding:12px 16px;color:#64748b;">120 min</td>
+              <td style="padding:12px 16px;">
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CARS TAB -->
+    <div id="tab-cars" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-500">Active cars appear in the daily schedule builder.</p>
+        <button onclick="addCar()" style="background:#0369A1;color:white;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Car
+        </button>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden max-w-lg">
+        <div id="cars-list">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f1f5f9;" class="car-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;background:#0F172A;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+              </div>
+              <input type="text" value="Car A" style="font-size:15px;font-weight:600;color:#0F172A;border:none;outline:none;background:transparent;width:80px;">
+            </div>
+            <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f1f5f9;" class="car-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;background:#334155;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+              </div>
+              <input type="text" value="Car B" style="font-size:15px;font-weight:600;color:#0F172A;border:none;outline:none;background:transparent;width:80px;">
+            </div>
+            <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;" class="car-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;background:#64748b;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+              </div>
+              <input type="text" value="Car C" style="font-size:15px;font-weight:600;color:#0F172A;border:none;outline:none;background:transparent;width:80px;">
+            </div>
+            <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">Click the label to rename a car.</p>
+    </div>
+
+    <!-- TECHNICIANS TAB -->
+    <div id="tab-technicians" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-500">Technicians can log in to view their car's daily jobs.</p>
+        <button onclick="openSheet('technician')" style="background:#0369A1;color:white;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Technician
+        </button>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden max-w-2xl">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Name</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Email</th>
+              <th style="padding:12px 16px;text-align:left;font-weight:600;color:#64748b;">Assigned Car</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:32px;height:32px;background:#dbeafe;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#1d4ed8;">AK</div>
+                  <span style="font-weight:500;color:#0F172A;">Ahmad Karim</span>
+                </div>
+              </td>
+              <td style="padding:12px 16px;color:#64748b;">ahmad@kogil.sg</td>
+              <td style="padding:12px 16px;">
+                <select class="form-select" style="width:120px;padding:6px 10px;">
+                  <option>Car A</option>
+                  <option>Car B</option>
+                  <option>Car C</option>
+                  <option>— Unassigned —</option>
+                </select>
+              </td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:32px;height:32px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#065f46;">BT</div>
+                  <span style="font-weight:500;color:#0F172A;">Benny Tan</span>
+                </div>
+              </td>
+              <td style="padding:12px 16px;color:#64748b;">benny@kogil.sg</td>
+              <td style="padding:12px 16px;">
+                <select class="form-select" style="width:120px;padding:6px 10px;">
+                  <option>Car A</option>
+                  <option selected>Car B</option>
+                  <option>Car C</option>
+                  <option>— Unassigned —</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:32px;height:32px;background:#fef3c7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#b45309;">CW</div>
+                  <span style="font-weight:500;color:#0F172A;">Charlie Wong</span>
+                </div>
+              </td>
+              <td style="padding:12px 16px;color:#64748b;">charlie@kogil.sg</td>
+              <td style="padding:12px 16px;">
+                <select class="form-select" style="width:120px;padding:6px 10px;">
+                  <option>Car A</option>
+                  <option>Car B</option>
+                  <option>Car C</option>
+                  <option selected>— Unassigned —</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DEPOT TAB -->
+    <div id="tab-depot" class="hidden">
+      <div class="max-w-xl">
+        <p class="text-sm text-slate-500 mb-5">The depot is the starting point for route optimisation. All cars depart from here at 08:00.</p>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-6">
+          <div class="mb-5">
+            <label class="form-label">Depot address <span style="color:#dc2626;">*</span></label>
+            <input type="text" class="form-input" value="123 Ubi Ave 3, Singapore 408897" id="depot-address">
+          </div>
+          <div class="mb-5">
+            <label class="form-label">Postal code</label>
+            <input type="text" class="form-input" value="408897" style="max-width:150px;">
+          </div>
+
+          <button onclick="geocodeDepot()" style="background:#f8fafc;border:1px solid #e2e8f0;color:#0F172A;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Geocode &amp; Preview
+          </button>
+
+          <!-- Map Preview -->
+          <div id="depot-map" class="map-placeholder" style="height:200px;border:1px solid #e2e8f0;">
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+              <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <p class="text-xs text-slate-400 mt-1">Click "Geocode" to preview</p>
+            </div>
+          </div>
+
+          <!-- Geocoded preview (hidden until geocoded) -->
+          <div id="depot-geocoded" class="hidden mt-3 p-3" style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;font-size:13px;color:#065f46;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Located: 123 Ubi Ave 3, Singapore 408897 (1.3241° N, 103.8985° E)
+            </div>
+          </div>
+
+          <button onclick="saveDepot()" style="margin-top:20px;width:100%;background:#0369A1;color:white;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">Save Depot Location</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Sheet Overlay -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+
+<!-- Service Type Sheet -->
+<div class="sheet-panel" id="service-sheet">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+    <h2 style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;font-size:18px;">Add Service Type</h2>
+    <button onclick="closeSheet()" style="border:none;background:none;cursor:pointer;color:#64748b;font-size:20px;line-height:1;">&times;</button>
+  </div>
+  <div class="space-y-5">
+    <div>
+      <label class="form-label">Service name <span style="color:#dc2626;">*</span></label>
+      <input type="text" class="form-input" placeholder="e.g. Chemical Overhaul">
+    </div>
+    <div>
+      <label class="form-label">Category <span style="color:#dc2626;">*</span></label>
+      <select class="form-select">
+        <option value="">Select category</option>
+        <option>Maintenance</option>
+        <option>Fault Repair</option>
+        <option>Installation</option>
+      </select>
+    </div>
+    <div>
+      <label class="form-label">Description</label>
+      <textarea class="form-input" rows="3" placeholder="Brief description shown to customers..." style="resize:vertical;"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <label class="form-label">Duration (minutes)</label>
+        <input type="number" class="form-input" placeholder="60" min="15" step="15">
+      </div>
+      <div>
+        <label class="form-label">Price per unit ($)</label>
+        <input type="number" class="form-input" placeholder="Leave blank = on-site quote" min="0">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #f1f5f9;">
+      <div>
+        <p class="text-sm font-semibold text-[#0F172A]">Active</p>
+        <p class="text-xs text-slate-400">Show in customer booking form</p>
+      </div>
+      <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+    </div>
+    <div style="display:flex;gap:10px;padding-top:8px;">
+      <button onclick="closeSheet()" style="flex:1;border:1px solid #e2e8f0;background:white;color:#0F172A;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      <button onclick="saveService()" style="flex:1;background:#0369A1;color:white;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">Save Service Type</button>
+    </div>
+  </div>
+</div>
+
+<!-- Technician Sheet -->
+<div class="sheet-panel" id="technician-sheet">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+    <h2 style="font-family:'Poppins',sans-serif;font-weight:700;color:#0F172A;font-size:18px;">Add Technician</h2>
+    <button onclick="closeSheet()" style="border:none;background:none;cursor:pointer;color:#64748b;font-size:20px;line-height:1;">&times;</button>
+  </div>
+  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;margin-bottom:20px;font-size:12px;color:#1e40af;">
+    A technician account will be created in Supabase Auth with the <strong>technician</strong> role. They will receive a welcome email with a temporary password.
+  </div>
+  <div class="space-y-5">
+    <div>
+      <label class="form-label">Full name <span style="color:#dc2626;">*</span></label>
+      <input type="text" class="form-input" placeholder="Ahmad Karim">
+    </div>
+    <div>
+      <label class="form-label">Email address <span style="color:#dc2626;">*</span></label>
+      <input type="email" class="form-input" placeholder="ahmad@kogil.sg">
+    </div>
+    <div>
+      <label class="form-label">Temporary password <span style="color:#dc2626;">*</span></label>
+      <input type="text" class="form-input" placeholder="Min. 8 characters">
+      <p class="text-xs text-slate-400 mt-1.5">Technician should change this on first login.</p>
+    </div>
+    <div>
+      <label class="form-label">Assign to car</label>
+      <select class="form-select">
+        <option value="">— Unassigned —</option>
+        <option>Car A</option>
+        <option>Car B</option>
+        <option>Car C</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;padding-top:8px;">
+      <button onclick="closeSheet()" style="flex:1;border:1px solid #e2e8f0;background:white;color:#0F172A;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      <button onclick="saveTechnician()" style="flex:1;background:#0369A1;color:white;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="settings-toast" style="position:fixed;bottom:24px;right:24px;background:#065F46;color:white;border-radius:10px;padding:14px 20px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:none;z-index:500;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toast-msg">Saved successfully.</span>
+  </div>
+</div>
+
+<script>
+  var currentTab = 'services';
+  var currentSheet = null;
+
+  function switchTab(tab, btn) {
+    document.getElementById('tab-' + currentTab).classList.add('hidden');
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    currentTab = tab;
+    var tabs = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.remove('active');
+    }
+    btn.classList.add('active');
+  }
+
+  function openSheet(type) {
+    currentSheet = type;
+    document.getElementById('sheet-overlay').classList.add('open');
+    document.getElementById(type + '-sheet').classList.add('open');
+  }
+
+  function closeSheet() {
+    if (currentSheet) {
+      document.getElementById(currentSheet + '-sheet').classList.remove('open');
+    }
+    document.getElementById('sheet-overlay').classList.remove('open');
+    currentSheet = null;
+  }
+
+  function showToast(msg) {
+    var toast = document.getElementById('settings-toast');
+    var msgEl = document.getElementById('toast-msg');
+    msgEl.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(function() { toast.style.display = 'none'; }, 3000);
+  }
+
+  function saveService() {
+    closeSheet();
+    showToast('Service type saved.');
+  }
+
+  function saveTechnician() {
+    closeSheet();
+    showToast('Technician account created.');
+  }
+
+  function geocodeDepot() {
+    setTimeout(function() {
+      document.getElementById('depot-geocoded').classList.remove('hidden');
+      var mapDiv = document.getElementById('depot-map');
+      mapDiv.style.backgroundImage = "linear-gradient(rgba(203,213,225,0.4) 1px,transparent 1px),linear-gradient(90deg,rgba(203,213,225,0.4) 1px,transparent 1px)";
+      mapDiv.style.backgroundSize = "30px 30px";
+      mapDiv.style.backgroundColor = "#e2e8f0";
+      mapDiv.style.display = "flex";
+      mapDiv.style.alignItems = "center";
+      mapDiv.style.justifyContent = "center";
+      mapDiv.style.position = "relative";
+      var pin = document.createElement('div');
+      pin.style.cssText = "width:20px;height:20px;background:#dc2626;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);";
+      while (mapDiv.firstChild) { mapDiv.removeChild(mapDiv.firstChild); }
+      var wrap = document.createElement('div');
+      wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:6px;";
+      wrap.appendChild(pin);
+      var label = document.createElement('span');
+      label.style.cssText = "font-size:11px;color:#0F172A;font-weight:600;background:white;padding:2px 6px;border-radius:4px;transform:rotate(0deg);";
+      label.textContent = "Depot";
+      wrap.appendChild(label);
+      mapDiv.appendChild(wrap);
+    }, 600);
+  }
+
+  function saveDepot() {
+    showToast('Depot location saved.');
+  }
+
+  function addCar() {
+    var list = document.getElementById('cars-list');
+    var count = list.querySelectorAll('.car-row').length;
+    var letters = ['A','B','C','D','E','F'];
+    var letter = letters[count] || (count + 1).toString();
+
+    var row = document.createElement('div');
+    row.className = 'car-row';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #f1f5f9;';
+    row.style.animation = 'none';
+
+    var left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:12px;';
+
+    var icon = document.createElement('div');
+    icon.style.cssText = 'width:36px;height:36px;background:#94a3b8;border-radius:8px;display:flex;align-items:center;justify-content:center;';
+    icon.textContent = '';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = 'Car ' + letter;
+    input.style.cssText = 'font-size:15px;font-weight:600;color:#0F172A;border:none;outline:none;background:transparent;width:80px;';
+
+    left.appendChild(icon);
+    left.appendChild(input);
+
+    var label = document.createElement('label');
+    label.className = 'toggle-switch';
+    var cbx = document.createElement('input');
+    cbx.type = 'checkbox';
+    cbx.checked = true;
+    var slider = document.createElement('span');
+    slider.className = 'toggle-slider';
+    label.appendChild(cbx);
+    label.appendChild(slider);
+
+    row.appendChild(left);
+    row.appendChild(label);
+    list.appendChild(row);
+
+    showToast('Car ' + letter + ' added.');
+  }
+</script>
+</body>
+</html>

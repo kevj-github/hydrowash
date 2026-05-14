@@ -1,0 +1,14 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]: HydroWash
+      - generic [ref=e5]: · Technician
+    - main [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - heading "Today's Jobs" [level=1] [ref=e9]
+          - paragraph [ref=e10]: 2026-05-07 · 0 jobs
+        - paragraph [ref=e12]: No jobs scheduled for today.
+  - button "Open Next.js Dev Tools" [ref=e18] [cursor=pointer]:
+    - img [ref=e19]
+  - alert [ref=e22]

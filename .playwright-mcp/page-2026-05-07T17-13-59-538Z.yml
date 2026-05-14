@@ -1,0 +1,26 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e28] [cursor=pointer]:
+    - img [ref=e29]
+  - alert [ref=e32]
+  - banner [ref=e33]:
+    - generic [ref=e34]:
+      - link "HydroWash" [ref=e35] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e36]:
+        - link "My Bookings" [ref=e37] [cursor=pointer]:
+          - /url: /account/bookings
+        - link "Book Now" [ref=e38] [cursor=pointer]:
+          - /url: /book
+        - button "Sign Out" [ref=e39]
+  - main [ref=e40]:
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - heading "My Bookings" [level=1] [ref=e44]
+          - paragraph [ref=e45]: Track all your service bookings.
+        - link "New Booking" [ref=e46] [cursor=pointer]:
+          - /url: /book
+      - generic [ref=e47]:
+        - paragraph [ref=e48]: No bookings yet
+        - link "Book your first service" [ref=e49] [cursor=pointer]:
+          - /url: /book

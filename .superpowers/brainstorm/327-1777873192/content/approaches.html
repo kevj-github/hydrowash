@@ -1,0 +1,67 @@
+<h2>3 Approaches for the Ko Gil Aircon System</h2>
+<p class="subtitle">Choose an architecture — each covers booking, admin dashboard, route optimization, and email notifications</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Next.js + Supabase + Vercel <span style="color:#22c55e;font-size:0.8em;font-weight:600;margin-left:8px;">RECOMMENDED</span></h3>
+      <p>Single codebase: Next.js App Router for all UI (customer booking form + admin dashboard), API routes for backend logic, Supabase for database + auth, Vercel for deployment.</p>
+      <div class="pros-cons" style="margin-top:12px;">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>One repo, one language (TypeScript)</li>
+          <li>Supabase gives auth + realtime + Postgres out of the box</li>
+          <li>Vercel handles deploys, scaling, env vars</li>
+          <li>Fast to build and iterate</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>VRP optimization in Node.js is workable but not Python-native</li>
+          <li>Supabase has a free tier but costs scale with usage</li>
+        </ul></div>
+      </div>
+      <p style="margin-top:8px;font-size:0.85em;color:#888;"><strong>Stack:</strong> Next.js 15 · Supabase (Postgres + Auth) · Google Maps API · Resend (email) · Vercel</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Next.js (frontend) + FastAPI (backend)</h3>
+      <p>Split architecture: Next.js for UI, Python FastAPI for the backend API and VRP optimization (Python has better OR-Tools / optimization libraries). Two separate deployments.</p>
+      <div class="pros-cons" style="margin-top:12px;">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Python is the best ecosystem for optimization (OR-Tools, scipy)</li>
+          <li>Cleaner separation of concerns</li>
+          <li>FastAPI is fast and well-documented</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Two codebases = more complexity</li>
+          <li>Cross-language debugging is harder</li>
+          <li>Overkill for Singapore's job scale (5–15 jobs/day)</li>
+        </ul></div>
+      </div>
+      <p style="margin-top:8px;font-size:0.85em;color:#888;"><strong>Stack:</strong> Next.js 15 · FastAPI · PostgreSQL · Google Maps API · Resend · Vercel + Railway</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>SaaS Booking Tool (e.g. Calendly / SimplyBook) + custom admin</h3>
+      <p>Use an existing booking SaaS for the customer-facing scheduling, build only the admin dashboard + route optimization as a custom app.</p>
+      <div class="pros-cons" style="margin-top:12px;">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Booking UX already built and tested</li>
+          <li>Less code to maintain for booking layer</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>No control over the customer booking flow</li>
+          <li>SaaS tools don't support custom route optimization logic</li>
+          <li>Monthly SaaS fees add up</li>
+          <li>Integration complexity between systems</li>
+        </ul></div>
+      </div>
+      <p style="margin-top:8px;font-size:0.85em;color:#888;"><strong>Stack:</strong> SimplyBook.me / Calendly + Custom Next.js admin + Google Maps API</p>
+    </div>
+  </div>
+</div>

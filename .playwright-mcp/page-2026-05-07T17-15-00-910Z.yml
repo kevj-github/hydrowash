@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Book a Service" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Complete the steps below to submit your booking request.
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: ✓
+          - generic [ref=e12]: Service
+        - generic [ref=e15]:
+          - generic [ref=e16]: "2"
+          - generic [ref=e17]: Schedule
+        - generic [ref=e20]:
+          - generic [ref=e21]: "3"
+          - generic [ref=e22]: Location
+        - generic [ref=e25]:
+          - generic [ref=e26]: "4"
+          - generic [ref=e27]: Review
+      - generic [ref=e28]:
+        - heading "Schedule" [level=2] [ref=e94]
+        - generic [ref=e95]:
+          - paragraph [ref=e96]: Provide your preferred date window. Our team will confirm a specific date within this range.
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - generic [ref=e99]:
+                - text: Earliest Date
+                - generic [ref=e100]: "*"
+              - textbox "Earliest Date *" [ref=e101]
+            - generic [ref=e102]:
+              - generic [ref=e103]:
+                - text: Latest Date
+                - generic [ref=e104]: "*"
+              - textbox "Latest Date *" [ref=e105]
+          - generic [ref=e106]:
+            - generic [ref=e107]: Preferred Time Slot
+            - combobox [ref=e108]:
+              - generic [ref=e109]: No preference
+              - img: ▼
+            - textbox [ref=e110]
+            - paragraph [ref=e111]: Optional — subject to availability
+      - generic [ref=e45]:
+        - button "Back" [ref=e112]
+        - button "Next" [disabled]
+  - button "Open Next.js Dev Tools" [ref=e51] [cursor=pointer]:
+    - img [ref=e52]
+  - alert [ref=e55]
