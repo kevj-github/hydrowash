@@ -6,7 +6,7 @@ export interface GeocodeResult {
 
 export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
   const key = process.env.GOOGLE_MAPS_API_KEY
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=sg&key=${key}`
   const res = await fetch(url)
   const data = await res.json()
 

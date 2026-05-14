@@ -5,8 +5,8 @@ import { sendContractServiceDue, sendContractExpiring } from '@/lib/email/send'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hydrowash.sg'
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret = req.headers.get('x-cron-secret')
+  if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

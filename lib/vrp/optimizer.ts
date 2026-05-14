@@ -85,7 +85,7 @@ export function optimizeRoute(
       sequenceOrder: sequenceOrder++,
       estimatedStart: minutesToTime(arrivalTime),
       estimatedEnd: minutesToTime(endTime),
-      travelFromPrevMinutes: sequenceOrder === 2 ? travel : travel,
+      travelFromPrevMinutes: travel,
       locationIndex: job.locationIndex,
     })
 

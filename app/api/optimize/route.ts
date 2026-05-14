@@ -9,9 +9,9 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (profileError || !profile || profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { selectedBookingIds }: { selectedBookingIds: string[] } = await request.json()
   if (!selectedBookingIds?.length) return NextResponse.json({ error: 'No bookings selected' }, { status: 400 })
@@ -45,11 +45,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 502 })
   }
 
+  const missingSlot = ordered.find((b: any) => !b.time_slot)
+  if (missingSlot) return NextResponse.json({ error: `Booking ${missingSlot.id} has no time_slot` }, { status: 422 })
+
   const jobs = ordered.map((b: any, i: number) => ({
     bookingId: b.id,
     locationIndex: i + 1,
     durationMinutes: (b.service_type as any)?.duration_minutes ?? 60,
-    timeSlot: (b.time_slot ?? 'S10_12') as TimeSlot,
+    timeSlot: b.time_slot as TimeSlot,
   }))
 
   const vrpResult = optimizeRoute(jobs, travelMatrix)
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
       address: booking.address,
       serviceType: (booking.service_type as any)?.name ?? '',
       durationMinutes: (booking.service_type as any)?.duration_minutes ?? 60,
-      timeSlot: (booking.time_slot ?? 'S10_12') as TimeSlot,
+      timeSlot: booking.time_slot as TimeSlot,
       notes: booking.notes ?? null,
     }
   })

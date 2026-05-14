@@ -1,7 +1,7 @@
 # Next Session — Resume Here
 
 ## Status
-Phase 2 Subsystems H, A, B, C, D, E, F, G — **all complete** (2026-05-14). Migrations 001–019 applied to Supabase. `npm install` done. Clean build passes.
+Phase 2 Subsystems H, A, B, C, D, E, F, G — **all complete** (2026-05-14). Bug audit fixes applied (2026-05-14). Migrations 001–019 applied to Supabase. `npm install` done. Clean build passes.
 
 ## Completed (full history)
 - **Phase 1** — booking portal, admin dashboard, VRP optimizer, email templates, API routes, cron job
@@ -52,6 +52,21 @@ Phase 2 Subsystems H, A, B, C, D, E, F, G — **all complete** (2026-05-14). Mig
 - `app/api/cron/contracts/route.ts` — fully rewritten: sends `ContractServiceDue` emails; sends `ContractExpiring` emails + sets `expiry_reminder_sent = true`
 - `components/booking/BookingWizard.tsx` — 409 handler: fetches `/api/availability/suggest`, shows clickable date+slot pill suggestions
 - `package.json` — added `qrcode.react: ^4.2.0`
+
+## Bug audit fixes (2026-05-14)
+All 12 actionable bugs from `BUG-AUDIT.md` fixed:
+- **CRITICAL** — Booking POST rewrote with `booking_date`/`time_slot`; removed `earliest_date`/`preferred_slot`/`room_type`; inserts `booking_unit_locations`; returns 409 on conflict
+- **CRITICAL** — Cron contracts auth header changed from `Authorization: Bearer` to `x-cron-secret`
+- **HIGH** — VRP optimizer throws on missing `time_slot` instead of silently defaulting to `S10_12`
+- **HIGH** — All API route profile checks updated: `if (profileError || !profile || profile.role !== 'admin')`
+- **MEDIUM** — PayNow CRC uses `TextEncoder` for correct UTF-8 byte processing
+- **MEDIUM** — Distance Matrix batches in chunks of 25 to handle large route days
+- **MEDIUM** — Contract date arithmetic uses explicit UTC (`T00:00:00Z`, `setUTCFullYear`, `setUTCMonth`) in all 3 routes
+- **MEDIUM** — Email send errors now log `console.error` instead of silently swallowing
+- **MEDIUM** — Geocode API now includes `&region=sg` for Singapore-biased results
+- **MEDIUM** — Contract request validates `preferred_month` matches `YYYY-MM` format
+- **LOW** — AC catalog GET supports `?active=true` filter to exclude inactive items
+- **LOW** — VRP optimizer dead ternary (`sequenceOrder === 2 ? travel : travel`) removed
 
 ## Owner still needs to supply (in Supabase app_settings)
 - `paynow_mobile` → PayNow mobile number (required for E to work)

@@ -24,11 +24,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'num_units and preferred_month are required' }, { status: 400 })
   }
 
+  if (!/^\d{4}-\d{2}$/.test(preferred_month)) {
+    return NextResponse.json({ error: 'preferred_month must be YYYY-MM' }, { status: 400 })
+  }
+
   // preferred_month is YYYY-MM — start_date is first day of that month
   const start_date = `${preferred_month}-01`
-  const startDateObj = new Date(start_date)
-  const endDateObj = new Date(startDateObj)
-  endDateObj.setFullYear(endDateObj.getFullYear() + 1)
+  const endDateObj = new Date(`${start_date}T00:00:00Z`)
+  endDateObj.setUTCFullYear(endDateObj.getUTCFullYear() + 1)
   const end_date = endDateObj.toISOString().split('T')[0]
 
   const { data: contract, error } = await supabase

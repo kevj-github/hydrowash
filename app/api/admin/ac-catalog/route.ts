@@ -32,7 +32,10 @@ export async function GET(req: Request) {
   const { table, error } = resolveTable(req)
   if (error) return NextResponse.json({ error }, { status: 400 })
   const supabase = await createClient()
-  const { data } = await supabase.from(table).select('*').order('display_order')
+  const activeOnly = new URL(req.url).searchParams.get('active') === 'true'
+  let query = supabase.from(table).select('*').order('display_order')
+  if (activeOnly) query = query.eq('is_active', true)
+  const { data } = await query
   return NextResponse.json(data ?? [])
 }
 

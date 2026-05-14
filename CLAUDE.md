@@ -180,6 +180,12 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - Invoice statuses: `UNPAID | PAID`
 - `contract_pricing_tiers` format: `[{min_units, max_units: number|null, price_sgd}]` — `max_units: null` = per-unit rate
 - `contracts.price_sgd` is **nullable** (NULL for PENDING_REVIEW contracts, set on activation). Guard with `price_sgd != null ? ... : 'TBD'` before rendering.
+- **Booking POST** (`/api/bookings`) uses `booking_date` + `time_slot` (NOT old `earliest_date`/`preferred_slot`). Checks slot availability before insert; returns 409 on conflict.
+- **Profile role checks** in API routes use `if (profileError || !profile || profile.role !== 'admin')` — not `profile?.role !== 'admin'`.
+- **Cron auth**: both cron routes use `x-cron-secret` header (NOT `Authorization: Bearer`).
+- **Geocode** (`lib/maps/geocode.ts`) includes `&region=sg` for Singapore-biased results.
+- **Distance Matrix** (`lib/maps/distance-matrix.ts`) batches in chunks of 25 to handle large route days.
+- **Contract date arithmetic** uses `T00:00:00Z` + `setUTCFullYear`/`setUTCMonth` to avoid timezone drift.
 
 ## Key flows
 
@@ -282,5 +288,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Migrations through 019 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present. See `docs/superpowers/NEXT-SESSION.md`.
+- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Bug audit fixes applied (2026-05-14). Migrations through 019 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present. See `docs/superpowers/NEXT-SESSION.md`.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.

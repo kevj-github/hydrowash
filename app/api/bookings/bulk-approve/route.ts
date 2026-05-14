@@ -8,9 +8,9 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (profileError || !profile || profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { booking_ids, confirmed_date }: { booking_ids: string[]; confirmed_date: string } =
     await request.json()
@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
     bookings.map(async (booking) => {
       const { data } = await adminClient.auth.admin.getUserById(booking.customer_id)
       const email = data?.user?.email
-      if (email) await sendBookingApproved(booking, email).catch(() => null)
+      if (email) await sendBookingApproved(booking, email).catch(err =>
+        console.error(`[bulk-approve] Failed to send email to ${email}:`, err)
+      )
     })
   )
 

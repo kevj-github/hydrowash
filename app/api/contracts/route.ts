@@ -8,13 +8,13 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (profileError || !profile || profile.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  const startDateObj = new Date(start_date)
-  const endDateObj = new Date(startDateObj)
-  endDateObj.setFullYear(endDateObj.getFullYear() + 1)
+  const startDateObj = new Date(`${start_date}T00:00:00Z`)
+  const endDateObj = new Date(`${start_date}T00:00:00Z`)
+  endDateObj.setUTCFullYear(endDateObj.getUTCFullYear() + 1)
   const end_date = endDateObj.toISOString().split('T')[0]
 
   const { data: contract, error: contractError } = await supabase
@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
   }
 
   const serviceDates = [1, 2, 3, 4].map((n) => {
-    const d = new Date(startDateObj)
-    d.setMonth(d.getMonth() + 3 * n)
+    const d = new Date(`${start_date}T00:00:00Z`)
+    d.setUTCMonth(d.getUTCMonth() + 3 * n)
     return {
       contract_id: contract.id,
       due_date: d.toISOString().split('T')[0],
@@ -78,13 +78,13 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (profileError || !profile || profile.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

@@ -6,9 +6,10 @@ function tlv(tag: string, value: string): string {
 }
 
 function crc16ccitt(data: string): string {
+  const bytes = new TextEncoder().encode(data)
   let crc = 0xffff
-  for (let i = 0; i < data.length; i++) {
-    crc ^= data.charCodeAt(i) << 8
+  for (const byte of bytes) {
+    crc ^= byte << 8
     for (let j = 0; j < 8; j++) {
       if (crc & 0x8000) {
         crc = (crc << 1) ^ 0x1021
