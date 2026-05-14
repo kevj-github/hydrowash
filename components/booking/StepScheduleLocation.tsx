@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { useJsApiLoader } from '@react-google-maps/api'
+import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
 import { Home, MapPin, Pencil } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -8,8 +8,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { SlotCalendar } from './SlotCalendar'
 import { SLOT_LABELS } from '@/lib/types'
 import type { TimeSlot } from '@/lib/types'
-
-const LIBRARIES: ('places')[] = ['places']
 
 type LocationPreset = 'home' | 'current' | 'other'
 
@@ -32,10 +30,7 @@ interface Props {
 }
 
 export function StepScheduleLocation({ data, onChange, profileAddress }: Props) {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
-    libraries: LIBRARIES,
-  })
+  const isLoaded = useMapsLoaded()
 
   const inputRef = useRef<HTMLInputElement>(null)
   const onChangeRef = useRef(onChange)

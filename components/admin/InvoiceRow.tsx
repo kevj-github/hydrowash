@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { InvoiceWithCustomer, PaymentMethod } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -72,10 +73,8 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false }: Pr
       <td className="py-2 px-3">
         {invoice.status === 'UNPAID' && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger>
-              <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50">
-                Mark Paid
-              </Button>
+            <DialogTrigger className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-green-700 border-green-300 hover:bg-green-50')}>
+              Mark Paid
             </DialogTrigger>
             <DialogContent className="max-w-sm">
               <DialogHeader>

@@ -10,7 +10,8 @@ import {
   ContractServiceDateWithBooking,
   InvoiceWithCustomer,
 } from '@/lib/types'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -196,10 +197,8 @@ export default function ContractDetailPage() {
           </div>
           <div className="flex gap-2">
             <Dialog open={activateOpen} onOpenChange={setActivateOpen}>
-              <DialogTrigger>
-                <Button className="bg-green-600 text-white hover:bg-green-700">
-                  Activate Contract
-                </Button>
+              <DialogTrigger className={cn(buttonVariants(), 'bg-green-600 text-white hover:bg-green-700')}>
+                Activate Contract
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>

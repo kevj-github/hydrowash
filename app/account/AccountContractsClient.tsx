@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -190,10 +191,8 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                 }
               }}
             >
-              <DialogTrigger>
-                <Button size="sm" className="bg-accent text-white hover:bg-accent/90">
-                  + Request Contract
-                </Button>
+              <DialogTrigger className={cn(buttonVariants({ size: 'sm' }), 'bg-accent text-white hover:bg-accent/90')}>
+                + Request Contract
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>

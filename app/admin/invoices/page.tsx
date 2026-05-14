@@ -5,10 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import InvoiceRow from '@/components/admin/InvoiceRow'
 import { InvoiceWithCustomer, CreateInvoicePayload } from '@/lib/types'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -200,10 +201,8 @@ function AdminInvoicesContent() {
             }
           }}
         >
-          <DialogTrigger>
-            <Button className="bg-accent text-white hover:bg-accent/90">
-              + New Invoice
-            </Button>
+          <DialogTrigger className={cn(buttonVariants(), 'bg-accent text-white hover:bg-accent/90')}>
+            + New Invoice
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>

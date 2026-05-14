@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useState } from 'react'
-import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api'
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api'
+import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
 import type { BookingWithRelations } from '@/lib/types'
 
 const MAP_CENTER = { lat: 1.3521, lng: 103.8198 }
@@ -34,10 +35,7 @@ interface Props {
 
 export function BookingsMap({ bookings, selected, onPinClick }: Props) {
   const [activeInfoId, setActiveInfoId] = useState<string | null>(null)
-
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
-  })
+  const isLoaded = useMapsLoaded()
 
   const onLoad = useCallback((_map: google.maps.Map) => {}, [])
 

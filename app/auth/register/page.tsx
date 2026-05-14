@@ -1,15 +1,14 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useJsApiLoader } from '@react-google-maps/api'
+import Script from 'next/script'
+import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { MapPin, Wind } from 'lucide-react'
 import Link from 'next/link'
-
-const LIBRARIES: ('places')[] = ['places']
 
 const fields = [
   { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Jane Tan' },
@@ -37,10 +36,7 @@ export default function RegisterPage() {
   const supabase = createClient()
   const addressInputRef = useRef<HTMLInputElement>(null)
 
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
-    libraries: LIBRARIES,
-  })
+  const isLoaded = useMapsLoaded()
 
   useEffect(() => {
     if (!isLoaded || !addressInputRef.current) return
@@ -158,6 +154,10 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex">
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        strategy="lazyOnload"
+      />
       {leftPanel}
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">

@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ContractCard from '@/components/admin/ContractCard'
 import { ContractWithCustomer, ContractServiceDate, CreateContractPayload } from '@/lib/types'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -191,10 +192,8 @@ export default function AdminContractsPage() {
             }
           }}
         >
-          <DialogTrigger>
-            <Button className="bg-accent text-white hover:bg-accent/90">
-              + New Contract
-            </Button>
+          <DialogTrigger className={cn(buttonVariants(), 'bg-accent text-white hover:bg-accent/90')}>
+            + New Contract
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>

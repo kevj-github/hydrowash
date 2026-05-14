@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Script from 'next/script'
 import { Button } from '@/components/ui/button'
 import { StepServiceDetails } from './StepServiceDetails'
 import { StepScheduleLocation } from './StepScheduleLocation'
@@ -134,6 +135,10 @@ export function BookingWizard({ serviceTypes, profileAddress }: Props) {
 
   return (
     <div className="max-w-lg mx-auto">
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        strategy="lazyOnload"
+      />
       {/* Progress */}
       <div className="flex items-center justify-between mb-8">
         {STEPS.map((label, i) => (

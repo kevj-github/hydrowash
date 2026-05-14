@@ -1,6 +1,7 @@
 'use client'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import Script from 'next/script'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -193,6 +194,10 @@ export function AdminBookingsClient({ initialBookings }: Props) {
 
   return (
     <div key={refreshKey} className="flex flex-col h-[calc(100vh-10rem)]">
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+        strategy="lazyOnload"
+      />
       <div className="flex items-center justify-between mb-4">
         <h1 className="font-heading font-bold text-2xl text-primary">Bookings</h1>
       </div>

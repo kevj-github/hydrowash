@@ -1,13 +1,12 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useJsApiLoader } from '@react-google-maps/api'
+import Script from 'next/script'
+import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react'
-
-const LIBRARIES: ('places')[] = ['places']
 
 interface ProfileData {
   name: string
@@ -41,10 +40,7 @@ export default function AccountSettingsClient({ profile }: Props) {
   const [error, setError] = useState('')
   const addressInputRef = useRef<HTMLInputElement>(null)
 
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
-    libraries: LIBRARIES,
-  })
+  const isLoaded = useMapsLoaded()
 
   useEffect(() => {
     if (!isLoaded || !addressInputRef.current) return
@@ -101,6 +97,10 @@ export default function AccountSettingsClient({ profile }: Props) {
 
   return (
     <div className="max-w-lg mx-auto py-10 px-4">
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        strategy="lazyOnload"
+      />
       <h1 className="font-heading font-bold text-2xl text-primary mb-1">Account Settings</h1>
       <p className="text-muted-foreground text-sm mb-6">Update your profile details</p>
 

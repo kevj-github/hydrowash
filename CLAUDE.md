@@ -276,7 +276,7 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - Cron endpoints are secured with a `CRON_SECRET` header check.
 - shadcn/ui v4 uses `@base-ui` (NOT `@radix-ui`). `onValueChange` is `(value: string | null, event: Event) => void` — always use `?? ''` when assigning to string state.
 - shadcn/ui v4 `SelectValue` does NOT auto-resolve selected item label — always provide explicit children text inside `<SelectValue>`.
-- shadcn/ui v4 `DialogTrigger` does NOT accept `asChild` — wrap the button directly inside `<DialogTrigger>`.
+- shadcn/ui v4 `DialogTrigger` renders its own `<button>` element — NEVER nest a `<Button>` component inside it (nested `<button>` causes hydration errors). Instead apply button styles directly to `<DialogTrigger>` using `buttonVariants`: `<DialogTrigger className={cn(buttonVariants(), 'extra-classes')}>Label</DialogTrigger>`.
 - `useSearchParams` requires a `<Suspense>` boundary in Next.js 15+.
 - Both `lib/supabase/client.ts` and `lib/supabase/server.ts` export `createClient`. Import as `@/lib/supabase/server` (server) or `@/lib/supabase/client` (browser).
 - `BookingsMap` and `RouteMap` use `next/dynamic` with `ssr: false` (Google Maps requires browser).
@@ -288,5 +288,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Bug audit fixes applied (2026-05-14). Migrations through 019 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present. See `docs/superpowers/NEXT-SESSION.md`.
+- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Bug audit fixes applied (2026-05-14). Full Playwright QA pass completed (2026-05-14) — nested-button hydration bug fixed across 5 files. Migrations through 019 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present. See `docs/superpowers/NEXT-SESSION.md`.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.

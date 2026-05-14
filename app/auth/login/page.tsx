@@ -13,6 +13,7 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -21,15 +22,37 @@ function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setLoading(false)
       return
     }
-    const redirect = searchParams.get('redirect') ?? '/'
-    router.push(redirect)
+    const explicit = searchParams.get('redirect')
+    if (explicit) {
+      router.push(explicit)
+      router.refresh()
+      return
+    }
+    // Determine default destination by role
+    try {
+      const { data: profile } = await supabase
+        .from('profiles').select('role').eq('id', data.user.id).single()
+      router.push(profile?.role === 'admin' ? '/admin' : '/account/bookings')
+    } catch {
+      router.push('/account/bookings')
+    }
     router.refresh()
+  }
+
+  async function handleReset() {
+    if (!email) { setError('Enter your email first'); return }
+    setLoading(true)
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
+    })
+    setResetSent(true)
+    setLoading(false)
   }
 
   return (
@@ -47,7 +70,17 @@ function LoginForm() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password" className="text-sm font-medium text-primary">Password</Label>
+        <div className="flex items-center justify-between mb-1">
+          <Label htmlFor="password" className="text-sm font-medium text-primary">Password</Label>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={loading}
+            className="text-xs text-accent hover:underline cursor-pointer disabled:opacity-50"
+          >
+            Forgot password?
+          </button>
+        </div>
         <Input
           id="password"
           type="password"
@@ -58,6 +91,11 @@ function LoginForm() {
           className="h-11"
         />
       </div>
+      {resetSent && (
+        <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          Password reset email sent — check your inbox.
+        </p>
+      )}
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           {error}
