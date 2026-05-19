@@ -13,7 +13,7 @@ type LocationPreset = 'home' | 'current' | 'other'
 
 interface StepData {
   booking_date: string
-  time_slot: string
+  preferred_slots: TimeSlot[]
   address: string
   postal_code: string
   lat: number | null
@@ -108,14 +108,14 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
         </p>
         <SlotCalendar
           selectedDate={data.booking_date || undefined}
-          selectedSlot={(data.time_slot as TimeSlot) || undefined}
-          onChange={(date, slot) => onChange({ booking_date: date, time_slot: slot })}
+          selectedSlots={data.preferred_slots ?? []}
+          onChange={(date, slots) => onChange({ booking_date: date, preferred_slots: slots })}
         />
-        {data.booking_date && data.time_slot && (
+        {data.booking_date && data.preferred_slots?.length > 0 && (
           <p className="text-xs text-green-700 mt-2">
             ✓ {new Date(data.booking_date + 'T00:00:00').toLocaleDateString('en-SG', {
               day: 'numeric', month: 'short', year: 'numeric',
-            })} · {SLOT_LABELS[data.time_slot as TimeSlot] ?? data.time_slot}
+            })} · {data.preferred_slots.map(s => SLOT_LABELS[s]).join(', ')}
           </p>
         )}
       </div>

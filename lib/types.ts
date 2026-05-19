@@ -47,7 +47,9 @@ export interface Booking {
   lat: number
   lng: number
   booking_date: string
-  time_slot: TimeSlot
+  time_slot: TimeSlot           // first preferred slot (backward compat)
+  preferred_slots: TimeSlot[]   // all customer availability preferences (1–3)
+  confirmed_slot: TimeSlot | null  // admin-confirmed slot (set on approval)
   num_units: number | null
   fault_description: string | null
   urgency: Urgency | null

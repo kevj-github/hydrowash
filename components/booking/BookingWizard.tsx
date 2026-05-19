@@ -8,6 +8,7 @@ import { StepScheduleLocation } from './StepScheduleLocation'
 import { StepReview } from './StepReview'
 import type { ServiceType, TimeSlot } from '@/lib/types'
 import { SLOT_LABELS } from '@/lib/types'
+// SLOT_LABELS kept for potential display use
 
 interface Props {
   serviceTypes: ServiceType[]
@@ -20,7 +21,7 @@ type BookingData = {
   service_type_id: string
   category: string
   booking_date: string
-  time_slot: string
+  preferred_slots: TimeSlot[]
   unit_location_ids: string[]
   address: string
   postal_code: string
@@ -38,16 +39,12 @@ type BookingData = {
   media_urls?: string[]
 }
 
-interface Suggestion {
-  date: string
-  slot: TimeSlot
-}
 
 const initial: BookingData = {
   service_type_id: '',
   category: '',
   booking_date: '',
-  time_slot: '',
+  preferred_slots: [],
   unit_location_ids: [],
   address: '',
   postal_code: '',
@@ -56,17 +53,12 @@ const initial: BookingData = {
   media_urls: [],
 }
 
-function formatSuggestionDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
-}
 
 export function BookingWizard({ serviceTypes, profileAddress }: Props) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<BookingData>(initial)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const router = useRouter()
 
   function update(updates: Partial<BookingData>) {
@@ -76,19 +68,22 @@ export function BookingWizard({ serviceTypes, profileAddress }: Props) {
   function canNext(): boolean {
     if (step === 0) {
       if (!data.service_type_id || !data.category) return false
-      if (data.category === 'MAINTENANCE' && !data.num_units) return false
+      if (data.category === 'MAINTENANCE') {
+        if (!data.num_units) return false
+        const locs = data.unit_location_ids ?? []
+        if (locs.length < data.num_units || locs.some(id => !id)) return false
+      }
       if (data.category === 'FAULT_REPAIR' && !data.fault_description?.trim()) return false
       if (data.category === 'INSTALLATION' && !data.num_units) return false
       return true
     }
-    if (step === 1) return !!data.booking_date && !!data.time_slot && !!data.address && data.lat !== null
+    if (step === 1) return !!data.booking_date && (data.preferred_slots?.length ?? 0) > 0 && !!data.address && data.lat !== null
     return true
   }
 
   async function handleSubmit() {
     setSubmitting(true)
     setError('')
-    setSuggestions([])
     try {
       const addressParts = [data.unit_floor, data.building_name, data.address].filter(Boolean)
       const fullAddress = addressParts.join(', ')
@@ -101,24 +96,9 @@ export function BookingWizard({ serviceTypes, profileAddress }: Props) {
           ...data,
           address: fullAddress || data.address,
           notes: combinedNotes || undefined,
+          time_slot: data.preferred_slots[0],
         }),
       })
-
-      if (res.status === 409) {
-        setError('That slot was just taken.')
-        // Fetch alternative suggestions
-        const params = new URLSearchParams({
-          from: data.booking_date,
-          slot: data.time_slot,
-          days: '14',
-        })
-        const suggestRes = await fetch(`/api/availability/suggest?${params}`)
-        if (suggestRes.ok) {
-          const json = await suggestRes.json()
-          setSuggestions(json.suggestions ?? [])
-        }
-        return
-      }
 
       if (!res.ok) {
         const body = await res.json()
@@ -170,33 +150,10 @@ export function BookingWizard({ serviceTypes, profileAddress }: Props) {
       </div>
 
       {error && (
-        <div className="mb-4 space-y-3">
+        <div className="mb-4">
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             {error}
           </p>
-          {suggestions.length > 0 ? (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-primary">Available alternatives:</p>
-              <div className="flex flex-wrap gap-2">
-                {suggestions.map((s) => (
-                  <button
-                    key={`${s.date}|${s.slot}`}
-                    onClick={() => {
-                      update({ booking_date: s.date, time_slot: s.slot })
-                      setError('')
-                      setSuggestions([])
-                      setStep(1)
-                    }}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/30 hover:bg-accent hover:text-white transition-colors"
-                  >
-                    {formatSuggestionDate(s.date)} · {SLOT_LABELS[s.slot]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : error === 'That slot was just taken.' ? (
-            <p className="text-xs text-muted-foreground">No nearby slots available — please pick another date from the calendar.</p>
-          ) : null}
         </div>
       )}
 

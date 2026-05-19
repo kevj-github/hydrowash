@@ -1,14 +1,17 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
 import type { AcUnitLocation } from '@/lib/types'
 
 interface Props {
+  numUnits: number
   value: string[]
   onChange: (ids: string[]) => void
 }
 
-export function UnitLocationPicker({ value, onChange }: Props) {
+export function UnitLocationPicker({ numUnits, value, onChange }: Props) {
   const [locations, setLocations] = useState<AcUnitLocation[]>([])
 
   useEffect(() => {
@@ -21,37 +24,38 @@ export function UnitLocationPicker({ value, onChange }: Props) {
       .then(({ data }) => setLocations(data ?? []))
   }, [])
 
-  function toggle(id: string) {
-    if (value.includes(id)) {
-      onChange(value.filter(v => v !== id))
-    } else {
-      onChange([...value, id])
-    }
+  function handleChange(index: number, locationId: string) {
+    const next = [...value]
+    next[index] = locationId
+    onChange(next)
   }
 
-  if (!locations.length) {
-    return <p className="text-xs text-muted-foreground">Loading locations…</p>
-  }
+  if (!numUnits || numUnits < 1) return null
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {locations.map(loc => {
-        const active = value.includes(loc.id)
-        return (
-          <button
-            key={loc.id}
-            type="button"
-            onClick={() => toggle(loc.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-              active
-                ? 'bg-accent text-white border-accent'
-                : 'border-border text-primary hover:bg-muted/60'
-            }`}
+    <div className="space-y-2">
+      {Array.from({ length: numUnits }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <Label className="text-xs text-muted-foreground w-14 shrink-0">Unit {i + 1}</Label>
+          <Select
+            value={value[i] ?? ''}
+            onValueChange={v => handleChange(i, v ?? '')}
           >
-            {loc.label}
-          </button>
-        )
-      })}
+            <SelectTrigger className="h-8 text-xs flex-1">
+              <SelectValue placeholder="Select room…">
+                {locations.find(l => l.id === value[i])?.label ?? null}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {locations.map(loc => (
+                <SelectItem key={loc.id} value={loc.id}>
+                  {loc.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ))}
     </div>
   )
 }

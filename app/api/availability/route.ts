@@ -15,12 +15,14 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient()
 
   const [bookingsRes, blocksRes] = await Promise.all([
+    // Only show APPROVED bookings' confirmed_slot as "booked"
     supabase
       .from('bookings')
-      .select('booking_date, time_slot')
-      .gte('booking_date', monthStart)
-      .lt('booking_date', nextMonthStart)
-      .in('status', ['PENDING', 'APPROVED']),
+      .select('confirmed_date, confirmed_slot')
+      .gte('confirmed_date', monthStart)
+      .lt('confirmed_date', nextMonthStart)
+      .eq('status', 'APPROVED')
+      .not('confirmed_slot', 'is', null),
     supabase
       .from('blocked_slots')
       .select('blocked_date, slot')
@@ -36,8 +38,8 @@ export async function GET(request: NextRequest) {
   }
 
   for (const b of bookingsRes.data ?? []) {
-    if (b.booking_date && b.time_slot) {
-      getOrCreate(b.booking_date).booked.push(b.time_slot as TimeSlot)
+    if (b.confirmed_date && b.confirmed_slot) {
+      getOrCreate(b.confirmed_date).booked.push(b.confirmed_slot as TimeSlot)
     }
   }
 

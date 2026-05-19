@@ -17,12 +17,13 @@ export async function PATCH(
 
   const { id } = await params
   const body = await request.json()
-  const { action, confirmed_date, rejection_reason } = body
+  const { action, confirmed_date, confirmed_slot, rejection_reason } = body
 
-  const updates: Record<string, string> = {}
+  const updates: Record<string, string | null> = {}
   if (action === 'approve') {
     updates.status = 'APPROVED'
     if (confirmed_date) updates.confirmed_date = confirmed_date
+    if (confirmed_slot) updates.confirmed_slot = confirmed_slot
   } else if (action === 'reject') {
     updates.status = 'REJECTED'
     if (rejection_reason) updates.rejection_reason = rejection_reason

@@ -12,8 +12,11 @@ export async function POST(request: NextRequest) {
     .from('profiles').select('role').eq('id', user.id).single()
   if (profileError || !profile || profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { booking_ids, confirmed_date }: { booking_ids: string[]; confirmed_date: string } =
-    await request.json()
+  const { booking_ids, confirmed_date, confirmed_slot }: {
+    booking_ids: string[]
+    confirmed_date: string
+    confirmed_slot?: string
+  } = await request.json()
 
   if (!booking_ids?.length || !confirmed_date) {
     return NextResponse.json({ error: 'booking_ids and confirmed_date required' }, { status: 400 })
@@ -30,9 +33,12 @@ export async function POST(request: NextRequest) {
 
   // All fetched PENDING bookings are eligible — slot already captures the date
   if (bookings.length > 0) {
+    const updatePayload: Record<string, string | null> = { status: 'APPROVED', confirmed_date }
+    if (confirmed_slot) updatePayload.confirmed_slot = confirmed_slot
+
     await supabase
       .from('bookings')
-      .update({ status: 'APPROVED', confirmed_date })
+      .update(updatePayload)
       .in('id', bookings.map(b => b.id))
   }
 

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { BookingCard } from '@/components/admin/BookingCard'
-import { SLOT_LABELS } from '@/lib/types'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 
 const BookingsMap = dynamic(
@@ -43,6 +44,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
   // Maintenance bulk-approve state
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmedDate, setConfirmedDate] = useState('')
+  const [confirmedSlot, setConfirmedSlot] = useState('')
   const [approving, setApproving] = useState(false)
   const [approveResult, setApproveResult] = useState<{ approved: number; excluded: { id: string; customer: string }[] } | null>(null)
 
@@ -137,12 +139,17 @@ export function AdminBookingsClient({ initialBookings }: Props) {
       const res = await fetch('/api/bookings/bulk-approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ booking_ids: Array.from(selected), confirmed_date: confirmedDate }),
+        body: JSON.stringify({
+          booking_ids: Array.from(selected),
+          confirmed_date: confirmedDate,
+          confirmed_slot: confirmedSlot || undefined,
+        }),
       })
       const data = await res.json()
       setApproveResult(data)
       setSelected(new Set())
       setConfirmedDate('')
+      setConfirmedSlot('')
     } catch {
       setApproveResult(null)
     } finally {
@@ -277,9 +284,25 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                 />
               </div>
 
+              <div className="space-y-1.5">
+                <Label className="text-xs">Confirmed Time Slot <span className="text-red-500">*</span></Label>
+                <Select value={confirmedSlot} onValueChange={v => setConfirmedSlot(v ?? '')}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Pick a slot…">
+                      {confirmedSlot ? (SLOT_LABELS[confirmedSlot as TimeSlot] ?? confirmedSlot) : null}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SLOT_KEYS.map(s => (
+                      <SelectItem key={s} value={s}>{SLOT_LABELS[s]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Button
                 onClick={handleBulkApprove}
-                disabled={approving || selected.size === 0 || !confirmedDate}
+                disabled={approving || selected.size === 0 || !confirmedDate || !confirmedSlot}
                 className="bg-accent hover:bg-accent/90 text-white text-sm shrink-0"
               >
                 {approving ? 'Approving…' : `Approve ${selected.size} Booking${selected.size !== 1 ? 's' : ''}`}
@@ -307,7 +330,13 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                     >
                       <p className="font-semibold text-primary">{b.customer?.name}</p>
                       <p className="text-muted-foreground">{b.address}</p>
-                      <p className="text-muted-foreground mt-0.5">{b.booking_date} · {SLOT_LABELS[b.time_slot as TimeSlot] ?? b.time_slot}</p>
+                      <p className="text-muted-foreground mt-0.5">
+                        {b.booking_date}{' '}
+                        {(b.preferred_slots?.length
+                          ? b.preferred_slots
+                          : b.time_slot ? [b.time_slot] : []
+                        ).map((s: string) => SLOT_LABELS[s as TimeSlot] ?? s).join(' / ')}
+                      </p>
                     </button>
                   ))
                 )}

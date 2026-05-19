@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { geocodeAddress } from '@/lib/maps/geocode'
 import { sendBookingReceived } from '@/lib/email/send'
 import { NextRequest, NextResponse } from 'next/server'
-import type { TimeSlot } from '@/lib/types'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -36,35 +35,28 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
-  const { booking_date, time_slot, unit_location_ids } = body
+  const { booking_date, preferred_slots, unit_location_ids } = body
 
-  if (!booking_date || !time_slot) {
-    return NextResponse.json({ error: 'booking_date and time_slot are required' }, { status: 400 })
+  if (!booking_date || !preferred_slots?.length) {
+    return NextResponse.json({ error: 'booking_date and preferred_slots are required' }, { status: 400 })
   }
 
-  // Check for slot conflict (partial unique index only covers PENDING+APPROVED)
-  const { data: existing } = await supabase
-    .from('bookings')
-    .select('id')
-    .eq('booking_date', booking_date)
-    .eq('time_slot', time_slot)
-    .in('status', ['PENDING', 'APPROVED'])
-    .maybeSingle()
-
-  if (existing) {
-    return NextResponse.json({ error: 'That slot is no longer available' }, { status: 409 })
+  const validSlots = ['S10_12', 'S13_15', 'S15_17', 'S17_19', 'S19_21']
+  const slots: string[] = preferred_slots.filter((s: string) => validSlots.includes(s)).slice(0, 3)
+  if (!slots.length) {
+    return NextResponse.json({ error: 'At least one valid time slot required' }, { status: 400 })
   }
 
-  // Check for admin-blocked slot
+  // Check for full-day block on the requested date
   const { data: blocked } = await supabase
     .from('blocked_slots')
     .select('id')
     .eq('blocked_date', booking_date)
-    .or(`slot.is.null,slot.eq.${time_slot}`)
+    .is('slot', null)
     .maybeSingle()
 
   if (blocked) {
-    return NextResponse.json({ error: 'That slot is not available' }, { status: 409 })
+    return NextResponse.json({ error: 'That date is not available' }, { status: 409 })
   }
 
   // Use lat/lng from Places API if provided; fall back to geocoding
@@ -88,7 +80,8 @@ export async function POST(request: NextRequest) {
       lat,
       lng,
       booking_date,
-      time_slot: time_slot as TimeSlot,
+      time_slot: slots[0],        // first preference (backward compat)
+      preferred_slots: slots,
       num_units: body.num_units ?? null,
       fault_description: body.fault_description ?? null,
       urgency: body.urgency ?? null,
@@ -101,10 +94,6 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) {
-    // Unique constraint violation = race condition on slot
-    if (error.code === '23505') {
-      return NextResponse.json({ error: 'That slot is no longer available' }, { status: 409 })
-    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

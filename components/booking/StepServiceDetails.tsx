@@ -143,9 +143,10 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Unit Locations</Label>
-            <p className="text-xs text-muted-foreground">Select which rooms have AC units to be serviced.</p>
+            <Label>Unit Locations <span className="text-red-500">*</span></Label>
+            <p className="text-xs text-muted-foreground">Select the room for each AC unit to be serviced.</p>
             <UnitLocationPicker
+              numUnits={data.num_units ?? 0}
               value={data.unit_location_ids ?? []}
               onChange={ids => onChange({ unit_location_ids: ids })}
             />

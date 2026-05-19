@@ -6,7 +6,7 @@ interface BookingData {
   service_type_id: string
   category: string
   booking_date: string
-  time_slot: string
+  preferred_slots: TimeSlot[]
   address: string
   postal_code: string
   unit_floor?: string
@@ -65,8 +65,10 @@ export function StepReview({ data, serviceTypes }: Props) {
             : '—'}
         />
         <Row
-          label="Time Slot"
-          value={data.time_slot ? SLOT_LABELS[data.time_slot as TimeSlot] ?? data.time_slot : '—'}
+          label="Preferred Slots"
+          value={data.preferred_slots?.length
+            ? data.preferred_slots.map(s => SLOT_LABELS[s]).join(', ')
+            : '—'}
         />
       </div>
 

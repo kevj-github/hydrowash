@@ -3,8 +3,9 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SLOT_LABELS } from '@/lib/types'
-import type { BookingWithRelations } from '@/lib/types'
+import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 
 interface Props {
   booking: BookingWithRelations
@@ -28,9 +29,14 @@ const statusColor: Record<string, string> = {
 
 export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Props) {
   const [confirmedDate, setConfirmedDate] = useState(booking.confirmed_date ?? '')
+  const [confirmedSlot, setConfirmedSlot] = useState<string>(booking.confirmed_slot ?? '')
   const [rejectionReason, setRejectionReason] = useState('')
   const [showReject, setShowReject] = useState(false)
   const [loading, setLoading] = useState<'approve' | 'reject' | 'complete' | null>(null)
+
+  const preferredSlots: TimeSlot[] = (booking.preferred_slots?.length
+    ? booking.preferred_slots
+    : booking.time_slot ? [booking.time_slot] : []) as TimeSlot[]
 
   async function act(action: 'approve' | 'reject' | 'complete') {
     setLoading(action)
@@ -38,7 +44,12 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
       await fetch(`/api/bookings/${booking.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, confirmed_date: confirmedDate || undefined, rejection_reason: rejectionReason || undefined }),
+        body: JSON.stringify({
+          action,
+          confirmed_date: confirmedDate || undefined,
+          confirmed_slot: confirmedSlot || undefined,
+          rejection_reason: rejectionReason || undefined,
+        }),
       })
     } finally {
       setLoading(null)
@@ -71,16 +82,29 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
 
       <p className="text-sm font-medium text-accent mb-1">{booking.service_type.name}</p>
       <p className="text-xs text-slate-500 mb-1">{booking.address}, S{booking.postal_code}</p>
-      <p className="text-xs text-slate-500 mb-1">
-        {booking.booking_date
-          ? new Date(booking.booking_date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
-          : '—'}
-        {booking.time_slot ? ` · ${SLOT_LABELS[booking.time_slot as import('@/lib/types').TimeSlot] ?? booking.time_slot}` : ''}
-      </p>
+
+      <div className="mb-1">
+        <p className="text-xs text-slate-500">
+          Requested:{' '}
+          {booking.booking_date
+            ? new Date(booking.booking_date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '—'}
+        </p>
+        {preferredSlots.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-0.5">
+            {preferredSlots.map(s => (
+              <span key={s} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                {SLOT_LABELS[s]}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {booking.confirmed_date && (
         <p className="text-xs font-semibold text-accent mb-2">
           Confirmed: {booking.confirmed_date}
+          {booking.confirmed_slot ? ` · ${SLOT_LABELS[booking.confirmed_slot as TimeSlot] ?? booking.confirmed_slot}` : ''}
         </p>
       )}
 
@@ -89,23 +113,40 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
       )}
 
       {booking.status === 'PENDING' && (
-        <div className="space-y-2">
-          <div>
-            <Label className="text-xs">Confirmed Date</Label>
-            <Input
-              type="date"
-              value={confirmedDate}
-              defaultValue={booking.booking_date ?? ''}
-              onChange={e => setConfirmedDate(e.target.value)}
-              className="h-7 text-xs mt-1"
-            />
+        <div className="space-y-2" onClick={e => e.stopPropagation()}>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Confirmed Date</Label>
+              <Input
+                type="date"
+                value={confirmedDate}
+                defaultValue={booking.booking_date ?? ''}
+                onChange={e => setConfirmedDate(e.target.value)}
+                className="h-7 text-xs mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Confirmed Slot</Label>
+              <Select value={confirmedSlot} onValueChange={v => setConfirmedSlot(v ?? '')}>
+                <SelectTrigger className="h-7 text-xs mt-1">
+                  <SelectValue placeholder="Pick slot…">
+                    {confirmedSlot ? (SLOT_LABELS[confirmedSlot as TimeSlot] ?? confirmedSlot) : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {preferredSlots.map(s => (
+                    <SelectItem key={s} value={s}>{SLOT_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
               size="sm"
               className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs"
               onClick={() => act('approve')}
-              disabled={!confirmedDate || !!loading}
+              disabled={!confirmedDate || !confirmedSlot || !!loading}
             >
               {loading === 'approve' ? '…' : 'Approve'}
             </Button>
@@ -145,7 +186,7 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
           size="sm"
           variant="outline"
           className="w-full text-xs"
-          onClick={() => act('complete')}
+          onClick={e => { e.stopPropagation(); act('complete') }}
           disabled={!!loading}
         >
           {loading === 'complete' ? '…' : 'Mark Complete'}
