@@ -45,7 +45,7 @@ Roles are stored in `profiles.role` and enforced via Supabase RLS on every table
 - `FAULT_REPAIR` — inspection visit first; admin approves individually by urgency
 - `INSTALLATION` — new AC unit; admin reviews specs and approves
 
-All categories use the **slot model**: customer picks a single `booking_date` (date) and one of 5 fixed `time_slot` values. One booking per slot (enforced by partial unique index). Admin assigns a `confirmed_date` on approval.
+All categories use the **multi-slot model**: customer picks a `booking_date` (date) and up to 3 preferred `time_slot` values (stored as `preferred_slots text[]`). Admin resolves conflicts and assigns a `confirmed_date` + `confirmed_slot` on approval. Uniqueness is enforced only on confirmed APPROVED bookings `(confirmed_date, confirmed_slot)`.
 
 ### Time slots (canonical enum values)
 ```
@@ -109,9 +109,9 @@ components/
   booking/StepServiceDetails.tsx  # Step 0: service type, category fields, UnitLocationPicker for MAINTENANCE
   booking/StepScheduleLocation.tsx  # Step 1: SlotCalendar (date+slot) + address presets (Home/My Location/Other) + Places autocomplete
   booking/StepReview.tsx       # Step 2: summary of all booking data before submit
-  booking/SlotCalendar.tsx     # Month-grid calendar fetching /api/availability; slot pills per day
-  booking/UnitLocationPicker.tsx  # Chip multi-select reading ac_unit_locations from Supabase browser client
-  admin/BookingCard.tsx        # Status badge, confirmed date, highlighted prop for map-pin selection, onCardClick prop for card→map sync
+  booking/SlotCalendar.tsx     # Month-grid calendar fetching /api/availability; multi-select up to 3 slot pills; SGT-aware past-slot blocking
+  booking/UnitLocationPicker.tsx  # N per-unit <Select> dropdowns (one per unit), driven by numUnits prop; reads ac_unit_locations from Supabase browser client
+  admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync
   admin/BookingsMap.tsx        # Google Map markers; InfoWindow popup on pin click (customer name, service, address, status, dates); next/dynamic ssr:false
   admin/ContractCard.tsx       # Contract list card with status/due/expiry badges; shows address if present
   admin/ServiceDateRow.tsx     # One quarterly service visit row (table)
@@ -152,6 +152,7 @@ supabase/migrations/016_phase2_rls.sql           # RLS for all Phase 2 new table
 supabase/migrations/017_profile_address.sql      # address, address_lat, address_lng, postal_code on profiles ✅ applied
 supabase/migrations/018_contract_pending.sql     # price_sgd nullable; PENDING_REVIEW status; expiry_reminder_sent ✅ applied
 supabase/migrations/019_contracts_customer_insert.sql  # RLS INSERT for customer self-signup ✅ applied
+supabase/migrations/020_multi_slot.sql               # preferred_slots text[], confirmed_slot text; drop PENDING slot uniqueness; new APPROVED confirmed_slot unique index; drop booking_unit_locations unique constraint ✅ applied
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -163,7 +164,7 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 |---|---|
 | `profiles` | Extends `auth.users`; holds `name`, `phone`, `role` |
 | `service_types` | Admin-configured list of services; `category` enum drives booking form options |
-| `bookings` | Core table — `booking_date date NOT NULL`, `time_slot text NOT NULL` (slot enum); partial unique index on `(booking_date, time_slot) WHERE status IN ('PENDING','APPROVED')` |
+| `bookings` | Core table — `booking_date date NOT NULL`, `time_slot text NOT NULL` (first preferred slot, backward compat), `preferred_slots text[] NOT NULL DEFAULT '{}'` (up to 3 customer choices), `confirmed_slot text` (admin pick on approval); unique index on `(confirmed_date, confirmed_slot) WHERE status = 'APPROVED'` |
 | `app_settings` | Singleton — depot location, company info, `paynow_mobile`, `contract_pricing_tiers jsonb` |
 | `contracts` | 1-year maintenance contracts; `status` = ACTIVE/EXPIRED/CANCELLED; optional `address` text column |
 | `contract_service_dates` | 4 auto-generated quarterly visit dates per contract; `booking_id` links to the booking when scheduled |
@@ -180,7 +181,10 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - Invoice statuses: `UNPAID | PAID`
 - `contract_pricing_tiers` format: `[{min_units, max_units: number|null, price_sgd}]` — `max_units: null` = per-unit rate
 - `contracts.price_sgd` is **nullable** (NULL for PENDING_REVIEW contracts, set on activation). Guard with `price_sgd != null ? ... : 'TBD'` before rendering.
-- **Booking POST** (`/api/bookings`) uses `booking_date` + `time_slot` (NOT old `earliest_date`/`preferred_slot`). Checks slot availability before insert; returns 409 on conflict.
+- **Booking POST** (`/api/bookings`) accepts `booking_date` + `preferred_slots: string[]` (1–3 slots). Sets `time_slot = preferred_slots[0]` for backward compat. Only checks for full-day blocks — no per-slot conflict check (conflicts resolved by admin at approval time).
+- **Booking PATCH** (`/api/bookings/[id]`) approve action accepts `confirmed_date` + `confirmed_slot`; both are saved on the booking.
+- **Bulk approve** (`/api/bookings/bulk-approve`) accepts `confirmed_date` + optional `confirmed_slot`; applies both to all selected bookings.
+- **Availability API** (`/api/availability`) returns `confirmed_slot` from APPROVED bookings only (not PENDING). Pending bookings no longer block calendar slots.
 - **Profile role checks** in API routes use `if (profileError || !profile || profile.role !== 'admin')` — not `profile?.role !== 'admin'`.
 - **Cron auth**: both cron routes use `x-cron-secret` header (NOT `Authorization: Bearer`).
 - **Geocode** (`lib/maps/geocode.ts`) includes `&region=sg` for Singapore-biased results.
@@ -191,11 +195,11 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 
 **Booking wizard (`/book`) — 3 steps:**
 - **Step 0 (Service):** Service type selector (grouped by category). MAINTENANCE shows num_units + UnitLocationPicker (room chips from `ac_unit_locations`). FAULT_REPAIR shows fault description + urgency. INSTALLATION shows AC brand/model + num_units.
-- **Step 1 (Schedule & Location):** `SlotCalendar` — month grid fetching `/api/availability`; days with full blocks are greyed out; available days show 5 slot pills per day (booked/blocked pills disabled). Address presets: Home (profile address — if available), My Location (geolocation → `/api/geocode/reverse`), Other (Google Places Autocomplete). After slot confirmed, unit/floor + building + access notes fields appear.
-- **Step 2 (Review):** Summary. Submit POSTs to `/api/bookings` with `{ booking_date, time_slot, unit_location_ids[], address, ... }`. 409 = slot taken.
+- **Step 1 (Schedule & Location):** `SlotCalendar` — month grid fetching `/api/availability`; days with full blocks are greyed out; slot pills are multi-select up to 3 (SGT-aware — past slots on today greyed/disabled). Address presets: Home (profile address — if available), My Location (geolocation → `/api/geocode/reverse`), Other (Google Places Autocomplete). After location confirmed, unit/floor + building + access notes fields appear.
+- **Step 2 (Review):** Summary. Submit POSTs to `/api/bookings` with `{ booking_date, preferred_slots[], time_slot, unit_location_ids[], address, ... }`.
 
 **Admin booking management (`/admin/bookings`) — 4 tabs:**
-- **Maintenance tab (default):** Google Map with pins for pending bookings; admin visually groups clusters, selects bookings by clicking pins, picks a `confirmed_date` for the group; bulk-approves via `/api/bookings/bulk-approve`. No date-range conflict logic (single-date model).
+- **Maintenance tab (default):** Google Map with pins for pending bookings; admin visually groups clusters, selects bookings by clicking pins, picks a `confirmed_date` + `confirmed_slot` for the group; bulk-approves via `/api/bookings/bulk-approve`. Approve button disabled until both date and slot selected.
 - **Fault Repair tab:** Cards sorted by urgency — approve individually. Filter bar: customer name search, booking_date-from filter, ALL/PENDING/APPROVED toggle. **Bidirectional map↔card sync**.
 - **Installation tab:** Same as Fault Repair.
 - **All tab:** Full table view with customer name search + PENDING / ACTIVE / PAST status filter. Same bidirectional sync.
@@ -259,6 +263,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 - **Phase 2 — Subsystem E** — invoice PayNow QR display ✅ complete (2026-05-14)
 - **Phase 2 — Subsystem F** — wire up automated reminder emails ✅ complete (2026-05-14)
 - **Phase 2 — Subsystem G** — alternative slot suggestions on 409 ✅ complete (2026-05-14)
+- **Phase 2 — Multi-slot + UX** — multi-slot preferences (up to 3), per-unit location dropdowns, SGT past-slot blocking, admin confirmed_slot picker, contract 403 fix ✅ complete (2026-05-19)
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -281,12 +286,12 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - Both `lib/supabase/client.ts` and `lib/supabase/server.ts` export `createClient`. Import as `@/lib/supabase/server` (server) or `@/lib/supabase/client` (browser).
 - `BookingsMap` and `RouteMap` use `next/dynamic` with `ssr: false` (Google Maps requires browser).
 - `SlotCalendar` fetches `/api/availability?month=YYYY-MM` on mount and on month navigation. The response `byDate` is keyed by date string.
-- `UnitLocationPicker` fetches `ac_unit_locations` directly from Supabase browser client on mount.
+- `UnitLocationPicker` fetches `ac_unit_locations` directly from Supabase browser client on mount. Renders N `<Select>` dropdowns driven by `numUnits` prop; `value: string[]` has one entry per unit. Same room can be selected for multiple units (DB unique constraint dropped in migration 020).
 - `StepScheduleLocation` loads the Google Places library via `useJsApiLoader` with `libraries: ['places']` — define the array outside the component to keep a stable reference.
 - `lib/booking/slots.ts` contains pure functions for slot availability logic and contract tier pricing — import these in tests and server routes, not inline logic.
 - `service_types.description` is `NOT NULL DEFAULT ''` — never send `null`; send empty string instead.
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Bug audit fixes applied (2026-05-14). Full Playwright QA pass completed (2026-05-14) — nested-button hydration bug fixed across 5 files. Migrations through 019 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present. See `docs/superpowers/NEXT-SESSION.md`.
+- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Multi-slot + UX improvements complete (2026-05-19): multi-slot preferences, per-unit location dropdowns, SGT past-slot blocking, admin confirmed_slot, contract 403 fix. Migrations through 020 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
