@@ -180,6 +180,7 @@ supabase/migrations/024_month_only_service_dates.sql # adds due_month text + sec
 supabase/migrations/025_app_settings_company.sql     # adds company_address, company_phone, company_email, company_instagram, authorised_officer_name to app_settings ✅ applied
 supabase/migrations/026_completion_invoice.sql       # profiles.customer_no (bigint, auto-seq trigger); bookings.work_order_no + attended_by; job_completions table; RLS ✅ applied
 supabase/migrations/027_service_type_price.sql       # service_types.default_price_sgd numeric ✅ applied
+supabase/migrations/028_customer_booking_update.sql  # RLS UPDATE policy for customers on own bookings ✅ applied
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -331,6 +332,16 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 - **Phase 2 — Subsystem K** — job completion workflow: JobCompletionDialog (3-step), work order PDF, PayNow QR email, auto work_order_no/customer_no, job_completions table ✅ complete (2026-05-20)
 - **Phase 2 — Subsystem J** — admin customer 360 (/admin/customers list + detail) + agenda week-grid (/admin/agenda) ✅ complete (2026-05-20)
 - **Phase 2 — Subsystem L** — mobile QA polish: tap targets ≥44px, hero text overflow fix, all customer-facing pages audited at 375px ✅ complete (2026-05-20)
+- **Post-Phase 2 fixes (2026-05-20):**
+  - Removed "Book Again" feature from customer bookings page
+  - `SlotCalendar`: max 3 slots **total** across all dates (not per-date); multi-date still supported
+  - Admin `BookingCard` confirmed slot dropdown now shows all 5 time slots (not just customer's preferred)
+  - Contract PDF (`/api/contracts/[id]/pdf`) and work order PDF (`/api/bookings/[id]/work-order-pdf`) now accessible to the owning customer (not admin-only)
+  - `ContractCard`: Preview PDF button for AWAITING_PAYMENT/ACTIVE contracts
+  - `InvoiceRow`: View PDF button when `booking_id` present
+  - Customer contracts page: View Contract PDF link; customer invoices table: View PDF link
+  - cancel/reschedule API routes: allow admin role (was customer-only)
+  - Migration 028: customer booking UPDATE RLS policy (required for cancel/reschedule)
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -360,5 +371,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** All Phase 2 subsystems complete (2026-05-20). All migrations 001–027 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Current status:** All Phase 2 subsystems complete + post-release fixes applied (2026-05-20). All migrations 001–028 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
