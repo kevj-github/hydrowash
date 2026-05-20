@@ -173,13 +173,13 @@ supabase/migrations/017_profile_address.sql      # address, address_lat, address
 supabase/migrations/018_contract_pending.sql     # price_sgd nullable; PENDING_REVIEW status; expiry_reminder_sent ✅ applied
 supabase/migrations/019_contracts_customer_insert.sql  # RLS INSERT for customer self-signup ✅ applied
 supabase/migrations/020_multi_slot.sql               # preferred_slots text[], confirmed_slot text; drop PENDING slot uniqueness; new APPROVED confirmed_slot unique index; drop booking_unit_locations unique constraint ✅ applied
-supabase/migrations/021_multi_date_slots.sql         # preferred_date_slots jsonb ✅ apply
-supabase/migrations/022_contract_awaiting_payment.sql # contracts status adds AWAITING_PAYMENT ✅ apply
-supabase/migrations/023_booking_cancellation.sql     # adds CANCELLED to bookings status; cancelled_at, cancelled_by, cancelled_reason columns ✅ apply
-supabase/migrations/024_month_only_service_dates.sql # adds due_month text + second_reminder_sent bool to contract_service_dates ✅ apply
-supabase/migrations/025_app_settings_company.sql     # adds company_address, company_phone, company_email, company_instagram, authorised_officer_name to app_settings ✅ apply
-supabase/migrations/026_completion_invoice.sql       # profiles.customer_no (bigint, auto-seq trigger); bookings.work_order_no + attended_by; job_completions table; RLS ✅ apply
-supabase/migrations/027_service_type_price.sql       # service_types.default_price_sgd numeric ✅ apply
+supabase/migrations/021_multi_date_slots.sql         # preferred_date_slots jsonb ✅ applied
+supabase/migrations/022_contract_awaiting_payment.sql # contracts status adds AWAITING_PAYMENT ✅ applied
+supabase/migrations/023_booking_cancellation.sql     # adds CANCELLED to bookings status; cancelled_at, cancelled_by, cancelled_reason columns ✅ applied
+supabase/migrations/024_month_only_service_dates.sql # adds due_month text + second_reminder_sent bool to contract_service_dates ✅ applied
+supabase/migrations/025_app_settings_company.sql     # adds company_address, company_phone, company_email, company_instagram, authorised_officer_name to app_settings ✅ applied
+supabase/migrations/026_completion_invoice.sql       # profiles.customer_no (bigint, auto-seq trigger); bookings.work_order_no + attended_by; job_completions table; RLS ✅ applied
+supabase/migrations/027_service_type_price.sql       # service_types.default_price_sgd numeric ✅ applied
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -360,5 +360,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** All Phase 2 subsystems complete (2026-05-20). Migrations 021–027 added — apply all in Supabase SQL editor in order. Supabase Storage bucket `documents` (private) must be created for PDF storage. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Current status:** All Phase 2 subsystems complete (2026-05-20). All migrations 001–027 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
