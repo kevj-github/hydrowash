@@ -16,7 +16,7 @@ npx jest vrp       # Run VRP test file
 ```
 
 ## Tech stack
-- **Framework:** Next.js 15 App Router, TypeScript
+- **Framework:** Next.js 16 App Router, TypeScript
 - **Database/Auth:** Supabase (Postgres + Auth + Row Level Security)
 - **Maps:** Google Maps Platform (Geocoding API, Distance Matrix API, Maps JavaScript API)
 - **Email:** Resend + React Email
@@ -133,7 +133,7 @@ lib/
   email/templates/             # React Email templates
   types.ts                     # Shared TypeScript types — TimeSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings
 
-middleware.ts                  # Auth routing (role-based redirects — admin and customer only)
+middleware.ts                  # Auth routing (role-based redirects — admin and customer only) ⚠ Next.js 16 deprecated this filename in favour of proxy.ts — still works but will need renaming
 supabase/migrations/001_schema.sql
 supabase/migrations/002_rls.sql
 supabase/migrations/003_seed_services.sql
