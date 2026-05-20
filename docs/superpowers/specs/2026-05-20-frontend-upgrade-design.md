@@ -162,11 +162,57 @@ All non-hero images use `loading="lazy"` (Next.js default). Declare `width`/`hei
 
 ---
 
+---
+
+## Page 5: Admin Panels (`/admin/*`)
+
+### Goal
+Cleaner UX and better data density — no photos. Focus on active states, visual hierarchy, and scannability.
+
+### Navigation (`app/admin/layout.tsx`)
+- Extract nav links into a `AdminNav` client component that uses `usePathname` to highlight the active link.
+- Active link style: `bg-white/15 text-white font-medium rounded-md`.
+- Add a Lucide icon beside each label: `LayoutDashboard` (Overview), `CalendarCheck` (Bookings), `Users` (Customers), `CalendarRange` (Agenda), `CalendarOff` (Availability), `FileText` (Contracts), `Receipt` (Invoices), `Settings` (Settings).
+
+### Dashboard (`app/admin/page.tsx`)
+- Stat cards: add icon in `bg-accent/10 text-accent` circle left-side, `border-l-4 border-accent` / `border-l-4 border-amber-400` left strip by stat type.
+- Quick action cards: add `ArrowRight` icon; `group-hover:translate-x-1 transition-transform` on hover.
+- Alert sections (Service Due / Expiring Contracts): replace full amber/red background with `bg-white border border-border border-l-4 border-l-amber-400` / `border-l-red-400` card style. Each row gets a `→` link to the relevant contract detail page.
+
+### Bookings (`app/admin/bookings/page.tsx` + `components/admin/BookingCard.tsx`)
+- Tab bar: active tab uses `border-b-2 border-accent text-accent font-semibold` underline — remove background highlight style.
+- Filter chips: `rounded-full border` pill style; active chip: `bg-accent text-white border-accent`.
+- `BookingCard`: add `border-l-4` left strip with status colour — amber (PENDING), green (APPROVED), slate (COMPLETED/REJECTED). Status badge: `rounded-full` pill.
+
+### Contracts (`app/admin/contracts/page.tsx`) + Invoices (`app/admin/invoices/page.tsx`)
+- Page title: add count badge — `<span className="text-muted-foreground font-normal text-base">· {count}</span>` next to heading.
+- Filter chips: same pill style as bookings.
+- List rows: `bg-white` / `bg-muted/40` alternating; `hover:bg-accent/5 transition-colors`.
+- Status badges: `rounded-full` pill, consistent across both pages.
+
+### Customers (`app/admin/customers/page.tsx`)
+- Each row: avatar initial circle — `w-8 h-8 rounded-full bg-accent/10 text-accent font-semibold text-sm flex items-center justify-center` showing first letter of name.
+- Row hover: `hover:bg-accent/5 cursor-pointer`; entire row links to customer detail.
+- Active contract badge: `rounded-full bg-green-100 text-green-700 text-xs px-2 py-0.5`.
+
+### Customer Detail (`app/admin/customers/[id]/page.tsx`)
+- Profile card: larger avatar circle (`w-16 h-16`, `text-2xl`), name + phone + email grouped in a `bg-white rounded-xl border border-border p-6` card. `Total Paid` value in `text-accent font-bold text-2xl`.
+
+### Agenda (`app/admin/agenda/page.tsx`)
+- Booking chips in cells: `rounded-md bg-accent/10 text-accent text-xs px-2 py-0.5 font-medium`.
+- Today's column header: `bg-accent/10 font-semibold text-accent rounded-t-md`.
+- Slot row labels: `text-xs text-muted-foreground text-right pr-2`.
+
+### Settings (`app/admin/settings/page.tsx`)
+- Wrap each settings group (service types, depot, company info) in a `bg-white rounded-xl border border-border p-6 mb-6` card with a `font-heading font-semibold text-lg mb-4` heading.
+
+---
+
 ## Files to Create / Modify
 
 | File | Change |
 |---|---|
-| `app/(public)/page.tsx` | Add photo hero, stat icons, Why Choose Us section, Testimonials section, updated How It Works, photo CTA |
+| `app/(public)/page.tsx` | Photo hero, stat icons, Why Choose Us, Testimonials, updated How It Works, photo CTA |
 | `components/ui/service-card.tsx` | Add optional `photoSrc` + `photoAlt` props; render photo banner at top |
 | `app/auth/login/page.tsx` | Left panel photo, form polish |
 | `app/auth/register/page.tsx` | Left panel photo, form polish |
@@ -175,3 +221,13 @@ All non-hero images use `loading="lazy"` (Next.js default). Declare `width`/`hei
 | `app/account/bookings/page.tsx` | Summary strip, card polish, empty state |
 | `app/account/contracts/page.tsx` | Summary strip, card polish, empty state |
 | `app/globals.css` | Add `prefers-reduced-motion` guard if not already present |
+| `app/admin/layout.tsx` + `components/admin/AdminNav.tsx` (new) | Extract nav to client component with active state + icons |
+| `app/admin/page.tsx` | Stat card icons/strip, quick action hover, alert card style |
+| `app/admin/bookings/page.tsx` | Underline tab bar, pill filter chips |
+| `components/admin/BookingCard.tsx` | Left status strip, pill badge |
+| `app/admin/contracts/page.tsx` | Count badge, pill chips, alternating rows |
+| `app/admin/invoices/page.tsx` | Count badge, pill chips, alternating rows |
+| `app/admin/customers/page.tsx` | Avatar initials, row hover, pill badges |
+| `app/admin/customers/[id]/page.tsx` | Larger avatar, accent total paid |
+| `app/admin/agenda/page.tsx` | Chip style, today column highlight, slot label style |
+| `app/admin/settings/page.tsx` | Wrap sections in cards |
