@@ -165,6 +165,7 @@ export function SlotCalendar({ value, onChange }: Props) {
           const fullyBlocked = isDayFullyBlocked(d.date)
           const isSelected = value.some(e => e.date === d.date)
           const isActive = d.date === activeDate
+          const isToday = d.date === todaySGT
           const atMax = value.length >= MAX_DATES && !isSelected
           const disabled = isPast || fullyBlocked || atMax
           return (
@@ -176,8 +177,9 @@ export function SlotCalendar({ value, onChange }: Props) {
                 rounded-lg text-xs py-2.5 font-medium transition-colors
                 ${disabled ? 'text-muted-foreground opacity-40 cursor-not-allowed' : ''}
                 ${isActive && !disabled ? 'bg-accent text-white ring-2 ring-accent ring-offset-1' : ''}
-                ${isSelected && !isActive && !disabled ? 'bg-accent/20 text-accent border border-accent/40' : ''}
-                ${!isSelected && !disabled ? 'hover:bg-muted text-primary' : ''}
+                ${isSelected && !isActive && !disabled ? 'bg-accent text-white font-semibold shadow-sm' : ''}
+                ${!isSelected && isToday && !disabled ? 'ring-2 ring-accent/50 ring-offset-1 hover:bg-accent/10 hover:text-accent text-primary' : ''}
+                ${!isSelected && !isToday && !disabled ? 'hover:bg-accent/10 hover:text-accent text-primary' : ''}
               `}
             >
               {d.date.slice(8)}
