@@ -1,26 +1,41 @@
 import Link from 'next/link'
-import { Wind, Wrench, Zap, Package, ArrowRight } from 'lucide-react'
+import Image from 'next/image'
+import { Wind, Wrench, Zap, Package, ArrowRight, CalendarCheck, Cpu, MapPin, ShieldCheck, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Section, SectionInner } from '@/components/ui/section'
 import { SectionHeading } from '@/components/ui/section-heading'
 import { ServiceCard } from '@/components/ui/service-card'
 import { StepItem } from '@/components/ui/step-item'
 
+// Replace these with your chosen Unsplash URLs (see plan Photo Reference table)
+const PHOTO_HERO = 'https://images.unsplash.com/photo-1621905251189-08b45249ec76?auto=format&fit=crop&w=1920&q=80'
+const PHOTO_SERVICE_MAINTENANCE = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80'
+const PHOTO_SERVICE_FAULT = 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=800&q=80'
+const PHOTO_SERVICE_INSTALL = 'https://images.unsplash.com/photo-1581092921461-7031e4bfb83e?auto=format&fit=crop&w=800&q=80'
+const PHOTO_WHY_US = 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1200&q=80'
+const PHOTO_CTA = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1920&q=80'
+
 const services = [
   {
     icon: Wrench,
     title: 'General Maintenance',
     description: 'Regular servicing, chemical wash, and overhaul to keep your AC running at peak efficiency year-round.',
+    photoSrc: PHOTO_SERVICE_MAINTENANCE,
+    photoAlt: 'Aircon maintenance and cleaning',
   },
   {
     icon: Zap,
     title: 'Fault Repair',
     description: 'Fast diagnosis and repair for all aircon faults — from water leaks to no cooling. We come to you.',
+    photoSrc: PHOTO_SERVICE_FAULT,
+    photoAlt: 'Aircon fault repair technician',
   },
   {
     icon: Package,
     title: 'Installation',
     description: 'Professional installation of new AC units with proper setup, testing, and post-install support.',
+    photoSrc: PHOTO_SERVICE_INSTALL,
+    photoAlt: 'New aircon unit installation',
   },
 ]
 
@@ -37,8 +52,19 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Hero — dark navy */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#0C2340] to-[#0F172A] text-white">
+      {/* Hero — photo background */}
+      <section className="relative overflow-hidden bg-primary text-white">
+        {/* Background photo */}
+        <div className="absolute inset-0">
+          <Image
+            src={PHOTO_HERO}
+            alt="HydroWash aircon technician at work"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-primary/75" />
+        </div>
         {/* Dot grid texture */}
         <div
           className="absolute inset-0 opacity-[0.06]"
@@ -48,30 +74,22 @@ export default async function HomePage() {
           }}
           aria-hidden
         />
-        {/* Sentinel for scroll-aware navbar */}
         <div id="hero-sentinel" className="absolute top-0 left-0 w-px h-px" aria-hidden />
 
         <SectionInner className="relative py-24 sm:py-32 text-center">
-          {/* Label */}
           <div className="animate-fade-up inline-flex items-center gap-2 bg-white/10 text-sky-300 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6">
             <Wind size={12} />
             Trusted for 5 years across Singapore
           </div>
-
-          {/* Heading */}
           <h1 className="animate-fade-up-delay-1 font-heading font-bold text-4xl sm:text-6xl lg:text-7xl leading-tight mb-6">
             Hydrowash home
             <br />
             <span className="text-sky-400">aircon solution.</span>
           </h1>
-
-          {/* Subheading */}
           <p className="animate-fade-up-delay-2 text-slate-300 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed mb-10">
             5 years of expert aircon servicing — maintenance,
             fault repair, and installation across Singapore.
           </p>
-
-          {/* CTA */}
           <div className="animate-fade-up-delay-3 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href={bookHref}
@@ -96,17 +114,20 @@ export default async function HomePage() {
       <section className="bg-white border-b border-border">
         <SectionInner className="py-8">
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
+            <div className="flex flex-col items-center gap-1">
+              <CalendarCheck size={22} className="text-accent mb-1" strokeWidth={1.75} />
               <p className="font-heading font-bold text-3xl text-primary">5+</p>
-              <p className="text-sm text-muted-foreground mt-1">Years in service</p>
+              <p className="text-sm text-muted-foreground">Years in service</p>
             </div>
-            <div>
+            <div className="flex flex-col items-center gap-1">
+              <Cpu size={22} className="text-accent mb-1" strokeWidth={1.75} />
               <p className="font-heading font-bold text-3xl text-primary">All</p>
-              <p className="text-sm text-muted-foreground mt-1">AC makes &amp; models</p>
+              <p className="text-sm text-muted-foreground">AC makes &amp; models</p>
             </div>
-            <div>
+            <div className="flex flex-col items-center gap-1">
+              <MapPin size={22} className="text-accent mb-1" strokeWidth={1.75} />
               <p className="font-heading font-bold text-3xl text-primary">SG</p>
-              <p className="text-sm text-muted-foreground mt-1">Island-wide coverage</p>
+              <p className="text-sm text-muted-foreground">Island-wide coverage</p>
             </div>
           </div>
         </SectionInner>
@@ -122,7 +143,14 @@ export default async function HomePage() {
           />
           <div className="grid sm:grid-cols-3 gap-6">
             {services.map(s => (
-              <ServiceCard key={s.title} icon={s.icon} title={s.title} description={s.description} />
+              <ServiceCard
+                key={s.title}
+                icon={s.icon}
+                title={s.title}
+                description={s.description}
+                photoSrc={s.photoSrc}
+                photoAlt={s.photoAlt}
+              />
             ))}
           </div>
         </SectionInner>
