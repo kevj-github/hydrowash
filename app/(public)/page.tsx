@@ -8,10 +8,10 @@ import { ServiceCard } from '@/components/ui/service-card'
 import { StepItem } from '@/components/ui/step-item'
 
 // Replace these with your chosen Unsplash URLs (see plan Photo Reference table)
-const PHOTO_HERO = 'https://images.unsplash.com/photo-1621905251189-08b45249ec76?auto=format&fit=crop&w=1920&q=80'
+const PHOTO_HERO = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1920&q=80'
 const PHOTO_SERVICE_MAINTENANCE = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80'
 const PHOTO_SERVICE_FAULT = 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=800&q=80'
-const PHOTO_SERVICE_INSTALL = 'https://images.unsplash.com/photo-1581092921461-7031e4bfb83e?auto=format&fit=crop&w=800&q=80'
+const PHOTO_SERVICE_INSTALL = 'https://images.unsplash.com/photo-1613545325278-f24b0cae1224?auto=format&fit=crop&w=800&q=80'
 const PHOTO_WHY_US = 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1200&q=80'
 const PHOTO_CTA = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1920&q=80'
 

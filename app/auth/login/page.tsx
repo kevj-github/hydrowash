@@ -118,7 +118,7 @@ export default function LoginPage() {
       {/* Left panel — photo */}
       <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1621905251189-08b45249ec76?auto=format&fit=crop&w=1200&q=80"
+          src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80"
           alt="HydroWash aircon technician"
           fill
           className="object-cover"
