@@ -40,7 +40,7 @@ export function CancelDialog({ bookingId, onSuccess }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'border-red-300 text-red-600 hover:bg-red-50')}>
+      <DialogTrigger className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'border-red-300 text-red-600 hover:bg-red-50 min-h-[44px]')}>
         Cancel
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">

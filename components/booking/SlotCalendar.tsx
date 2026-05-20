@@ -132,11 +132,11 @@ export function SlotCalendar({ value, onChange }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <button onClick={prevMonth} className="p-1 rounded hover:bg-muted text-primary">
+        <button onClick={prevMonth} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted text-primary">
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-sm font-semibold text-primary">{monthName}</span>
-        <button onClick={nextMonth} className="p-1 rounded hover:bg-muted text-primary">
+        <button onClick={nextMonth} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted text-primary">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -165,7 +165,7 @@ export function SlotCalendar({ value, onChange }: Props) {
               disabled={disabled}
               onClick={() => handleDateClick(d.date)}
               className={`
-                rounded-lg text-xs py-1.5 font-medium transition-colors
+                rounded-lg text-xs py-2.5 font-medium transition-colors
                 ${disabled ? 'text-muted-foreground opacity-40 cursor-not-allowed' : ''}
                 ${isActive && !disabled ? 'bg-accent text-white ring-2 ring-accent ring-offset-1' : ''}
                 ${isSelected && !isActive && !disabled ? 'bg-accent/20 text-accent border border-accent/40' : ''}
@@ -205,7 +205,7 @@ export function SlotCalendar({ value, onChange }: Props) {
               </div>
               <button
                 onClick={e => { e.stopPropagation(); removeDate(entry.date) }}
-                className="ml-2 text-muted-foreground hover:text-red-500"
+                className="ml-2 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 rounded"
               >
                 <X className="w-3 h-3" />
               </button>

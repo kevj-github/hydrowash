@@ -101,7 +101,7 @@ export default async function AccountBookingsPage({
                 )}
                 <Link
                   href={`/book?repeat=${booking.id}`}
-                  className="text-xs px-3 py-2 rounded-md border border-border font-medium text-primary hover:bg-muted/60"
+                  className="text-xs px-3 py-2.5 min-h-[44px] flex items-center rounded-md border border-border font-medium text-primary hover:bg-muted/60"
                 >
                   Book Again
                 </Link>

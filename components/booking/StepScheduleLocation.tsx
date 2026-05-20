@@ -127,7 +127,7 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
             <button
               type="button"
               onClick={applyHome}
-              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
+              className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
                 preset === 'home' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
               }`}
             >
@@ -139,7 +139,7 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
             type="button"
             onClick={applyCurrentLocation}
             disabled={geoLoading}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
+            className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
               preset === 'current' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
             }`}
           >
@@ -152,7 +152,7 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
               setPreset('other')
               onChange({ address: '', postal_code: '', lat: null, lng: null })
             }}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
+            className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
               preset === 'other' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
             }`}
           >

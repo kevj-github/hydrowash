@@ -59,7 +59,7 @@ export default async function HomePage() {
           </div>
 
           {/* Heading */}
-          <h1 className="animate-fade-up-delay-1 font-heading font-bold text-5xl sm:text-6xl lg:text-7xl leading-tight mb-6">
+          <h1 className="animate-fade-up-delay-1 font-heading font-bold text-4xl sm:text-6xl lg:text-7xl leading-tight mb-6">
             Hydrowash home
             <br />
             <span className="text-sky-400">aircon solution.</span>
