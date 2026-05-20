@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Wind } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -114,8 +115,16 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
-      {/* Left panel — dark navy */}
-      <div className="hidden md:flex md:w-2/5 bg-[#0F172A] flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
+      {/* Left panel — photo */}
+      <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
+        <Image
+          src="https://images.unsplash.com/photo-1621905251189-08b45249ec76?auto=format&fit=crop&w=1200&q=80"
+          alt="HydroWash aircon technician"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-primary/70" />
         <div
           className="absolute inset-0 opacity-[0.05]"
           style={{
@@ -129,7 +138,7 @@ export default function LoginPage() {
             <Wind size={28} className="text-sky-300" strokeWidth={1.75} />
           </div>
           <h1 className="font-heading font-bold text-3xl text-white mb-3">HydroWash</h1>
-          <p className="text-slate-400 text-base leading-relaxed max-w-xs">
+          <p className="text-slate-300 text-base leading-relaxed max-w-xs">
             Book aircon services online — just pick a date and we&apos;ll handle the rest.
           </p>
         </div>
@@ -153,6 +162,9 @@ export default function LoginPage() {
           <Suspense fallback={<div className="h-48" />}>
             <LoginForm />
           </Suspense>
+          <p className="text-xs text-center text-muted-foreground mt-6">
+            <Link href="/" className="hover:underline cursor-pointer">← Back to home</Link>
+          </p>
         </div>
       </div>
     </div>
