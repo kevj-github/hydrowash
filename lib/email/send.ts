@@ -159,7 +159,8 @@ export async function sendContractPricing(
     paynowMobile: string
     referenceId: string
   },
-  email: string
+  email: string,
+  pdfBuffer?: Buffer
 ) {
   const { ContractPricingEmail } = await import('./templates/ContractPricingEmail')
   return resend.emails.send({
@@ -167,5 +168,8 @@ export async function sendContractPricing(
     to: email,
     subject: `Your HydroWash contract pricing — S$${data.priceSgd.toFixed(2)}/year`,
     react: ContractPricingEmail(data),
+    attachments: pdfBuffer
+      ? [{ filename: 'HydroWash-Contract.pdf', content: pdfBuffer }]
+      : [],
   })
 }

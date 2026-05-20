@@ -39,6 +39,9 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes }: Pr
   const supabase = createClient()
   const [settings, setSettings] = useState(initialSettings ?? {
     depot_address: '', depot_lat: 0, depot_lng: 0, company_name: 'HydroWash', contact_email: '',
+    company_address: '404B Fernvale Lane, S792404', company_phone: '(+65) 8811 1105',
+    company_email: 'hydrowash20@gmail.com', company_instagram: '@Hydrowash.sg',
+    authorised_officer_name: 'Gilbert Chen',
   })
   const [serviceTypes, setServiceTypes] = useState(initialServiceTypes)
   const [saving, setSaving] = useState(false)
@@ -162,6 +165,26 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes }: Pr
           <div className="space-y-1.5">
             <Label>Contact Email</Label>
             <Input type="email" value={settings.contact_email} onChange={e => setSettings(s => ({ ...s, contact_email: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Company Address (shown on PDF documents)</Label>
+            <Input value={settings.company_address ?? ''} onChange={e => setSettings(s => ({ ...s, company_address: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Company Phone (shown on PDF documents)</Label>
+            <Input value={settings.company_phone ?? ''} onChange={e => setSettings(s => ({ ...s, company_phone: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Company Email (shown on PDF documents)</Label>
+            <Input value={settings.company_email ?? ''} onChange={e => setSettings(s => ({ ...s, company_email: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Instagram Handle (shown on PDF documents)</Label>
+            <Input value={settings.company_instagram ?? ''} onChange={e => setSettings(s => ({ ...s, company_instagram: e.target.value }))} placeholder="@Hydrowash.sg" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Authorised Officer Name (PDF signature)</Label>
+            <Input value={settings.authorised_officer_name ?? ''} onChange={e => setSettings(s => ({ ...s, authorised_officer_name: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
             <Label>Depot Address (used as VRP start point)</Label>

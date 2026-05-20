@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { sendContractPricing } from '@/lib/email/send'
-import { buildPayNowPayload } from '@/lib/utils/paynow'
-import QRCode from 'qrcode'
 
 export async function PATCH(
   req: NextRequest,
@@ -70,44 +66,6 @@ export async function PATCH(
     return NextResponse.json({ error: updateError?.message ?? 'Update failed' }, { status: 500 })
   }
 
-  try {
-    const { data: settings } = await supabase
-      .from('app_settings')
-      .select('paynow_mobile')
-      .single()
-
-    const adminSupabase = createAdminClient()
-    const { data: { user: customerUser } } = await adminSupabase.auth.admin.getUserById(contract.customer_id)
-
-    const { data: customerProfile } = await supabase
-      .from('profiles')
-      .select('name')
-      .eq('id', contract.customer_id)
-      .single()
-
-    if (customerUser?.email && settings?.paynow_mobile) {
-      const referenceId = `CONTRACT-${id.slice(0, 8).toUpperCase()}`
-      const payload = buildPayNowPayload(settings.paynow_mobile, priceNum, referenceId)
-      const qrDataUrl = await QRCode.toDataURL(payload, { width: 300, margin: 2 })
-
-      await sendContractPricing(
-        {
-          customerName: customerProfile?.name ?? 'Customer',
-          numUnits: contract.num_units,
-          priceSgd: priceNum,
-          startDate: start_date,
-          endDate: end_date,
-          address: contract.address ?? undefined,
-          paynowQrDataUrl: qrDataUrl,
-          paynowMobile: settings.paynow_mobile,
-          referenceId,
-        },
-        customerUser.email
-      )
-    }
-  } catch (err) {
-    console.error('[set-price] Email send failed:', err)
-  }
-
+  // Email is sent separately via POST /api/contracts/[id]/send-contract-pdf after admin previews PDF
   return NextResponse.json({ contract })
 }

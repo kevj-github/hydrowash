@@ -98,6 +98,11 @@ export interface AppSettings {
   contact_email: string
   paynow_mobile: string | null
   contract_pricing_tiers: ContractPricingTier[]
+  company_address?: string
+  company_phone?: string
+  company_email?: string
+  company_instagram?: string
+  authorised_officer_name?: string
 }
 
 // ============================================================
