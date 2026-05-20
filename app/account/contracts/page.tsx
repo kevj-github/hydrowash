@@ -47,6 +47,8 @@ export default async function AccountContractsPage() {
       .single(),
   ])
 
+  const activeContracts = contractsRes.data?.filter((c: any) => c.status === 'ACTIVE').length ?? 0
+
   return (
     <AccountContractsClient
       contracts={contractsRes.data ?? []}
@@ -54,6 +56,7 @@ export default async function AccountContractsPage() {
       profileAddress={profileRes.data?.address ?? null}
       pricingTiers={settingsRes.data?.contract_pricing_tiers ?? []}
       paynowMobile={settingsRes.data?.paynow_mobile ?? null}
+      activeContracts={activeContracts}
     />
   )
 }

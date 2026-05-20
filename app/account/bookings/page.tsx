@@ -4,6 +4,7 @@ import { SLOT_LABELS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 import { RescheduleDialog } from '@/components/account/RescheduleDialog'
 import { CancelDialog } from '@/components/account/CancelDialog'
+import { CalendarDays, Clock, CalendarOff } from 'lucide-react'
 
 const statusColor: Record<string, string> = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -36,8 +37,34 @@ export default async function AccountBookingsPage({
     .eq('customer_id', user!.id)
     .order('created_at', { ascending: false })
 
+  const totalBookings = bookings?.length ?? 0
+  const upcomingBookings = bookings?.filter(b =>
+    ['PENDING', 'APPROVED'].includes(b.status)
+  ).length ?? 0
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+      {/* Summary strip */}
+      <div className="flex gap-4 mb-6">
+        <div className="flex items-center gap-3 bg-white rounded-xl border border-border px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+            <CalendarDays size={18} className="text-accent" strokeWidth={1.75} />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="font-heading font-bold text-lg text-primary leading-none">{totalBookings}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 bg-white rounded-xl border border-border px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+            <Clock size={18} className="text-amber-500" strokeWidth={1.75} />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Upcoming</p>
+            <p className="font-heading font-bold text-lg text-primary leading-none">{upcomingBookings}</p>
+          </div>
+        </div>
+      </div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-heading font-bold text-2xl text-primary">My Bookings</h1>
@@ -58,10 +85,15 @@ export default async function AccountBookingsPage({
       )}
 
       {!bookings?.length ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <p className="text-lg mb-2">No bookings yet</p>
-          <Link href="/book" className="text-accent hover:underline text-sm cursor-pointer">
-            Book your first service
+        <div className="text-center py-20">
+          <CalendarOff size={48} className="text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
+          <h3 className="font-heading font-semibold text-primary text-lg mb-1">No bookings yet</h3>
+          <p className="text-muted-foreground text-sm mb-4">Schedule your first aircon service today.</p>
+          <Link
+            href="/book"
+            className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-all duration-150 cursor-pointer"
+          >
+            Book a Service
           </Link>
         </div>
       ) : (
@@ -93,7 +125,7 @@ export default async function AccountBookingsPage({
                 )}
               </div>
               {canModify(booking) && (
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2">
                   <RescheduleDialog bookingId={booking.id} />
                   <CancelDialog bookingId={booking.id} />
                 </div>

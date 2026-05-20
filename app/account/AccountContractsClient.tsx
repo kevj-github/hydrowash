@@ -18,6 +18,7 @@ import {
 import { ContractPricingTier } from '@/lib/types'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
+import { FileText, FileX } from 'lucide-react'
 
 interface ServiceDate {
   id: string
@@ -57,6 +58,7 @@ interface Props {
   profileAddress: string | null
   pricingTiers: ContractPricingTier[]
   paynowMobile: string | null
+  activeContracts: number
 }
 
 const CONTRACT_STATUS_COLORS: Record<string, string> = {
@@ -87,7 +89,7 @@ function getPricingHint(tiers: ContractPricingTier[], numUnits: number): string 
   return `Estimated S$${tier.price_sgd.toFixed(2)}/year for ${numUnits} unit${numUnits !== 1 ? 's' : ''}`
 }
 
-export function AccountContractsClient({ contracts, invoices, profileAddress, pricingTiers, paynowMobile }: Props) {
+export function AccountContractsClient({ contracts, invoices, profileAddress, pricingTiers, paynowMobile, activeContracts }: Props) {
   const [contractStatus, setContractStatus] = useState('ALL')
   const [invoiceStatus, setInvoiceStatus] = useState('ALL')
   const [invDateFrom, setInvDateFrom] = useState('')
@@ -165,6 +167,19 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-10">
+
+      {/* Summary strip */}
+      <div className="flex gap-4 mb-6">
+        <div className="flex items-center gap-3 bg-white rounded-xl border border-border px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+            <FileText size={18} className="text-accent" strokeWidth={1.75} />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Active Contracts</p>
+            <p className="font-heading font-bold text-lg text-primary leading-none">{activeContracts}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Contracts section */}
       <div className="space-y-4">
@@ -278,11 +293,11 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
         </div>
 
         {filteredContracts.length === 0 ? (
-          <p className="text-muted-foreground">
-            {contracts.length === 0
-              ? 'You have no maintenance contracts yet. Request one to get started.'
-              : 'No contracts match the selected filter.'}
-          </p>
+          <div className="text-center py-20">
+            <FileX size={48} className="text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
+            <h3 className="font-heading font-semibold text-primary text-lg mb-1">No contracts yet</h3>
+            <p className="text-muted-foreground text-sm mb-4">Contact us to set up a maintenance contract.</p>
+          </div>
         ) : (
           <div className="space-y-6">
             {filteredContracts.map((contract) => {
