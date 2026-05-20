@@ -1,5 +1,5 @@
 export type UserRole = 'customer' | 'admin'
-export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED'
+export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED'
 export type BookingCategory = 'MAINTENANCE' | 'FAULT_REPAIR' | 'INSTALLATION'
 export type TimeSlot = 'S10_12' | 'S13_15' | 'S15_17' | 'S17_19' | 'S19_21'
 export type Urgency = 'HIGH' | 'MEDIUM' | 'LOW'
@@ -138,7 +138,9 @@ export interface ContractServiceDate {
   id: string
   contract_id: string
   due_date: string
+  due_month: string
   reminder_sent: boolean
+  second_reminder_sent: boolean
   booking_id: string | null
 }
 

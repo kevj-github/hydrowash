@@ -58,6 +58,32 @@ export async function sendDayBeforeReminder(booking: BookingWithRelations, email
   })
 }
 
+export async function sendBookingRescheduled(
+  data: { customerName: string; bookingId: string; serviceType: string; newDates: string[] },
+  adminEmail: string
+) {
+  const { BookingRescheduled } = await import('./templates/BookingRescheduled')
+  return resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    subject: `Booking rescheduled — #${data.bookingId}`,
+    react: BookingRescheduled(data),
+  })
+}
+
+export async function sendBookingCancelled(
+  data: { customerName: string; bookingId: string; serviceType: string; reason?: string },
+  adminEmail: string
+) {
+  const { BookingCancelled } = await import('./templates/BookingCancelled')
+  return resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    subject: `Booking cancelled — #${data.bookingId}`,
+    react: BookingCancelled(data),
+  })
+}
+
 export async function sendContractServiceDue(
   data: { customerName: string; numUnits: number; dueDate: string; bookUrl: string },
   email: string

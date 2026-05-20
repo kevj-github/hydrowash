@@ -1,6 +1,7 @@
 'use client'
 
 import { ContractServiceDateWithBooking } from '@/lib/types'
+import { formatDueMonth } from '@/lib/contracts/service-dates'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -18,8 +19,8 @@ export default function ServiceDateRow({
   availableBookings,
   onLink,
 }: Props) {
-  const today = new Date().toISOString().split('T')[0]
-  const isPast = serviceDate.due_date < today
+  const todayMonth = new Date().toISOString().slice(0, 7)
+  const isPast = serviceDate.due_month < todayMonth
 
   async function handleLink() {
     const bookingId = prompt(
@@ -34,7 +35,7 @@ export default function ServiceDateRow({
   return (
     <tr className="border-b border-gray-100 text-sm">
       <td className="py-2 px-3 text-gray-500">Visit {index + 1}</td>
-      <td className="py-2 px-3 font-medium">{serviceDate.due_date}</td>
+      <td className="py-2 px-3 font-medium">{formatDueMonth(serviceDate.due_month)}</td>
       <td className="py-2 px-3">
         {serviceDate.booking ? (
           <span className="text-green-700">Linked: {serviceDate.booking.id.slice(0, 8)}…</span>

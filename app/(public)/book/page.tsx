@@ -2,7 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { BookingWizard } from '@/components/booking/BookingWizard'
 import { SectionHeading } from '@/components/ui/section-heading'
 
-export default async function BookPage() {
+export default async function BookPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ repeat?: string }>
+}) {
+  const { repeat } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -34,7 +39,11 @@ export default async function BookPage() {
           align="center"
           className="mb-10"
         />
-        <BookingWizard serviceTypes={serviceTypesRes.data ?? []} profileAddress={profileAddress} />
+        <BookingWizard
+          serviceTypes={serviceTypesRes.data ?? []}
+          profileAddress={profileAddress}
+          repeatId={repeat}
+        />
       </div>
     </div>
   )

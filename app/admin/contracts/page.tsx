@@ -127,17 +127,29 @@ export default function AdminContractsPage() {
       if (endFrom && c.end_date < endFrom) return false
       if (endTo && c.end_date > endTo) return false
       if (serviceDueFrom || serviceDueTo) {
+        const fromMonth = serviceDueFrom ? serviceDueFrom.slice(0, 7) : null
+        const toMonth = serviceDueTo ? serviceDueTo.slice(0, 7) : null
         const nextDue = (c.contract_service_dates ?? [])
-          .filter((sd: { booking_id: string | null; due_date: string }) => !sd.booking_id)
-          .map((sd: { due_date: string }) => sd.due_date)
+          .filter((sd: { booking_id: string | null; due_month: string }) => !sd.booking_id)
+          .map((sd: { due_month: string }) => sd.due_month)
           .sort()[0] ?? null
         if (!nextDue) return false
-        if (serviceDueFrom && nextDue < serviceDueFrom) return false
-        if (serviceDueTo && nextDue > serviceDueTo) return false
+        if (fromMonth && nextDue < fromMonth) return false
+        if (toMonth && nextDue > toMonth) return false
       }
       return true
     })
+    .map((c) => {
+      const currentMonth = new Date().toISOString().slice(0, 7)
+      const isOverdue = (c.contract_service_dates ?? []).some(
+        (sd: { due_month: string; booking_id: string | null }) =>
+          !sd.booking_id && sd.due_month < currentMonth
+      )
+      return { ...c, isOverdue }
+    })
     .sort((a, b) => {
+      if (a.isOverdue && !b.isOverdue) return -1
+      if (b.isOverdue && !a.isOverdue) return 1
       const priority = (s: string) =>
         s === 'PENDING_REVIEW' ? 0 : s === 'AWAITING_PAYMENT' ? 1 : 2
       return priority(a.status) - priority(b.status)
@@ -397,7 +409,7 @@ export default function AdminContractsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filteredContracts.map((c) => (
-            <ContractCard key={c.id} contract={c} />
+            <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} />
           ))}
         </div>
       )}

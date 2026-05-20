@@ -5,25 +5,24 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import Link from 'next/link'
+import { formatDueMonth } from '@/lib/contracts/service-dates'
 
 interface Props {
   contract: ContractWithCustomer & { contract_service_dates: ContractServiceDate[] }
+  isOverdue?: boolean
 }
 
 function getNextServiceDue(dates: ContractServiceDate[]): string | null {
-  const today = new Date().toISOString().split('T')[0]
+  const todayMonth = new Date().toISOString().slice(0, 7)
   const upcoming = dates
-    .filter((d) => d.due_date >= today && !d.booking_id)
-    .sort((a, b) => a.due_date.localeCompare(b.due_date))
-  return upcoming[0]?.due_date ?? null
+    .filter((d) => d.due_month >= todayMonth && !d.booking_id)
+    .sort((a, b) => a.due_month.localeCompare(b.due_month))
+  return upcoming[0]?.due_month ?? null
 }
 
 function isServiceDueThisMonth(dates: ContractServiceDate[]): boolean {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const prefix = `${year}-${month}`
-  return dates.some((d) => d.due_date.startsWith(prefix) && !d.booking_id && !d.reminder_sent)
+  const prefix = new Date().toISOString().slice(0, 7)
+  return dates.some((d) => d.due_month === prefix && !d.booking_id && !d.reminder_sent)
 }
 
 function isExpiringSoon(endDate: string): boolean {
@@ -33,7 +32,7 @@ function isExpiringSoon(endDate: string): boolean {
   return end <= in30
 }
 
-export default function ContractCard({ contract }: Props) {
+export default function ContractCard({ contract, isOverdue }: Props) {
   const nextDue = getNextServiceDue(contract.contract_service_dates)
   const dueBadge = isServiceDueThisMonth(contract.contract_service_dates)
   const expiringSoon = contract.status === 'ACTIVE' && isExpiringSoon(contract.end_date)
@@ -73,6 +72,9 @@ export default function ContractCard({ contract }: Props) {
             {dueBadge && (
               <Badge className="bg-amber-100 text-amber-800 text-xs">Service Due</Badge>
             )}
+            {isOverdue && (
+              <Badge className="bg-destructive text-destructive-foreground text-xs">Overdue</Badge>
+            )}
             {expiringSoon && (
               <Badge className="bg-red-100 text-red-700 text-xs">Expiring Soon</Badge>
             )}
@@ -85,7 +87,7 @@ export default function ContractCard({ contract }: Props) {
           {contract.start_date} → {contract.end_date}
         </p>
         {nextDue && (
-          <p className="text-amber-700 font-medium">Next service due: {nextDue}</p>
+          <p className="text-amber-700 font-medium">Next service due: {formatDueMonth(nextDue)}</p>
         )}
         {contract.notes && (
           <p className="text-muted-foreground italic">{contract.notes}</p>

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Script from 'next/script'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ import type { ServiceType, PreferredDateSlot } from '@/lib/types'
 interface Props {
   serviceTypes: ServiceType[]
   profileAddress?: { address: string; postal_code: string; lat: number; lng: number } | null
+  repeatId?: string
 }
 
 const STEPS = ['Service', 'Schedule & Location', 'Review']
@@ -50,16 +51,53 @@ const initial: BookingData = {
 }
 
 
-export function BookingWizard({ serviceTypes, profileAddress }: Props) {
+export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<BookingData>(initial)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [prefilled, setPrefilled] = useState(false)
   const router = useRouter()
 
   function update(updates: Partial<BookingData>) {
     setData(prev => ({ ...prev, ...updates }))
   }
+
+  useEffect(() => {
+    if (!repeatId || prefilled) return
+    let cancelled = false
+    async function loadRepeat() {
+      try {
+        const res = await fetch(`/api/bookings/${repeatId}`)
+        if (!res.ok) return
+        const body = await res.json()
+        if (cancelled) return
+        const booking = body.booking
+        const unitLocationIds = body.unit_location_ids ?? []
+        setData(prev => ({
+          ...prev,
+          service_type_id: booking.service_type_id ?? '',
+          category: booking.category ?? '',
+          num_units: booking.num_units ?? undefined,
+          unit_location_ids: unitLocationIds,
+          address: booking.address ?? '',
+          postal_code: booking.postal_code ?? '',
+          lat: booking.lat ?? null,
+          lng: booking.lng ?? null,
+          unit_floor: booking.unit_floor ?? '',
+          building_name: booking.building_name ?? '',
+          access_notes: booking.access_notes ?? '',
+          preferred_date_slots: [],
+        }))
+        setStep(0)
+        setPrefilled(true)
+      } catch {
+        // ignore prefill errors
+      }
+    }
+    loadRepeat()
+    return () => { cancelled = true }
+  }, [repeatId, prefilled])
 
   function canNext(): boolean {
     if (step === 0) {

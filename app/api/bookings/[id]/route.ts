@@ -3,6 +3,36 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookingApproved, sendBookingRejected } from '@/lib/email/send'
 import { NextRequest, NextResponse } from 'next/server'
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id } = await params
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('id', id)
+    .eq('customer_id', user.id)
+    .single()
+
+  if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+
+  const { data: unitLocations } = await supabase
+    .from('booking_unit_locations')
+    .select('unit_location_id')
+    .eq('booking_id', id)
+
+  return NextResponse.json({
+    booking,
+    unit_location_ids: (unitLocations ?? []).map((row: { unit_location_id: string }) => row.unit_location_id),
+  })
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

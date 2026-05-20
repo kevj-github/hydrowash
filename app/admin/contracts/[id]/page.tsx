@@ -62,7 +62,7 @@ export default function ContractDetailPage() {
         *,
         customer:profiles!contracts_customer_id_fkey (id, name, phone),
         contract_service_dates (
-          id, contract_id, due_date, reminder_sent, booking_id,
+          id, contract_id, due_date, due_month, reminder_sent, second_reminder_sent, booking_id,
           booking:bookings!contract_service_dates_booking_id_fkey (
             id, status, confirmed_date, address
           )

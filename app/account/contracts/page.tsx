@@ -23,7 +23,9 @@ export default async function AccountContractsPage() {
         contract_service_dates (
           id,
           due_date,
+          due_month,
           reminder_sent,
+          second_reminder_sent,
           booking_id
         )
       `)

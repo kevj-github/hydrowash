@@ -17,11 +17,14 @@ import {
 } from '@/components/ui/dialog'
 import { ContractPricingTier } from '@/lib/types'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
+import { formatDueMonth } from '@/lib/contracts/service-dates'
 
 interface ServiceDate {
   id: string
   due_date: string
+  due_month: string
   reminder_sent: boolean
+  second_reminder_sent: boolean
   booking_id: string | null
 }
 
@@ -103,7 +106,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
     notes: '',
   })
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().slice(0, 7)
 
   const filteredContracts = contracts
     .filter(c => contractStatus === 'ALL' || c.status === contractStatus)
@@ -283,7 +286,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
           <div className="space-y-6">
             {filteredContracts.map((contract) => {
               const sortedDates = [...(contract.contract_service_dates ?? [])].sort(
-                (a, b) => a.due_date.localeCompare(b.due_date)
+                (a, b) => a.due_month.localeCompare(b.due_month)
               )
               const isPending = contract.status === 'PENDING_REVIEW'
               const isAwaitingPayment = contract.status === 'AWAITING_PAYMENT'
@@ -334,12 +337,12 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                         </thead>
                         <tbody>
                           {sortedDates.map((sd, i) => {
-                            const isPast = sd.due_date < today
+                            const isPast = sd.due_month < today
                             const isCompleted = !!sd.booking_id
                             return (
                               <tr key={sd.id} className="border-b border-border/50">
                                 <td className="py-1.5 text-muted-foreground">Visit {i + 1}</td>
-                                <td className="py-1.5 text-primary">{sd.due_date}</td>
+                                <td className="py-1.5 text-primary">{formatDueMonth(sd.due_month)}</td>
                                 <td className="py-1.5">
                                   {isCompleted ? (
                                     <Badge className="bg-green-100 text-green-800 text-xs">Booked</Badge>

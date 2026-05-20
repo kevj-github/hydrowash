@@ -2,12 +2,23 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { SLOT_LABELS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
+import { RescheduleDialog } from '@/components/account/RescheduleDialog'
+import { CancelDialog } from '@/components/account/CancelDialog'
 
 const statusColor: Record<string, string> = {
   PENDING: 'bg-amber-100 text-amber-800',
   APPROVED: 'bg-green-100 text-green-800',
   REJECTED: 'bg-red-100 text-red-800',
   COMPLETED: 'bg-slate-100 text-slate-700',
+  CANCELLED: 'bg-slate-100 text-slate-700',
+}
+
+function canModify(booking: BookingWithRelations): boolean {
+  if (!['PENDING', 'APPROVED'].includes(booking.status)) return false
+  const effectiveDate = booking.confirmed_date ?? booking.preferred_date_slots?.[0]?.date ?? booking.booking_date
+  const cutoff = new Date(`${effectiveDate}T00:00:00+08:00`)
+  cutoff.setTime(cutoff.getTime() - 24 * 60 * 60 * 1000)
+  return new Date() < cutoff
 }
 
 export default async function AccountBookingsPage({
@@ -80,6 +91,20 @@ export default async function AccountBookingsPage({
                 {booking.rejection_reason && (
                   <span className="text-red-600">Reason: {booking.rejection_reason}</span>
                 )}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {canModify(booking) && (
+                  <>
+                    <RescheduleDialog bookingId={booking.id} />
+                    <CancelDialog bookingId={booking.id} />
+                  </>
+                )}
+                <Link
+                  href={`/book?repeat=${booking.id}`}
+                  className="text-xs px-3 py-2 rounded-md border border-border font-medium text-primary hover:bg-muted/60"
+                >
+                  Book Again
+                </Link>
               </div>
             </div>
           ))}
