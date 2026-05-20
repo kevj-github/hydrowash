@@ -173,3 +173,28 @@ export async function sendContractPricing(
       : [],
   })
 }
+
+export async function sendWorkOrderReport(
+  data: {
+    customerName: string
+    workOrderNo: number
+    date: string
+    serviceType: string
+    address: string
+    totalSgd: number
+    paynowQrDataUrl: string
+    paynowMobile: string
+    referenceId: string
+  },
+  customerEmail: string,
+  pdfBuffer: Buffer
+) {
+  const { WorkOrderEmail } = await import('./templates/WorkOrderEmail')
+  return resend.emails.send({
+    from: FROM,
+    to: customerEmail,
+    subject: `Your HydroWash Work Order #${data.workOrderNo} — S$${data.totalSgd.toFixed(2)} due`,
+    react: WorkOrderEmail(data),
+    attachments: [{ filename: `work-order-${data.workOrderNo}.pdf`, content: pdfBuffer }],
+  })
+}

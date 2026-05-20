@@ -9,6 +9,44 @@ export interface PreferredDateSlot {
   slots: TimeSlot[]
 }
 
+export interface AcUnitDetail {
+  no: number
+  brand: string
+  model: string
+  serial_no: string
+  location: string
+}
+
+export interface ChecklistItem {
+  item: string
+  checked: boolean
+  note?: string
+}
+
+export interface AdditionalCharge {
+  description: string
+  amount_sgd: number
+}
+
+export interface JobCompletion {
+  id: string
+  booking_id: string
+  completed_by?: string
+  completed_at: string
+  attended_by: string
+  time_arrived: string
+  time_completed: string
+  ac_details: AcUnitDetail[]
+  checklist: ChecklistItem[]
+  job_description: string
+  job_rendered: string
+  remarks: string
+  additional_charges: AdditionalCharge[]
+  base_price_sgd: number
+  total_sgd: number
+  pdf_url?: string
+}
+
 export const SLOT_LABELS: Record<TimeSlot, string> = {
   S10_12: '10:00 – 12:00',
   S13_15: '13:00 – 15:00',

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { JobCompletionDialog } from '@/components/admin/JobCompletionDialog'
 import { SLOT_LABELS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 
@@ -32,13 +33,13 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
   const [confirmedSlot, setConfirmedSlot] = useState<string>(booking.confirmed_slot ?? '')
   const [rejectionReason, setRejectionReason] = useState('')
   const [showReject, setShowReject] = useState(false)
-  const [loading, setLoading] = useState<'approve' | 'reject' | 'complete' | null>(null)
+  const [loading, setLoading] = useState<'approve' | 'reject' | null>(null)
 
   const preferredSlots: TimeSlot[] = (booking.preferred_slots?.length
     ? booking.preferred_slots
     : booking.time_slot ? [booking.time_slot] : []) as TimeSlot[]
 
-  async function act(action: 'approve' | 'reject' | 'complete') {
+  async function act(action: 'approve' | 'reject') {
     setLoading(action)
     try {
       await fetch(`/api/bookings/${booking.id}`, {
@@ -182,15 +183,9 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
       )}
 
       {booking.status === 'APPROVED' && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="w-full text-xs"
-          onClick={e => { e.stopPropagation(); act('complete') }}
-          disabled={!!loading}
-        >
-          {loading === 'complete' ? '…' : 'Mark Complete'}
-        </Button>
+        <div onClick={e => e.stopPropagation()}>
+          <JobCompletionDialog booking={booking} onSuccess={onUpdate} />
+        </div>
       )}
     </div>
   )

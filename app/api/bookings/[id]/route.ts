@@ -57,8 +57,6 @@ export async function PATCH(
   } else if (action === 'reject') {
     updates.status = 'REJECTED'
     if (rejection_reason) updates.rejection_reason = rejection_reason
-  } else if (action === 'complete') {
-    updates.status = 'COMPLETED'
   } else {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
