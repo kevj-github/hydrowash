@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Script from 'next/script'
+import { Check, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StepServiceDetails } from './StepServiceDetails'
 import { StepScheduleLocation } from './StepScheduleLocation'
@@ -174,29 +175,33 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="lazyOnload"
       />
-      {/* Progress */}
-      <div className="flex items-center justify-between mb-8">
+      {/* Progress bar */}
+      <div className="flex items-center justify-center mb-8">
         {STEPS.map((label, i) => (
           <div key={label} className="flex items-center">
-            <div className={`flex items-center gap-2 ${i <= step ? 'text-accent' : 'text-slate-400'}`}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors
-                ${i < step ? 'bg-accent border-accent text-white'
-                  : i === step ? 'border-accent text-accent'
-                  : 'border-slate-300 text-slate-400'}`}
-              >
-                {i < step ? '✓' : i + 1}
+            <div className="flex flex-col items-center">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
+                i < step
+                  ? 'bg-accent/20 text-accent'
+                  : i === step
+                  ? 'bg-accent text-white shadow-md shadow-accent/30'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {i < step ? <Check size={16} strokeWidth={2.5} /> : i + 1}
               </div>
-              <span className="hidden sm:block text-xs font-medium">{label}</span>
+              <span className={`text-xs mt-1.5 font-medium hidden sm:block ${i === step ? 'text-accent' : 'text-muted-foreground'}`}>
+                {label}
+              </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`mx-2 h-px w-8 sm:w-16 ${i < step ? 'bg-accent' : 'bg-slate-200'}`} />
+              <div className={`w-16 sm:w-24 h-0.5 mx-2 mb-5 transition-colors duration-200 ${i < step ? 'bg-accent' : 'bg-border'}`} />
             )}
           </div>
         ))}
       </div>
 
       {/* Step content */}
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm mb-6">
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-6 sm:p-8 mb-6">
         <h2 className="font-heading font-semibold text-lg text-primary mb-5">{STEPS[step]}</h2>
 
         {step === 0 && <StepServiceDetails serviceTypes={serviceTypes} data={data} onChange={update} />}
@@ -227,11 +232,16 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
           </Button>
         ) : (
           <Button
-            onClick={handleSubmit}
+            type="button"
             disabled={submitting}
-            className="bg-accent hover:bg-accent/90 text-white"
+            className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-3 rounded-xl cursor-pointer disabled:opacity-70"
+            onClick={handleSubmit}
           >
-            {submitting ? 'Submitting…' : 'Submit Booking'}
+            {submitting ? (
+              <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" />Submitting…</span>
+            ) : (
+              <span className="flex items-center gap-2">Confirm Booking <ArrowRight size={16} /></span>
+            )}
           </Button>
         )}
       </div>
