@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Wind, Wrench, Zap, Package, ArrowRight, CalendarCheck, Cpu, MapPin, ShieldCheck, FileText } from 'lucide-react'
+import { Wind, Wrench, Zap, Package, ArrowRight, CalendarCheck, Cpu, MapPin, ShieldCheck, FileText, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Section, SectionInner } from '@/components/ui/section'
 import { SectionHeading } from '@/components/ui/section-heading'
@@ -50,6 +50,24 @@ const whyFeatures = [
   { icon: Cpu,         label: 'All makes & models',          desc: 'Mitsubishi, Daikin, Panasonic, Samsung, and more.' },
   { icon: ShieldCheck, label: 'Transparent pricing',         desc: 'Fixed rates, no hidden fees, ever.' },
   { icon: FileText,    label: '1-year maintenance contracts', desc: 'Quarterly servicing, fully managed for you.' },
+]
+
+const testimonials = [
+  {
+    name: 'Jason T.',
+    location: 'Jurong West',
+    quote: 'Booked at 9am, technician arrived by noon. Chemical wash done perfectly. Highly recommend!',
+  },
+  {
+    name: 'Priya S.',
+    location: 'Bishan',
+    quote: 'Finally an aircon company with transparent pricing. No surprise charges at all.',
+  },
+  {
+    name: 'Wei Liang C.',
+    location: 'Tampines',
+    quote: 'Signed up for the annual contract. Best decision — no more chasing for servicing dates.',
+  },
 ]
 
 export default async function HomePage() {
@@ -204,6 +222,38 @@ export default async function HomePage() {
         </SectionInner>
       </Section>
 
+      {/* Testimonials */}
+      <Section className="bg-muted py-20">
+        <SectionInner>
+          <SectionHeading
+            label="Reviews"
+            title="What our customers say"
+            subtitle="Real feedback from homeowners across Singapore."
+          />
+          <div className="grid sm:grid-cols-3 gap-6">
+            {testimonials.map(t => (
+              <div key={t.name} className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <div className="flex gap-0.5 mb-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={14} className="text-amber-400 fill-amber-400" />
+                  ))}
+                </div>
+                <p className="text-sm text-foreground leading-relaxed mb-5 italic">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-accent/10 text-accent font-semibold text-sm flex items-center justify-center shrink-0">
+                    {t.name[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.location}, Singapore</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionInner>
+      </Section>
+
       {/* How it works — muted bg */}
       <Section className="bg-muted py-20">
         <SectionInner>
@@ -215,13 +265,15 @@ export default async function HomePage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-0 max-w-2xl mx-auto">
             {steps.map((step, i) => (
               <div key={step.label} className="flex items-center">
-                <StepItem
-                  number={i + 1}
-                  label={step.label}
-                  description={step.description}
-                />
+                <div className="flex flex-col items-center text-center px-4">
+                  <div className="w-14 h-14 rounded-full bg-accent text-white font-heading font-bold text-xl flex items-center justify-center mb-3 shadow-md shadow-accent/20">
+                    {i + 1}
+                  </div>
+                  <p className="font-heading font-semibold text-primary text-base">{step.label}</p>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-[140px]">{step.description}</p>
+                </div>
                 {i < steps.length - 1 && (
-                  <div className="hidden sm:block w-16 h-px bg-border mx-2 flex-shrink-0 mb-6" />
+                  <div className="hidden sm:block w-16 h-0.5 bg-accent/30 flex-shrink-0 mb-10" />
                 )}
               </div>
             ))}
@@ -229,9 +281,13 @@ export default async function HomePage() {
         </SectionInner>
       </Section>
 
-      {/* CTA — dark navy */}
-      <Section className="bg-[#0F172A] py-20">
-        <SectionInner className="text-center">
+      {/* CTA — photo background */}
+      <Section className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0">
+          <Image src={PHOTO_CTA} alt="" fill className="object-cover" aria-hidden />
+          <div className="absolute inset-0 bg-primary/80" />
+        </div>
+        <SectionInner className="relative text-center">
           <SectionHeading
             label="Get started"
             title="Ready to book?"
