@@ -137,40 +137,35 @@
   .font-body {
     font-family: var(--font-body, 'Open Sans', sans-serif);
   }
-  .animate-fade-up {
-    animation: fadeUp 0.5s ease forwards;
-  }
-  .animate-fade-up-delay-1 {
-    animation: fadeUp 0.5s ease 0.1s forwards;
-    opacity: 0;
-  }
-  .animate-fade-up-delay-2 {
-    animation: fadeUp 0.5s ease 0.2s forwards;
-    opacity: 0;
-  }
-  .animate-fade-up-delay-3 {
-    animation: fadeUp 0.5s ease 0.35s forwards;
-    opacity: 0;
-  }
 }
 
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-fade-up,
-  .animate-fade-up-delay-1,
-  .animate-fade-up-delay-2,
-  .animate-fade-up-delay-3 {
-    animation: none;
-    opacity: 1;
+  @layer utilities {
+    .animate-fade-up {
+      animation: fadeUp 0.5s ease forwards;
+    }
+    .animate-fade-up-delay-1 {
+      animation: fadeUp 0.5s ease 0.1s forwards;
+      opacity: 0;
+    }
+    .animate-fade-up-delay-2 {
+      animation: fadeUp 0.5s ease 0.2s forwards;
+      opacity: 0;
+    }
+    .animate-fade-up-delay-3 {
+      animation: fadeUp 0.5s ease 0.35s forwards;
+      opacity: 0;
+    }
   }
 }
