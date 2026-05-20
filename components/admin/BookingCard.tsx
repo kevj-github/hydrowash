@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { JobCompletionDialog } from '@/components/admin/JobCompletionDialog'
-import { SLOT_LABELS } from '@/lib/types'
+import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 
 interface Props {
@@ -135,7 +135,7 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {preferredSlots.map(s => (
+                  {SLOT_KEYS.map(s => (
                     <SelectItem key={s} value={s}>{SLOT_LABELS[s]}</SelectItem>
                   ))}
                 </SelectContent>

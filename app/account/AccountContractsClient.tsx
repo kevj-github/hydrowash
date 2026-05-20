@@ -48,6 +48,7 @@ interface Invoice {
   payment_method: string | null
   paid_at: string | null
   created_at: string
+  booking_id: string | null
 }
 
 interface Props {
@@ -315,9 +316,29 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                     </p>
                   )}
                   {isAwaitingPayment && (
-                    <p className="text-sm text-orange-700 bg-orange-50 rounded-lg px-3 py-2">
-                      Pricing has been confirmed. Please complete the PayNow transfer to activate your contract.
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-sm text-orange-700 bg-orange-50 rounded-lg px-3 py-2">
+                        Pricing has been confirmed. Please complete the PayNow transfer to activate your contract.
+                      </p>
+                      <a
+                        href={`/api/contracts/${contract.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-xs text-accent underline"
+                      >
+                        View Contract PDF
+                      </a>
+                    </div>
+                  )}
+                  {contract.status === 'ACTIVE' && (
+                    <a
+                      href={`/api/contracts/${contract.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-xs text-accent underline"
+                    >
+                      View Contract PDF
+                    </a>
                   )}
 
                   {contract.notes && (
@@ -431,6 +452,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                   <th className="py-2.5 px-3 font-medium">Amount</th>
                   <th className="py-2.5 px-3 font-medium">Status</th>
                   <th className="py-2.5 px-3 font-medium">Date</th>
+                  <th className="py-2.5 px-3 font-medium" />
                   {paynowMobile && <th className="py-2.5 px-3 font-medium" />}
                 </tr>
               </thead>
@@ -450,6 +472,18 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                     </td>
                     <td className="py-2.5 px-3 text-muted-foreground">
                       {inv.created_at.split('T')[0]}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {inv.booking_id && (
+                        <a
+                          href={`/api/bookings/${inv.booking_id}/work-order-pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-accent underline hover:no-underline"
+                        >
+                          View PDF
+                        </a>
+                      )}
                     </td>
                     {paynowMobile && (
                       <td className="py-2.5 px-3">

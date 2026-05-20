@@ -92,10 +92,15 @@ export default function ContractCard({ contract, isOverdue }: Props) {
         {contract.notes && (
           <p className="text-muted-foreground italic">{contract.notes}</p>
         )}
-        <div className="pt-2">
+        <div className="pt-2 flex gap-2 flex-wrap">
           <Link href={`/admin/contracts/${contract.id}`}>
             <Button size="sm" variant="outline">View Details</Button>
           </Link>
+          {(contract.status === 'AWAITING_PAYMENT' || contract.status === 'ACTIVE') && (
+            <a href={`/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline">Preview PDF</Button>
+            </a>
+          )}
         </div>
       </CardContent>
     </Card>

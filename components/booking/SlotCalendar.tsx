@@ -5,7 +5,7 @@ import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
 import type { TimeSlot, PreferredDateSlot } from '@/lib/types'
 
 const SGT_OFFSET_MS = 8 * 60 * 60 * 1000
-const MAX_SLOTS_PER_DATE = 3
+const MAX_TOTAL_SLOTS = 3
 const MAX_DATES = 5
 
 const SLOT_START_HOUR: Record<TimeSlot, number> = {
@@ -92,6 +92,8 @@ export function SlotCalendar({ value, onChange }: Props) {
     }
   }
 
+  const totalSlots = value.reduce((sum, e) => sum + e.slots.length, 0)
+
   function toggleSlot(slot: TimeSlot) {
     if (!activeDate) return
     const next = value.map(e => {
@@ -100,7 +102,7 @@ export function SlotCalendar({ value, onChange }: Props) {
       if (hasSlot) {
         return { ...e, slots: e.slots.filter(s => s !== slot) }
       }
-      if (e.slots.length < MAX_SLOTS_PER_DATE) {
+      if (totalSlots < MAX_TOTAL_SLOTS) {
         return { ...e, slots: [...e.slots, slot] }
       }
       return e
@@ -128,6 +130,7 @@ export function SlotCalendar({ value, onChange }: Props) {
 
   const activeDateEntry = activeDate ? value.find(e => e.date === activeDate) : null
   const activeSlots = activeDateEntry?.slots ?? []
+  const slotsRemaining = MAX_TOTAL_SLOTS - totalSlots
 
   return (
     <div className="space-y-4">
@@ -141,7 +144,12 @@ export function SlotCalendar({ value, onChange }: Props) {
         </button>
       </div>
 
-      {value.length >= MAX_DATES && (
+      {totalSlots >= MAX_TOTAL_SLOTS && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Maximum {MAX_TOTAL_SLOTS} time slots selected. You can still add more dates but no further slots.
+        </p>
+      )}
+      {value.length >= MAX_DATES && totalSlots < MAX_TOTAL_SLOTS && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           Maximum {MAX_DATES} date preferences reached.
         </p>
@@ -222,12 +230,12 @@ export function SlotCalendar({ value, onChange }: Props) {
             })}
           </p>
           <p className="text-xs text-muted-foreground">
-            Select up to {MAX_SLOTS_PER_DATE} slots ({activeSlots.length}/{MAX_SLOTS_PER_DATE} selected)
+            Select up to {MAX_TOTAL_SLOTS} slots total ({totalSlots}/{MAX_TOTAL_SLOTS} selected)
           </p>
           {SLOT_KEYS.map(slot => {
             const state = getSlotState(activeDate, slot)
             const isActive = activeSlots.includes(slot)
-            const isDisabled = state !== 'available' || (!isActive && activeSlots.length >= MAX_SLOTS_PER_DATE)
+            const isDisabled = state !== 'available' || (!isActive && slotsRemaining === 0)
             return (
               <button
                 key={slot}
@@ -236,7 +244,7 @@ export function SlotCalendar({ value, onChange }: Props) {
                 className={`
                   w-full text-xs px-3 py-2 rounded-lg border font-medium transition-colors text-left
                   ${isActive ? 'bg-accent text-white border-accent' : ''}
-                  ${state === 'available' && !isActive && activeSlots.length < MAX_SLOTS_PER_DATE
+                  ${state === 'available' && !isActive && slotsRemaining > 0
                     ? 'border-border text-primary hover:bg-muted/60' : ''}
                   ${isDisabled && !isActive ? 'bg-slate-50 text-muted-foreground border-border cursor-not-allowed opacity-60' : ''}
                 `}
@@ -245,7 +253,7 @@ export function SlotCalendar({ value, onChange }: Props) {
                 {state === 'booked' && <span className="ml-2 text-[10px]">Taken</span>}
                 {state === 'blocked' && <span className="ml-2 text-[10px]">Unavailable</span>}
                 {state === 'past' && <span className="ml-2 text-[10px]">Passed</span>}
-                {state === 'available' && !isActive && activeSlots.length >= MAX_SLOTS_PER_DATE && (
+                {state === 'available' && !isActive && slotsRemaining === 0 && (
                   <span className="ml-2 text-[10px] text-muted-foreground">(max reached)</span>
                 )}
               </button>

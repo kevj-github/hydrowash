@@ -92,20 +92,12 @@ export default async function AccountBookingsPage({
                   <span className="text-red-600">Reason: {booking.rejection_reason}</span>
                 )}
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {canModify(booking) && (
-                  <>
-                    <RescheduleDialog bookingId={booking.id} />
-                    <CancelDialog bookingId={booking.id} />
-                  </>
-                )}
-                <Link
-                  href={`/book?repeat=${booking.id}`}
-                  className="text-xs px-3 py-2.5 min-h-[44px] flex items-center rounded-md border border-border font-medium text-primary hover:bg-muted/60"
-                >
-                  Book Again
-                </Link>
-              </div>
+              {canModify(booking) && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <RescheduleDialog bookingId={booking.id} />
+                  <CancelDialog bookingId={booking.id} />
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -16,7 +16,7 @@ export async function GET(
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles').select('role').eq('id', user.id).single()
-  if (profileError || !profile || profile.role !== 'admin') {
+  if (profileError || !profile) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -27,6 +27,10 @@ export async function GET(
     .single()
 
   if (!contract) return NextResponse.json({ error: 'Contract not found' }, { status: 404 })
+
+  if (profile.role !== 'admin' && contract.customer_id !== user.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { data: settings } = await supabase
     .from('app_settings')

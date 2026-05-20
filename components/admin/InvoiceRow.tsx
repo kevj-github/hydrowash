@@ -71,6 +71,17 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false }: Pr
         {invoice.paid_at ? invoice.paid_at.split('T')[0] : '—'}
       </td>
       <td className="py-2 px-3">
+        <div className="flex gap-1.5 flex-wrap">
+        {invoice.booking_id && (
+          <a
+            href={`/api/bookings/${invoice.booking_id}/work-order-pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-xs')}
+          >
+            View PDF
+          </a>
+        )}
         {invoice.status === 'UNPAID' && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-green-700 border-green-300 hover:bg-green-50')}>
@@ -116,6 +127,7 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false }: Pr
         {invoice.status === 'PAID' && (
           <span className="text-xs text-muted-foreground">{invoice.payment_method}</span>
         )}
+        </div>
       </td>
     </tr>
   )

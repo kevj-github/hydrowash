@@ -33,7 +33,7 @@ export default async function AccountContractsPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('invoices')
-      .select('id, amount_sgd, description, status, payment_method, paid_at, created_at')
+      .select('id, amount_sgd, description, status, payment_method, paid_at, created_at, booking_id')
       .eq('customer_id', user.id)
       .order('created_at', { ascending: false }),
     supabase
