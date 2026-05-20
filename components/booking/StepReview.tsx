@@ -1,12 +1,11 @@
 'use client'
 import { SLOT_LABELS } from '@/lib/types'
-import type { ServiceType, TimeSlot } from '@/lib/types'
+import type { ServiceType, PreferredDateSlot } from '@/lib/types'
 
 interface BookingData {
   service_type_id: string
   category: string
-  booking_date: string
-  preferred_slots: TimeSlot[]
+  preferred_date_slots: PreferredDateSlot[]
   address: string
   postal_code: string
   unit_floor?: string
@@ -58,18 +57,24 @@ export function StepReview({ data, serviceTypes }: Props) {
 
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
         <h3 className="font-heading font-semibold text-sm text-primary mb-3">Schedule</h3>
-        <Row
-          label="Date"
-          value={data.booking_date
-            ? new Date(data.booking_date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
-            : '—'}
-        />
-        <Row
-          label="Preferred Slots"
-          value={data.preferred_slots?.length
-            ? data.preferred_slots.map(s => SLOT_LABELS[s]).join(', ')
-            : '—'}
-        />
+        {(data.preferred_date_slots ?? []).length === 0 && (
+          <p className="text-sm text-slate-400">No dates selected.</p>
+        )}
+        {(data.preferred_date_slots ?? []).map((entry, i) => (
+          <div key={entry.date} className="flex justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
+            <span className="text-sm text-slate-500">
+              {i === 0 ? 'First preference' : `Preference ${i + 1}`}
+            </span>
+            <span className="text-sm font-medium text-slate-800 text-right">
+              {new Date(entry.date + 'T00:00:00').toLocaleDateString('en-SG', {
+                day: 'numeric', month: 'short', year: 'numeric',
+              })}
+              {entry.slots.length > 0 && (
+                <> · {entry.slots.map(s => SLOT_LABELS[s]).join(', ')}</>
+              )}
+            </span>
+          </div>
+        ))}
       </div>
 
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">

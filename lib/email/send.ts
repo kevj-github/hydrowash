@@ -102,3 +102,44 @@ export async function sendContractActivated(
     react: ContractActivated(data),
   })
 }
+
+export async function sendContractRequestReceived(
+  data: {
+    customerName: string
+    numUnits: number
+    preferredMonth: string
+    address?: string
+  },
+  email: string
+) {
+  const { ContractRequestReceived } = await import('./templates/ContractRequestReceived')
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: 'Contract request received — HydroWash',
+    react: ContractRequestReceived(data),
+  })
+}
+
+export async function sendContractPricing(
+  data: {
+    customerName: string
+    numUnits: number
+    priceSgd: number
+    startDate: string
+    endDate: string
+    address?: string
+    paynowQrDataUrl: string
+    paynowMobile: string
+    referenceId: string
+  },
+  email: string
+) {
+  const { ContractPricingEmail } = await import('./templates/ContractPricingEmail')
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `Your HydroWash contract pricing — S$${data.priceSgd.toFixed(2)}/year`,
+    react: ContractPricingEmail(data),
+  })
+}

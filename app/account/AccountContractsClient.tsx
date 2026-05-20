@@ -57,6 +57,7 @@ interface Props {
 
 const CONTRACT_STATUS_COLORS: Record<string, string> = {
   PENDING_REVIEW: 'bg-amber-100 text-amber-800',
+  AWAITING_PAYMENT: 'bg-orange-100 text-orange-800',
   ACTIVE: 'bg-green-100 text-green-800',
   EXPIRED: 'bg-slate-100 text-slate-600',
   CANCELLED: 'bg-red-100 text-red-700',
@@ -64,6 +65,7 @@ const CONTRACT_STATUS_COLORS: Record<string, string> = {
 
 const CONTRACT_STATUS_LABELS: Record<string, string> = {
   PENDING_REVIEW: 'Pending Review',
+  AWAITING_PAYMENT: 'Awaiting Payment',
   ACTIVE: 'Active',
   EXPIRED: 'Expired',
   CANCELLED: 'Cancelled',
@@ -107,9 +109,9 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
     .filter(c => contractStatus === 'ALL' || c.status === contractStatus)
     // PENDING_REVIEW at the top
     .sort((a, b) => {
-      if (a.status === 'PENDING_REVIEW' && b.status !== 'PENDING_REVIEW') return -1
-      if (b.status === 'PENDING_REVIEW' && a.status !== 'PENDING_REVIEW') return 1
-      return 0
+      const priority = (s: string) =>
+        s === 'PENDING_REVIEW' ? 0 : s === 'AWAITING_PAYMENT' ? 1 : 2
+      return priority(a.status) - priority(b.status)
     })
 
   const filteredInvoices = invoices.filter(inv => {
@@ -166,7 +168,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
           <h1 className="font-heading font-bold text-2xl text-primary">My Contracts</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex gap-2 flex-wrap">
-              {['ALL', 'ACTIVE', 'PENDING_REVIEW', 'EXPIRED', 'CANCELLED'].map(s => (
+              {['ALL', 'ACTIVE', 'PENDING_REVIEW', 'AWAITING_PAYMENT', 'EXPIRED', 'CANCELLED'].map(s => (
                 <button
                   key={s}
                   onClick={() => setContractStatus(s)}
@@ -284,6 +286,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                 (a, b) => a.due_date.localeCompare(b.due_date)
               )
               const isPending = contract.status === 'PENDING_REVIEW'
+              const isAwaitingPayment = contract.status === 'AWAITING_PAYMENT'
               return (
                 <div key={contract.id} className={`bg-white border rounded-xl p-5 space-y-4 ${isPending ? 'border-amber-200' : 'border-border'}`}>
                   <div className="flex items-center justify-between">
@@ -306,6 +309,11 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                   {isPending && (
                     <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
                       Your request is under review. We will contact you to confirm the price and start date.
+                    </p>
+                  )}
+                  {isAwaitingPayment && (
+                    <p className="text-sm text-orange-700 bg-orange-50 rounded-lg px-3 py-2">
+                      Pricing has been confirmed. Please complete the PayNow transfer to activate your contract.
                     </p>
                   )}
 

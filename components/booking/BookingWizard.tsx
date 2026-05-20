@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button'
 import { StepServiceDetails } from './StepServiceDetails'
 import { StepScheduleLocation } from './StepScheduleLocation'
 import { StepReview } from './StepReview'
-import type { ServiceType, TimeSlot } from '@/lib/types'
-import { SLOT_LABELS } from '@/lib/types'
-// SLOT_LABELS kept for potential display use
+import type { ServiceType, PreferredDateSlot } from '@/lib/types'
 
 interface Props {
   serviceTypes: ServiceType[]
@@ -20,8 +18,7 @@ const STEPS = ['Service', 'Schedule & Location', 'Review']
 type BookingData = {
   service_type_id: string
   category: string
-  booking_date: string
-  preferred_slots: TimeSlot[]
+  preferred_date_slots: PreferredDateSlot[]
   unit_location_ids: string[]
   address: string
   postal_code: string
@@ -43,8 +40,7 @@ type BookingData = {
 const initial: BookingData = {
   service_type_id: '',
   category: '',
-  booking_date: '',
-  preferred_slots: [],
+  preferred_date_slots: [],
   unit_location_ids: [],
   address: '',
   postal_code: '',
@@ -77,7 +73,10 @@ export function BookingWizard({ serviceTypes, profileAddress }: Props) {
       if (data.category === 'INSTALLATION' && !data.num_units) return false
       return true
     }
-    if (step === 1) return !!data.booking_date && (data.preferred_slots?.length ?? 0) > 0 && !!data.address && data.lat !== null
+    if (step === 1) {
+      const hasValidEntry = data.preferred_date_slots.some(e => e.slots.length > 0)
+      return hasValidEntry && !!data.address && data.lat !== null
+    }
     return true
   }
 
@@ -89,6 +88,11 @@ export function BookingWizard({ serviceTypes, profileAddress }: Props) {
       const fullAddress = addressParts.join(', ')
       const combinedNotes = [data.access_notes, data.notes].filter(Boolean).join(' | ')
 
+      const firstEntry = data.preferred_date_slots[0]
+      const booking_date = firstEntry?.date ?? ''
+      const preferred_slots = firstEntry?.slots ?? []
+      const time_slot = preferred_slots[0] ?? ''
+
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,7 +100,10 @@ export function BookingWizard({ serviceTypes, profileAddress }: Props) {
           ...data,
           address: fullAddress || data.address,
           notes: combinedNotes || undefined,
-          time_slot: data.preferred_slots[0],
+          booking_date,
+          preferred_slots,
+          time_slot,
+          preferred_date_slots: data.preferred_date_slots,
         }),
       })
 

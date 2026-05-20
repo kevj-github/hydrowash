@@ -11,7 +11,7 @@ A Next.js 15 web app for online booking at a Singapore aircon servicing company.
 npm run dev        # Start dev server (localhost:3000)
 npm run build      # Production build
 npm run lint       # ESLint
-npm test           # Run all Jest tests
+npm test           # Run all Jest tests (if script exists)
 npx jest vrp       # Run VRP test file
 ```
 
@@ -45,7 +45,7 @@ Roles are stored in `profiles.role` and enforced via Supabase RLS on every table
 - `FAULT_REPAIR` — inspection visit first; admin approves individually by urgency
 - `INSTALLATION` — new AC unit; admin reviews specs and approves
 
-All categories use the **multi-slot model**: customer picks a `booking_date` (date) and up to 3 preferred `time_slot` values (stored as `preferred_slots text[]`). Admin resolves conflicts and assigns a `confirmed_date` + `confirmed_slot` on approval. Uniqueness is enforced only on confirmed APPROVED bookings `(confirmed_date, confirmed_slot)`.
+All categories use the **multi-date slot model**: customers choose up to 5 preferred dates, each with up to 3 time slots (`preferred_date_slots jsonb`). For backward compatibility, `booking_date` + `preferred_slots` + `time_slot` are still written from the first preference entry. Admin resolves conflicts and assigns a `confirmed_date` + `confirmed_slot` on approval. Uniqueness is enforced only on confirmed APPROVED bookings `(confirmed_date, confirmed_slot)`.
 
 ### Time slots (canonical enum values)
 ```
@@ -88,8 +88,11 @@ app/
   api/availability/route.ts    # GET ?month=YYYY-MM → { byDate: { [date]: { booked: TimeSlot[], blockedSlots: (TimeSlot|null)[] } } }
   api/admin/ac-catalog/route.ts   # GET/POST/PATCH ?kind=unit_types|brands — admin CRUD for ac_unit_types and ac_brands
   api/contracts/route.ts       # POST: create contract + auto-generate service dates; GET: list
-  api/contracts/request/route.ts  # POST: customer self-signup (status=PENDING_REVIEW, no price)
-  api/contracts/[id]/activate/route.ts  # PATCH: admin activates PENDING_REVIEW → ACTIVE + generates service dates + emails customer
+  api/contracts/request/route.ts  # POST: customer self-signup (status=PENDING_REVIEW, no price; sends confirmation email)
+  api/contracts/[id]/route.ts  # PATCH: edit; DELETE: cancel or hard delete
+  api/contracts/[id]/set-price/route.ts  # PATCH: set price → AWAITING_PAYMENT + send PayNow QR email
+  api/contracts/[id]/mark-paid/route.ts  # PATCH: AWAITING_PAYMENT → ACTIVE + generate service dates + send activation email
+  api/contracts/[id]/activate/route.ts  # PATCH: admin activates PENDING_REVIEW → ACTIVE + generates service dates + emails customer (admin-created contracts)
   api/contracts/[id]/link-booking/route.ts  # PATCH: link booking to service date
   api/invoices/route.ts        # POST: create invoice; GET: list with filters
   api/invoices/[id]/pay/route.ts  # PATCH: mark invoice paid
@@ -109,7 +112,7 @@ components/
   booking/StepServiceDetails.tsx  # Step 0: service type, category fields, UnitLocationPicker for MAINTENANCE
   booking/StepScheduleLocation.tsx  # Step 1: SlotCalendar (date+slot) + address presets (Home/My Location/Other) + Places autocomplete
   booking/StepReview.tsx       # Step 2: summary of all booking data before submit
-  booking/SlotCalendar.tsx     # Month-grid calendar fetching /api/availability; multi-select up to 3 slot pills; SGT-aware past-slot blocking
+  booking/SlotCalendar.tsx     # Month-grid calendar; up to 5 dates, 3 slots each; SGT-aware past-slot blocking
   booking/UnitLocationPicker.tsx  # N per-unit <Select> dropdowns (one per unit), driven by numUnits prop; reads ac_unit_locations from Supabase browser client
   admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync
   admin/BookingsMap.tsx        # Google Map markers; InfoWindow popup on pin click (customer name, service, address, status, dates); next/dynamic ssr:false
@@ -130,8 +133,8 @@ lib/
   maps/geocode.ts              # Google Geocoding API wrapper (forward geocode)
   maps/distance-matrix.ts      # Google Distance Matrix API wrapper
   email/send.ts                # Send functions via Resend
-  email/templates/             # React Email templates
-  types.ts                     # Shared TypeScript types — TimeSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings
+  email/templates/             # React Email templates (includes ContractRequestReceived, ContractPricingEmail)
+  types.ts                     # Shared TypeScript types — TimeSlot, PreferredDateSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings
 
 middleware.ts                  # Auth routing (role-based redirects — admin and customer only) ⚠ Next.js 16 deprecated this filename in favour of proxy.ts — still works but will need renaming
 supabase/migrations/001_schema.sql
@@ -153,6 +156,8 @@ supabase/migrations/017_profile_address.sql      # address, address_lat, address
 supabase/migrations/018_contract_pending.sql     # price_sgd nullable; PENDING_REVIEW status; expiry_reminder_sent ✅ applied
 supabase/migrations/019_contracts_customer_insert.sql  # RLS INSERT for customer self-signup ✅ applied
 supabase/migrations/020_multi_slot.sql               # preferred_slots text[], confirmed_slot text; drop PENDING slot uniqueness; new APPROVED confirmed_slot unique index; drop booking_unit_locations unique constraint ✅ applied
+supabase/migrations/021_multi_date_slots.sql         # preferred_date_slots jsonb ✅ apply
+supabase/migrations/022_contract_awaiting_payment.sql # contracts status adds AWAITING_PAYMENT ✅ apply
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -164,9 +169,9 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 |---|---|
 | `profiles` | Extends `auth.users`; holds `name`, `phone`, `role` |
 | `service_types` | Admin-configured list of services; `category` enum drives booking form options |
-| `bookings` | Core table — `booking_date date NOT NULL`, `time_slot text NOT NULL` (first preferred slot, backward compat), `preferred_slots text[] NOT NULL DEFAULT '{}'` (up to 3 customer choices), `confirmed_slot text` (admin pick on approval); unique index on `(confirmed_date, confirmed_slot) WHERE status = 'APPROVED'` |
+| `bookings` | Core table — `booking_date date NOT NULL`, `time_slot text NOT NULL` (first preferred slot, backward compat), `preferred_slots text[] NOT NULL DEFAULT '{}'` (up to 3 choices), `preferred_date_slots jsonb` (up to 5 date+slot entries), `confirmed_slot text`; unique index on `(confirmed_date, confirmed_slot) WHERE status = 'APPROVED'` |
 | `app_settings` | Singleton — depot location, company info, `paynow_mobile`, `contract_pricing_tiers jsonb` |
-| `contracts` | 1-year maintenance contracts; `status` = ACTIVE/EXPIRED/CANCELLED; optional `address` text column |
+| `contracts` | 1-year maintenance contracts; `status` = PENDING_REVIEW/AWAITING_PAYMENT/ACTIVE/EXPIRED/CANCELLED; optional `address` text column |
 | `contract_service_dates` | 4 auto-generated quarterly visit dates per contract; `booking_id` links to the booking when scheduled |
 | `invoices` | Manual invoices; optionally linked to a booking and/or contract |
 | `ac_unit_locations` | Admin-managed room labels (Master Bedroom, Room 1–3, Living Room, Kitchen, Study Room) |
@@ -177,11 +182,11 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 
 - `service_type_id` is NOT NULL on all bookings — fault repair types (e.g. "AC Not Cooling") are also rows in `service_types`
 - Booking statuses: `PENDING | APPROVED | REJECTED | COMPLETED`
-- Contract statuses: `PENDING_REVIEW | ACTIVE | EXPIRED | CANCELLED` — PENDING_REVIEW = customer self-request awaiting admin activation
+- Contract statuses: `PENDING_REVIEW | AWAITING_PAYMENT | ACTIVE | EXPIRED | CANCELLED` — customer self-requests move to AWAITING_PAYMENT after pricing
 - Invoice statuses: `UNPAID | PAID`
 - `contract_pricing_tiers` format: `[{min_units, max_units: number|null, price_sgd}]` — `max_units: null` = per-unit rate
 - `contracts.price_sgd` is **nullable** (NULL for PENDING_REVIEW contracts, set on activation). Guard with `price_sgd != null ? ... : 'TBD'` before rendering.
-- **Booking POST** (`/api/bookings`) accepts `booking_date` + `preferred_slots: string[]` (1–3 slots). Sets `time_slot = preferred_slots[0]` for backward compat. Only checks for full-day blocks — no per-slot conflict check (conflicts resolved by admin at approval time).
+- **Booking POST** (`/api/bookings`) accepts `preferred_date_slots` (1–5 entries, each with 1–3 slots). Derives `booking_date`, `preferred_slots`, and `time_slot` from the first entry. Only checks for full-day blocks — no per-slot conflict check (conflicts resolved by admin at approval time).
 - **Booking PATCH** (`/api/bookings/[id]`) approve action accepts `confirmed_date` + `confirmed_slot`; both are saved on the booking.
 - **Bulk approve** (`/api/bookings/bulk-approve`) accepts `confirmed_date` + optional `confirmed_slot`; applies both to all selected bookings.
 - **Availability API** (`/api/availability`) returns `confirmed_slot` from APPROVED bookings only (not PENDING). Pending bookings no longer block calendar slots.
@@ -195,8 +200,8 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 
 **Booking wizard (`/book`) — 3 steps:**
 - **Step 0 (Service):** Service type selector (grouped by category). MAINTENANCE shows num_units + UnitLocationPicker (room chips from `ac_unit_locations`). FAULT_REPAIR shows fault description + urgency. INSTALLATION shows AC brand/model + num_units.
-- **Step 1 (Schedule & Location):** `SlotCalendar` — month grid fetching `/api/availability`; days with full blocks are greyed out; slot pills are multi-select up to 3 (SGT-aware — past slots on today greyed/disabled). Address presets: Home (profile address — if available), My Location (geolocation → `/api/geocode/reverse`), Other (Google Places Autocomplete). After location confirmed, unit/floor + building + access notes fields appear.
-- **Step 2 (Review):** Summary. Submit POSTs to `/api/bookings` with `{ booking_date, preferred_slots[], time_slot, unit_location_ids[], address, ... }`.
+- **Step 1 (Schedule & Location):** `SlotCalendar` — month grid fetching `/api/availability`; select up to 5 dates, each with up to 3 slots (SGT-aware — past slots on today greyed/disabled). Address presets: Home (profile address — if available), My Location (geolocation → `/api/geocode/reverse`), Other (Google Places Autocomplete). After location confirmed, unit/floor + building + access notes fields appear.
+- **Step 2 (Review):** Summary. Submit POSTs to `/api/bookings` with `{ preferred_date_slots, booking_date, preferred_slots, time_slot, unit_location_ids[], address, ... }`.
 
 **Admin booking management (`/admin/bookings`) — 4 tabs:**
 - **Maintenance tab (default):** Google Map with pins for pending bookings; admin visually groups clusters, selects bookings by clicking pins, picks a `confirmed_date` + `confirmed_slot` for the group; bulk-approves via `/api/bookings/bulk-approve`. Approve button disabled until both date and slot selected.
@@ -217,7 +222,7 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - Admin creates a contract → API auto-generates 4 `contract_service_dates` at 3-month intervals
 - Create dialog: searchable customer combobox; optional `address` field
 - List filters (client-side): name/phone search; start/expiry/next-service-due date ranges; status pills
-- Detail page: service schedule; admin links bookings to service dates
+- Detail page: service schedule; admin links bookings to service dates; actions: set price → awaiting payment, mark paid, edit, deactivate/delete
 
 **Invoice management (`/admin/invoices`):**
 - Admin creates invoices manually; links to contract/booking optionally
@@ -226,7 +231,7 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 
 **Customer contracts & invoices (`/account/contracts`):**
 - Server component fetches; delegates to `AccountContractsClient` for filters
-- Contract status pills; invoice status pills + date-range filter
+- Contract status pills include Awaiting Payment; invoice status pills + date-range filter
 
 ## Design system
 Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-system/pages/[page-name].md`.
@@ -293,5 +298,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Multi-slot + UX improvements complete (2026-05-19): multi-slot preferences, per-unit location dropdowns, SGT past-slot blocking, admin confirmed_slot, contract 403 fix. Migrations through 020 applied. `lib/booking/slots.ts` created. `qrcode.react` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Multi-slot + UX improvements complete (2026-05-19): multi-slot preferences, per-unit location dropdowns, SGT past-slot blocking, admin confirmed_slot, contract 403 fix. Multi-date preferences + contract payment flow implemented (2026-05-20). Migrations through 022 added (apply 021/022). `lib/booking/slots.ts` created. `qrcode.react` + `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.

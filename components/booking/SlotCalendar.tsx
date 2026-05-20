@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
-import type { TimeSlot } from '@/lib/types'
+import type { TimeSlot, PreferredDateSlot } from '@/lib/types'
 
 const SGT_OFFSET_MS = 8 * 60 * 60 * 1000
-const MAX_SLOTS = 3
+const MAX_SLOTS_PER_DATE = 3
+const MAX_DATES = 5
 
 const SLOT_START_HOUR: Record<TimeSlot, number> = {
   S10_12: 10,
@@ -29,22 +30,22 @@ interface DayAvail {
 }
 
 interface Props {
-  selectedDate?: string
-  selectedSlots?: TimeSlot[]
-  onChange: (date: string, slots: TimeSlot[]) => void
+  value: PreferredDateSlot[]
+  onChange: (entries: PreferredDateSlot[]) => void
 }
 
 function toYearMonth(d: Date): string {
   return d.toISOString().slice(0, 7)
 }
 
-export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Props) {
+export function SlotCalendar({ value, onChange }: Props) {
   const todaySGT = getSGTDateStr()
   const [month, setMonth] = useState(() => toYearMonth(new Date()))
   const [availability, setAvailability] = useState<Record<string, DayAvail>>({})
   const [loading, setLoading] = useState(false)
-  const [pickedDate, setPickedDate] = useState<string | null>(selectedDate ?? null)
-  const [pickedSlots, setPickedSlots] = useState<TimeSlot[]>(selectedSlots)
+  const [activeDate, setActiveDate] = useState<string | null>(
+    value.length > 0 ? value[value.length - 1].date : null
+  )
 
   useEffect(() => {
     setLoading(true)
@@ -72,23 +73,39 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
     return 'available'
   }
 
-  function toggleSlot(slot: TimeSlot) {
-    let next: TimeSlot[]
-    if (pickedSlots.includes(slot)) {
-      next = pickedSlots.filter(s => s !== slot)
-    } else if (pickedSlots.length < MAX_SLOTS) {
-      next = [...pickedSlots, slot]
-    } else {
-      return
+  function handleDateClick(date: string) {
+    const exists = value.find(e => e.date === date)
+    if (exists) {
+      setActiveDate(date)
+    } else if (value.length < MAX_DATES) {
+      const next = [...value, { date, slots: [] }]
+      onChange(next)
+      setActiveDate(date)
     }
-    setPickedSlots(next)
-    if (pickedDate) onChange(pickedDate, next)
   }
 
-  function handleDateClick(date: string) {
-    setPickedDate(date)
-    setPickedSlots([])
-    onChange(date, [])
+  function removeDate(date: string) {
+    const next = value.filter(e => e.date !== date)
+    onChange(next)
+    if (activeDate === date) {
+      setActiveDate(next.length > 0 ? next[next.length - 1].date : null)
+    }
+  }
+
+  function toggleSlot(slot: TimeSlot) {
+    if (!activeDate) return
+    const next = value.map(e => {
+      if (e.date !== activeDate) return e
+      const hasSlot = e.slots.includes(slot)
+      if (hasSlot) {
+        return { ...e, slots: e.slots.filter(s => s !== slot) }
+      }
+      if (e.slots.length < MAX_SLOTS_PER_DATE) {
+        return { ...e, slots: [...e.slots, slot] }
+      }
+      return e
+    })
+    onChange(next)
   }
 
   const days: Array<{ date: string; inMonth: boolean }> = []
@@ -109,6 +126,9 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
     setMonth(toYearMonth(d))
   }
 
+  const activeDateEntry = activeDate ? value.find(e => e.date === activeDate) : null
+  const activeSlots = activeDateEntry?.slots ?? []
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -121,6 +141,12 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
         </button>
       </div>
 
+      {value.length >= MAX_DATES && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Maximum {MAX_DATES} date preferences reached.
+        </p>
+      )}
+
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
           <div key={d} className="text-xs font-medium text-muted-foreground py-1">{d}</div>
@@ -129,8 +155,10 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
           if (!d.inMonth) return <div key={i} />
           const isPast = d.date < todaySGT
           const fullyBlocked = isDayFullyBlocked(d.date)
-          const isSelected = pickedDate === d.date
-          const disabled = isPast || fullyBlocked
+          const isSelected = value.some(e => e.date === d.date)
+          const isActive = d.date === activeDate
+          const atMax = value.length >= MAX_DATES && !isSelected
+          const disabled = isPast || fullyBlocked || atMax
           return (
             <button
               key={d.date}
@@ -139,7 +167,8 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
               className={`
                 rounded-lg text-xs py-1.5 font-medium transition-colors
                 ${disabled ? 'text-muted-foreground opacity-40 cursor-not-allowed' : ''}
-                ${isSelected && !disabled ? 'bg-accent text-white' : ''}
+                ${isActive && !disabled ? 'bg-accent text-white ring-2 ring-accent ring-offset-1' : ''}
+                ${isSelected && !isActive && !disabled ? 'bg-accent/20 text-accent border border-accent/40' : ''}
                 ${!isSelected && !disabled ? 'hover:bg-muted text-primary' : ''}
               `}
             >
@@ -149,20 +178,56 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
         })}
       </div>
 
-      {pickedDate && pickedDate >= todaySGT && !isDayFullyBlocked(pickedDate) && (
+      {value.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-primary">Your preferred dates ({value.length}/{MAX_DATES}):</p>
+          {value.map(entry => (
+            <div
+              key={entry.date}
+              onClick={() => setActiveDate(entry.date)}
+              className={`flex items-center justify-between rounded-lg border px-3 py-2 cursor-pointer transition-colors text-xs
+                ${activeDate === entry.date ? 'border-accent bg-accent/5' : 'border-border hover:bg-muted/40'}`}
+            >
+              <div>
+                <span className="font-medium text-primary">
+                  {new Date(entry.date + 'T00:00:00').toLocaleDateString('en-SG', {
+                    weekday: 'short', day: 'numeric', month: 'short',
+                  })}
+                </span>
+                {entry.slots.length > 0 && (
+                  <span className="ml-2 text-muted-foreground">
+                    {entry.slots.map(s => SLOT_LABELS[s]).join(', ')}
+                  </span>
+                )}
+                {entry.slots.length === 0 && (
+                  <span className="ml-2 text-amber-600">No slots selected yet</span>
+                )}
+              </div>
+              <button
+                onClick={e => { e.stopPropagation(); removeDate(entry.date) }}
+                className="ml-2 text-muted-foreground hover:text-red-500"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeDate && activeDate >= todaySGT && !isDayFullyBlocked(activeDate) && (
         <div className="border-t border-border pt-4 space-y-2">
           <p className="text-xs font-medium text-primary">
-            {new Date(pickedDate + 'T00:00:00').toLocaleDateString('en-SG', {
+            {new Date(activeDate + 'T00:00:00').toLocaleDateString('en-SG', {
               weekday: 'long', day: 'numeric', month: 'long',
             })}
           </p>
           <p className="text-xs text-muted-foreground">
-            Select up to {MAX_SLOTS} available time slots ({pickedSlots.length}/{MAX_SLOTS} selected)
+            Select up to {MAX_SLOTS_PER_DATE} slots ({activeSlots.length}/{MAX_SLOTS_PER_DATE} selected)
           </p>
           {SLOT_KEYS.map(slot => {
-            const state = getSlotState(pickedDate, slot)
-            const isActive = pickedSlots.includes(slot)
-            const isDisabled = state !== 'available' || (!isActive && pickedSlots.length >= MAX_SLOTS)
+            const state = getSlotState(activeDate, slot)
+            const isActive = activeSlots.includes(slot)
+            const isDisabled = state !== 'available' || (!isActive && activeSlots.length >= MAX_SLOTS_PER_DATE)
             return (
               <button
                 key={slot}
@@ -171,9 +236,8 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
                 className={`
                   w-full text-xs px-3 py-2 rounded-lg border font-medium transition-colors text-left
                   ${isActive ? 'bg-accent text-white border-accent' : ''}
-                  ${state === 'available' && !isActive && pickedSlots.length < MAX_SLOTS
-                    ? 'border-border text-primary hover:bg-muted/60'
-                    : ''}
+                  ${state === 'available' && !isActive && activeSlots.length < MAX_SLOTS_PER_DATE
+                    ? 'border-border text-primary hover:bg-muted/60' : ''}
                   ${isDisabled && !isActive ? 'bg-slate-50 text-muted-foreground border-border cursor-not-allowed opacity-60' : ''}
                 `}
               >
@@ -181,7 +245,7 @@ export function SlotCalendar({ selectedDate, selectedSlots = [], onChange }: Pro
                 {state === 'booked' && <span className="ml-2 text-[10px]">Taken</span>}
                 {state === 'blocked' && <span className="ml-2 text-[10px]">Unavailable</span>}
                 {state === 'past' && <span className="ml-2 text-[10px]">Passed</span>}
-                {state === 'available' && !isActive && pickedSlots.length >= MAX_SLOTS && (
+                {state === 'available' && !isActive && activeSlots.length >= MAX_SLOTS_PER_DATE && (
                   <span className="ml-2 text-[10px] text-muted-foreground">(max reached)</span>
                 )}
               </button>

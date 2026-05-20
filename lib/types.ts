@@ -4,6 +4,11 @@ export type BookingCategory = 'MAINTENANCE' | 'FAULT_REPAIR' | 'INSTALLATION'
 export type TimeSlot = 'S10_12' | 'S13_15' | 'S15_17' | 'S17_19' | 'S19_21'
 export type Urgency = 'HIGH' | 'MEDIUM' | 'LOW'
 
+export interface PreferredDateSlot {
+  date: string
+  slots: TimeSlot[]
+}
+
 export const SLOT_LABELS: Record<TimeSlot, string> = {
   S10_12: '10:00 – 12:00',
   S13_15: '13:00 – 15:00',
@@ -49,6 +54,7 @@ export interface Booking {
   booking_date: string
   time_slot: TimeSlot           // first preferred slot (backward compat)
   preferred_slots: TimeSlot[]   // all customer availability preferences (1–3)
+  preferred_date_slots: PreferredDateSlot[]
   confirmed_slot: TimeSlot | null  // admin-confirmed slot (set on approval)
   num_units: number | null
   fault_description: string | null
@@ -98,7 +104,7 @@ export interface AppSettings {
 // Phase 1B — Contracts & Invoices
 // ============================================================
 
-export type ContractStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED'
+export type ContractStatus = 'PENDING_REVIEW' | 'AWAITING_PAYMENT' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED'
 
 export interface Contract {
   id: string

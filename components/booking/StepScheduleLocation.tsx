@@ -6,14 +6,12 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { SlotCalendar } from './SlotCalendar'
-import { SLOT_LABELS } from '@/lib/types'
-import type { TimeSlot } from '@/lib/types'
+import type { PreferredDateSlot } from '@/lib/types'
 
 type LocationPreset = 'home' | 'current' | 'other'
 
 interface StepData {
-  booking_date: string
-  preferred_slots: TimeSlot[]
+  preferred_date_slots: PreferredDateSlot[]
   address: string
   postal_code: string
   lat: number | null
@@ -104,18 +102,16 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
       {/* Slot calendar */}
       <div>
         <p className="text-sm font-medium text-primary mb-3">
-          Pick a date &amp; time slot <span className="text-red-500">*</span>
+          Pick your preferred dates &amp; time slots <span className="text-red-500">*</span>
         </p>
         <SlotCalendar
-          selectedDate={data.booking_date || undefined}
-          selectedSlots={data.preferred_slots ?? []}
-          onChange={(date, slots) => onChange({ booking_date: date, preferred_slots: slots })}
+          value={data.preferred_date_slots ?? []}
+          onChange={(entries) => onChange({ preferred_date_slots: entries })}
         />
-        {data.booking_date && data.preferred_slots?.length > 0 && (
+        {data.preferred_date_slots?.some(e => e.slots.length > 0) && (
           <p className="text-xs text-green-700 mt-2">
-            ✓ {new Date(data.booking_date + 'T00:00:00').toLocaleDateString('en-SG', {
-              day: 'numeric', month: 'short', year: 'numeric',
-            })} · {data.preferred_slots.map(s => SLOT_LABELS[s]).join(', ')}
+            ✓ {data.preferred_date_slots.filter(e => e.slots.length > 0).length} date preference
+            {data.preferred_date_slots.filter(e => e.slots.length > 0).length !== 1 ? 's' : ''} selected
           </p>
         )}
       </div>

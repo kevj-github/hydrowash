@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import ServiceDateRow from '@/components/admin/ServiceDateRow'
 import InvoiceRow from '@/components/admin/InvoiceRow'
@@ -26,6 +26,7 @@ import Link from 'next/link'
 
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const supabase = createClient()
 
   const [contract, setContract] = useState<ContractWithDetails | null>(null)
@@ -34,21 +35,27 @@ export default function ContractDetailPage() {
   const [availableBookings, setAvailableBookings] = useState<{ id: string; label: string }[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Activate dialog state
-  const [activateOpen, setActivateOpen] = useState(false)
-  const [activating, setActivating] = useState(false)
-  const [activateForm, setActivateForm] = useState({
+  const [setPriceOpen, setSetPriceOpen] = useState(false)
+  const [settingPrice, setSettingPrice] = useState(false)
+  const [setPriceForm, setSetPriceForm] = useState({ price_sgd: '', start_date: '', notes: '' })
+
+  const [markingPaid, setMarkingPaid] = useState(false)
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editForm, setEditForm] = useState({
     price_sgd: '',
-    start_date: '',
     notes: '',
+    address: '',
+    start_date: '',
+    end_date: '',
   })
 
-  // Cancel state
-  const [cancelling, setCancelling] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function fetchData() {
     setLoading(true)
-
     const { data: contractData } = await supabase
       .from('contracts')
       .select(`
@@ -77,12 +84,18 @@ export default function ContractDetailPage() {
         )
       )
       setInvoices(contractData.invoices ?? [])
-      // Pre-fill activate form from contract data
-      setActivateForm(f => ({
+      setSetPriceForm(f => ({
         ...f,
         start_date: f.start_date || contractData.start_date,
         notes: f.notes || contractData.notes || '',
       }))
+      setEditForm({
+        price_sgd: contractData.price_sgd != null ? String(contractData.price_sgd) : '',
+        notes: contractData.notes || '',
+        address: contractData.address || '',
+        start_date: contractData.start_date,
+        end_date: contractData.end_date,
+      })
     }
 
     if (contractData?.customer_id) {
@@ -100,13 +113,10 @@ export default function ContractDetailPage() {
         }))
       )
     }
-
     setLoading(false)
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [id])
+  useEffect(() => { fetchData() }, [id])
 
   async function handleLinkBooking(serviceDateId: string, bookingId: string) {
     const res = await fetch(`/api/contracts/${id}/link-booking`, {
@@ -122,17 +132,17 @@ export default function ContractDetailPage() {
     }
   }
 
-  async function handleActivate(e: React.FormEvent) {
+  async function handleSetPrice(e: React.FormEvent) {
     e.preventDefault()
-    setActivating(true)
-    const res = await fetch(`/api/contracts/${id}/activate`, {
+    setSettingPrice(true)
+    const res = await fetch(`/api/contracts/${id}/set-price`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(activateForm),
+      body: JSON.stringify(setPriceForm),
     })
-    setActivating(false)
+    setSettingPrice(false)
     if (res.ok) {
-      setActivateOpen(false)
+      setSetPriceOpen(false)
       fetchData()
     } else {
       const err = await res.json()
@@ -140,18 +150,63 @@ export default function ContractDetailPage() {
     }
   }
 
-  async function handleCancel() {
-    if (!confirm('Cancel this contract request?')) return
-    setCancelling(true)
-    const { error } = await supabase
-      .from('contracts')
-      .update({ status: 'CANCELLED' })
-      .eq('id', id)
-    setCancelling(false)
-    if (!error) {
+  async function handleMarkPaid() {
+    if (!confirm('Mark this contract as paid and activate it? This will generate the service schedule and notify the customer.')) return
+    setMarkingPaid(true)
+    const res = await fetch(`/api/contracts/${id}/mark-paid`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    setMarkingPaid(false)
+    if (res.ok) {
       fetchData()
     } else {
-      alert(`Error: ${error.message}`)
+      const err = await res.json()
+      alert(`Error: ${err.error}`)
+    }
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault()
+    setEditing(true)
+    const body: Record<string, string | number> = {}
+    if (editForm.price_sgd) body.price_sgd = parseFloat(editForm.price_sgd)
+    if (editForm.notes !== undefined) body.notes = editForm.notes
+    if (editForm.address !== undefined) body.address = editForm.address
+    if (editForm.start_date) body.start_date = editForm.start_date
+    if (editForm.end_date) body.end_date = editForm.end_date
+
+    const res = await fetch(`/api/contracts/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    setEditing(false)
+    if (res.ok) {
+      setEditOpen(false)
+      fetchData()
+    } else {
+      const err = await res.json()
+      alert(`Error: ${err.error}`)
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    const res = await fetch(`/api/contracts/${id}`, { method: 'DELETE' })
+    setDeleting(false)
+    setDeleteOpen(false)
+    if (res.ok) {
+      const body = await res.json()
+      if (body.deleted) {
+        router.push('/admin/contracts')
+      } else {
+        fetchData()
+      }
+    } else {
+      const err = await res.json()
+      alert(`Error: ${err.error}`)
     }
   }
 
@@ -160,6 +215,7 @@ export default function ContractDetailPage() {
 
   const statusColors: Record<string, string> = {
     PENDING_REVIEW: 'bg-amber-100 text-amber-800',
+    AWAITING_PAYMENT: 'bg-orange-100 text-orange-800',
     ACTIVE: 'bg-green-100 text-green-800',
     EXPIRED: 'bg-gray-100 text-gray-600',
     CANCELLED: 'bg-red-100 text-red-700',
@@ -167,12 +223,15 @@ export default function ContractDetailPage() {
 
   const statusLabels: Record<string, string> = {
     PENDING_REVIEW: 'Pending Review',
+    AWAITING_PAYMENT: 'Awaiting Payment',
     ACTIVE: 'Active',
     EXPIRED: 'Expired',
     CANCELLED: 'Cancelled',
   }
 
   const isPending = contract.status === 'PENDING_REVIEW'
+  const isAwaitingPayment = contract.status === 'AWAITING_PAYMENT'
+  const isEditable = contract.status !== 'CANCELLED'
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -188,31 +247,32 @@ export default function ContractDetailPage() {
         </span>
       </div>
 
-      {/* Pending Review CTA */}
       {isPending && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="font-semibold text-amber-800">Customer-requested contract</p>
-            <p className="text-sm text-amber-700 mt-0.5">Review the details, set a price, and activate to generate the service schedule.</p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              Review the details and set a price. An email with PayNow QR will be sent to the customer.
+            </p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={activateOpen} onOpenChange={setActivateOpen}>
+            <Dialog open={setPriceOpen} onOpenChange={setSetPriceOpen}>
               <DialogTrigger className={cn(buttonVariants(), 'bg-green-600 text-white hover:bg-green-700')}>
-                Activate Contract
+                Set Price &amp; Send Email
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Activate Contract</DialogTitle>
+                  <DialogTitle>Set Contract Price</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleActivate} className="space-y-4 pt-2">
+                <form onSubmit={handleSetPrice} className="space-y-4 pt-2">
                   <div>
                     <Label>Price (SGD / year)</Label>
                     <Input
                       type="number"
                       min={0}
                       step="0.01"
-                      value={activateForm.price_sgd}
-                      onChange={e => setActivateForm(f => ({ ...f, price_sgd: e.target.value }))}
+                      value={setPriceForm.price_sgd}
+                      onChange={e => setSetPriceForm(f => ({ ...f, price_sgd: e.target.value }))}
                       required
                       placeholder="e.g. 480.00"
                       className="mt-1"
@@ -222,8 +282,8 @@ export default function ContractDetailPage() {
                     <Label>Confirmed start date</Label>
                     <Input
                       type="date"
-                      value={activateForm.start_date}
-                      onChange={e => setActivateForm(f => ({ ...f, start_date: e.target.value }))}
+                      value={setPriceForm.start_date}
+                      onChange={e => setSetPriceForm(f => ({ ...f, start_date: e.target.value }))}
                       required
                       className="mt-1"
                     />
@@ -231,18 +291,18 @@ export default function ContractDetailPage() {
                   <div>
                     <Label>Notes for customer (optional)</Label>
                     <Textarea
-                      value={activateForm.notes}
-                      onChange={e => setActivateForm(f => ({ ...f, notes: e.target.value }))}
+                      value={setPriceForm.notes}
+                      onChange={e => setSetPriceForm(f => ({ ...f, notes: e.target.value }))}
                       rows={2}
                       className="mt-1"
                     />
                   </div>
                   <Button
                     type="submit"
-                    disabled={activating}
+                    disabled={settingPrice}
                     className="w-full bg-green-600 text-white hover:bg-green-700"
                   >
-                    {activating ? 'Activating…' : 'Activate & Send Email'}
+                    {settingPrice ? 'Sending…' : 'Set Price & Send PayNow Email'}
                   </Button>
                 </form>
               </DialogContent>
@@ -251,12 +311,131 @@ export default function ContractDetailPage() {
             <Button
               variant="outline"
               className="border-red-300 text-red-600 hover:bg-red-50"
-              onClick={handleCancel}
-              disabled={cancelling}
+              onClick={() => { setDeleteOpen(true) }}
             >
-              {cancelling ? 'Cancelling…' : 'Reject'}
+              Reject
             </Button>
           </div>
+        </div>
+      )}
+
+      {isAwaitingPayment && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-orange-800">Awaiting payment</p>
+            <p className="text-sm text-orange-700 mt-0.5">
+              PayNow QR email has been sent. Mark as paid once you confirm the transfer.
+            </p>
+          </div>
+          <Button
+            onClick={handleMarkPaid}
+            disabled={markingPaid}
+            className="bg-green-600 text-white hover:bg-green-700"
+          >
+            {markingPaid ? 'Activating…' : 'Mark Paid & Activate'}
+          </Button>
+        </div>
+      )}
+
+      {isEditable && (
+        <div className="flex gap-2 flex-wrap">
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogTrigger className={cn(buttonVariants({ variant: 'outline' }), 'text-primary')}>
+              Edit Contract
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Contract</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEdit} className="space-y-4 pt-2">
+                <div>
+                  <Label>Price (SGD / year)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={editForm.price_sgd}
+                    onChange={e => setEditForm(f => ({ ...f, price_sgd: e.target.value }))}
+                    placeholder="e.g. 480.00"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Address</Label>
+                  <Input
+                    value={editForm.address}
+                    onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))}
+                    placeholder="Service address (optional)"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Start date</Label>
+                  <Input
+                    type="date"
+                    value={editForm.start_date}
+                    onChange={e => setEditForm(f => ({ ...f, start_date: e.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>End date</Label>
+                  <Input
+                    type="date"
+                    value={editForm.end_date}
+                    onChange={e => setEditForm(f => ({ ...f, end_date: e.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Notes</Label>
+                  <Textarea
+                    value={editForm.notes}
+                    onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                    rows={2}
+                    className="mt-1"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={editing}
+                  className="w-full bg-accent text-white hover:bg-accent/90"
+                >
+                  {editing ? 'Saving…' : 'Save Changes'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <DialogTrigger className={cn(buttonVariants({ variant: 'outline' }), 'border-red-300 text-red-600 hover:bg-red-50')}>
+              {contract.status === 'CANCELLED' ? 'Delete' : 'Deactivate'}
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>
+                  {contract.status === 'CANCELLED' ? 'Delete Contract?' : 'Deactivate Contract?'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="pt-2 space-y-4">
+                <p className="text-sm text-gray-600">
+                  {contract.status === 'CANCELLED'
+                    ? 'This will permanently delete the contract and all associated service dates.'
+                    : 'This will cancel the contract. The customer will no longer have an active maintenance plan.'}
+                </p>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    {deleting ? 'Processing…' : contract.status === 'CANCELLED' ? 'Delete' : 'Deactivate'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 

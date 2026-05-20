@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendContractRequestReceived } from '@/lib/email/send'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -53,6 +54,29 @@ export async function POST(req: NextRequest) {
 
   if (error || !contract) {
     return NextResponse.json({ error: error?.message ?? 'Insert failed' }, { status: 500 })
+  }
+
+  try {
+    const { data: customerProfile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', user.id)
+      .single()
+
+    const preferredMonthLabel = new Date(`${preferred_month}-01T00:00:00Z`)
+      .toLocaleDateString('en-SG', { month: 'long', year: 'numeric' })
+
+    await sendContractRequestReceived(
+      {
+        customerName: customerProfile?.name ?? 'Customer',
+        numUnits: num_units,
+        preferredMonth: preferredMonthLabel,
+        address: address || undefined,
+      },
+      user.email!
+    )
+  } catch {
+    // Email failure does not fail the request
   }
 
   return NextResponse.json({ contract_id: contract.id }, { status: 201 })

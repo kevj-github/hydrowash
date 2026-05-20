@@ -24,14 +24,6 @@ export async function PATCH(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const body = await req.json()
-  const { price_sgd, start_date, notes } = body
-
-  if (!price_sgd || !start_date) {
-    return NextResponse.json({ error: 'price_sgd and start_date are required' }, { status: 400 })
-  }
-
-  // Verify contract is in PENDING_REVIEW
   const { data: existing } = await supabase
     .from('contracts')
     .select('*')
@@ -39,23 +31,14 @@ export async function PATCH(
     .single()
 
   if (!existing) return NextResponse.json({ error: 'Contract not found' }, { status: 404 })
-  if (existing.status !== 'PENDING_REVIEW') {
-    return NextResponse.json({ error: 'Contract is not pending review' }, { status: 409 })
-  }
 
-  const endDateObj = new Date(`${start_date}T00:00:00Z`)
-  endDateObj.setUTCFullYear(endDateObj.getUTCFullYear() + 1)
-  const end_date = endDateObj.toISOString().split('T')[0]
+  if (existing.status !== 'AWAITING_PAYMENT') {
+    return NextResponse.json({ error: 'Contract must be in AWAITING_PAYMENT status' }, { status: 409 })
+  }
 
   const { data: contract, error: updateError } = await supabase
     .from('contracts')
-    .update({
-      status: 'ACTIVE',
-      price_sgd: parseFloat(price_sgd),
-      start_date,
-      end_date,
-      notes: notes ?? existing.notes,
-    })
+    .update({ status: 'ACTIVE' })
     .eq('id', id)
     .select()
     .single()
@@ -64,34 +47,33 @@ export async function PATCH(
     return NextResponse.json({ error: updateError?.message ?? 'Update failed' }, { status: 500 })
   }
 
-  // Generate 4 quarterly service dates
-  const serviceDates = generateServiceDates(id, start_date)
-
+  const serviceDates = generateServiceDates(id, existing.start_date)
   await supabase.from('contract_service_dates').insert(serviceDates)
 
-  // Send activation email
   try {
     const adminSupabase = createAdminClient()
     const { data: { user: customerUser } } = await adminSupabase.auth.admin.getUserById(contract.customer_id)
+
     if (customerUser?.email) {
       const { data: customerProfile } = await supabase
         .from('profiles')
         .select('name')
         .eq('id', contract.customer_id)
         .single()
+
       await sendContractActivated(
         {
           customerName: customerProfile?.name ?? 'Customer',
           numUnits: contract.num_units,
-          priceSgd: parseFloat(price_sgd),
-          startDate: start_date,
+          priceSgd: parseFloat(contract.price_sgd),
+          startDate: existing.start_date,
           firstServiceDate: serviceDates[0].due_date,
         },
         customerUser.email
       )
     }
   } catch {
-    // Email failure doesn't fail the activation
+    // Email failure does not fail activation
   }
 
   return NextResponse.json({ contract })

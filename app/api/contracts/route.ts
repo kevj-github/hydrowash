@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
     `)
     .order('created_at', { ascending: false })
 
-  if (status && ['PENDING_REVIEW', 'ACTIVE', 'EXPIRED', 'CANCELLED'].includes(status)) {
+  if (status && ['PENDING_REVIEW', 'AWAITING_PAYMENT', 'ACTIVE', 'EXPIRED', 'CANCELLED'].includes(status)) {
     query = query.eq('status', status)
   }
 

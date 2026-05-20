@@ -138,9 +138,9 @@ export default function AdminContractsPage() {
       return true
     })
     .sort((a, b) => {
-      if (a.status === 'PENDING_REVIEW' && b.status !== 'PENDING_REVIEW') return -1
-      if (b.status === 'PENDING_REVIEW' && a.status !== 'PENDING_REVIEW') return 1
-      return 0
+      const priority = (s: string) =>
+        s === 'PENDING_REVIEW' ? 0 : s === 'AWAITING_PAYMENT' ? 1 : 2
+      return priority(a.status) - priority(b.status)
     })
 
   async function handleSubmit(e: React.FormEvent) {
@@ -365,7 +365,7 @@ export default function AdminContractsPage() {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {['ALL', 'PENDING_REVIEW', 'ACTIVE', 'EXPIRED', 'CANCELLED'].map((s) => (
+            {['ALL', 'PENDING_REVIEW', 'AWAITING_PAYMENT', 'ACTIVE', 'EXPIRED', 'CANCELLED'].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
@@ -375,7 +375,7 @@ export default function AdminContractsPage() {
                     : 'bg-white text-muted-foreground border-border hover:border-accent'
                 }`}
               >
-                {s === 'PENDING_REVIEW' ? 'Pending Review' : s}
+                {s === 'PENDING_REVIEW' ? 'Pending Review' : s === 'AWAITING_PAYMENT' ? 'Awaiting Payment' : s}
               </button>
             ))}
           </div>

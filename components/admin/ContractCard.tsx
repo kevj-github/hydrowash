@@ -37,10 +37,11 @@ export default function ContractCard({ contract }: Props) {
   const nextDue = getNextServiceDue(contract.contract_service_dates)
   const dueBadge = isServiceDueThisMonth(contract.contract_service_dates)
   const expiringSoon = contract.status === 'ACTIVE' && isExpiringSoon(contract.end_date)
-  const isPending = contract.status === 'PENDING_REVIEW'
+  const isPending = contract.status === 'PENDING_REVIEW' || contract.status === 'AWAITING_PAYMENT'
 
   const statusColors: Record<string, string> = {
     PENDING_REVIEW: 'bg-amber-100 text-amber-800',
+    AWAITING_PAYMENT: 'bg-orange-100 text-orange-800',
     ACTIVE: 'bg-green-100 text-green-800',
     EXPIRED: 'bg-muted text-muted-foreground',
     CANCELLED: 'bg-red-100 text-red-700',
@@ -48,6 +49,7 @@ export default function ContractCard({ contract }: Props) {
 
   const statusLabels: Record<string, string> = {
     PENDING_REVIEW: 'Pending Review',
+    AWAITING_PAYMENT: 'Awaiting Payment',
     ACTIVE: 'ACTIVE',
     EXPIRED: 'EXPIRED',
     CANCELLED: 'CANCELLED',

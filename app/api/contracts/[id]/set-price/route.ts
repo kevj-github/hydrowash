@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendContractActivated } from '@/lib/email/send'
-import { generateServiceDates } from '@/lib/contracts/service-dates'
+import { sendContractPricing } from '@/lib/email/send'
+import { buildPayNowPayload } from '@/lib/utils/paynow'
+import QRCode from 'qrcode'
 
 export async function PATCH(
   req: NextRequest,
@@ -31,7 +32,11 @@ export async function PATCH(
     return NextResponse.json({ error: 'price_sgd and start_date are required' }, { status: 400 })
   }
 
-  // Verify contract is in PENDING_REVIEW
+  const priceNum = parseFloat(price_sgd)
+  if (isNaN(priceNum) || priceNum <= 0) {
+    return NextResponse.json({ error: 'price_sgd must be a positive number' }, { status: 400 })
+  }
+
   const { data: existing } = await supabase
     .from('contracts')
     .select('*')
@@ -39,8 +44,9 @@ export async function PATCH(
     .single()
 
   if (!existing) return NextResponse.json({ error: 'Contract not found' }, { status: 404 })
+
   if (existing.status !== 'PENDING_REVIEW') {
-    return NextResponse.json({ error: 'Contract is not pending review' }, { status: 409 })
+    return NextResponse.json({ error: 'Contract must be in PENDING_REVIEW status' }, { status: 409 })
   }
 
   const endDateObj = new Date(`${start_date}T00:00:00Z`)
@@ -50,8 +56,8 @@ export async function PATCH(
   const { data: contract, error: updateError } = await supabase
     .from('contracts')
     .update({
-      status: 'ACTIVE',
-      price_sgd: parseFloat(price_sgd),
+      status: 'AWAITING_PAYMENT',
+      price_sgd: priceNum,
       start_date,
       end_date,
       notes: notes ?? existing.notes,
@@ -64,34 +70,43 @@ export async function PATCH(
     return NextResponse.json({ error: updateError?.message ?? 'Update failed' }, { status: 500 })
   }
 
-  // Generate 4 quarterly service dates
-  const serviceDates = generateServiceDates(id, start_date)
-
-  await supabase.from('contract_service_dates').insert(serviceDates)
-
-  // Send activation email
   try {
+    const { data: settings } = await supabase
+      .from('app_settings')
+      .select('paynow_mobile')
+      .single()
+
     const adminSupabase = createAdminClient()
     const { data: { user: customerUser } } = await adminSupabase.auth.admin.getUserById(contract.customer_id)
-    if (customerUser?.email) {
-      const { data: customerProfile } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('id', contract.customer_id)
-        .single()
-      await sendContractActivated(
+
+    const { data: customerProfile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', contract.customer_id)
+      .single()
+
+    if (customerUser?.email && settings?.paynow_mobile) {
+      const referenceId = `CONTRACT-${id.slice(0, 8).toUpperCase()}`
+      const payload = buildPayNowPayload(settings.paynow_mobile, priceNum, referenceId)
+      const qrDataUrl = await QRCode.toDataURL(payload, { width: 300, margin: 2 })
+
+      await sendContractPricing(
         {
           customerName: customerProfile?.name ?? 'Customer',
           numUnits: contract.num_units,
-          priceSgd: parseFloat(price_sgd),
+          priceSgd: priceNum,
           startDate: start_date,
-          firstServiceDate: serviceDates[0].due_date,
+          endDate: end_date,
+          address: contract.address ?? undefined,
+          paynowQrDataUrl: qrDataUrl,
+          paynowMobile: settings.paynow_mobile,
+          referenceId,
         },
         customerUser.email
       )
     }
-  } catch {
-    // Email failure doesn't fail the activation
+  } catch (err) {
+    console.error('[set-price] Email send failed:', err)
   }
 
   return NextResponse.json({ contract })

@@ -35,29 +35,52 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
-  const { booking_date, preferred_slots, unit_location_ids } = body
-
-  if (!booking_date || !preferred_slots?.length) {
-    return NextResponse.json({ error: 'booking_date and preferred_slots are required' }, { status: 400 })
+  const { preferred_date_slots, unit_location_ids } = body as {
+    preferred_date_slots?: { date: string; slots: string[] }[]
+    unit_location_ids?: string[]
+    [key: string]: unknown
   }
 
   const validSlots = ['S10_12', 'S13_15', 'S15_17', 'S17_19', 'S19_21']
-  const slots: string[] = preferred_slots.filter((s: string) => validSlots.includes(s)).slice(0, 3)
-  if (!slots.length) {
-    return NextResponse.json({ error: 'At least one valid time slot required' }, { status: 400 })
+
+  if (!preferred_date_slots?.length) {
+    return NextResponse.json({ error: 'At least one date preference is required' }, { status: 400 })
+  }
+  if (preferred_date_slots.length > 5) {
+    return NextResponse.json({ error: 'Maximum 5 date preferences allowed' }, { status: 400 })
   }
 
-  // Check for full-day block on the requested date
-  const { data: blocked } = await supabase
-    .from('blocked_slots')
-    .select('id')
-    .eq('blocked_date', booking_date)
-    .is('slot', null)
-    .maybeSingle()
+  const sanitisedEntries = preferred_date_slots
+    .filter(e => /^\d{4}-\d{2}-\d{2}$/.test(e.date))
+    .map(e => ({
+      date: e.date,
+      slots: (e.slots ?? []).filter(s => validSlots.includes(s)).slice(0, 3),
+    }))
+    .filter(e => e.slots.length > 0)
 
-  if (blocked) {
-    return NextResponse.json({ error: 'That date is not available' }, { status: 409 })
+  if (!sanitisedEntries.length) {
+    return NextResponse.json({ error: 'At least one date with valid time slots required' }, { status: 400 })
   }
+
+  for (const entry of sanitisedEntries) {
+    const { data: blocked } = await supabase
+      .from('blocked_slots')
+      .select('id')
+      .eq('blocked_date', entry.date)
+      .is('slot', null)
+      .maybeSingle()
+
+    if (blocked) {
+      return NextResponse.json(
+        { error: `${entry.date} is not available for booking` },
+        { status: 409 }
+      )
+    }
+  }
+
+  const booking_date = sanitisedEntries[0].date
+  const slots = sanitisedEntries[0].slots
+  const time_slot = slots[0]
 
   // Use lat/lng from Places API if provided; fall back to geocoding
   let lat: number = body.lat
@@ -80,8 +103,9 @@ export async function POST(request: NextRequest) {
       lat,
       lng,
       booking_date,
-      time_slot: slots[0],        // first preference (backward compat)
+      time_slot,
       preferred_slots: slots,
+      preferred_date_slots: sanitisedEntries,
       num_units: body.num_units ?? null,
       fault_description: body.fault_description ?? null,
       urgency: body.urgency ?? null,
