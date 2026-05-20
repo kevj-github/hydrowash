@@ -45,6 +45,13 @@ const steps = [
   { label: 'We confirm & arrive', description: 'Your booking is locked in' },
 ]
 
+const whyFeatures = [
+  { icon: Zap,         label: 'Same-day availability',      desc: 'Book in the morning, we arrive the same day.' },
+  { icon: Cpu,         label: 'All makes & models',          desc: 'Mitsubishi, Daikin, Panasonic, Samsung, and more.' },
+  { icon: ShieldCheck, label: 'Transparent pricing',         desc: 'Fixed rates, no hidden fees, ever.' },
+  { icon: FileText,    label: '1-year maintenance contracts', desc: 'Quarterly servicing, fully managed for you.' },
+]
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -152,6 +159,47 @@ export default async function HomePage() {
                 photoAlt={s.photoAlt}
               />
             ))}
+          </div>
+        </SectionInner>
+      </Section>
+
+      {/* Why Choose Us */}
+      <Section className="bg-white py-20">
+        <SectionInner>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Photo */}
+            <div className="relative h-80 lg:h-[440px] rounded-2xl overflow-hidden">
+              <Image
+                src={PHOTO_WHY_US}
+                alt="Professional HydroWash technician"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+              <div className="absolute inset-0 bg-primary/10 rounded-2xl" />
+            </div>
+            {/* Features */}
+            <div>
+              <SectionHeading
+                label="Why choose us"
+                title="Your AC in expert hands"
+                subtitle="We've been keeping Singapore cool since 2019."
+                align="left"
+              />
+              <ul className="space-y-5 mt-6">
+                {whyFeatures.map(f => (
+                  <li key={f.label} className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 mt-0.5">
+                      <f.icon size={18} strokeWidth={1.75} />
+                    </div>
+                    <div>
+                      <p className="font-heading font-semibold text-primary text-base">{f.label}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{f.desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </SectionInner>
       </Section>
