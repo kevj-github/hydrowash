@@ -28,6 +28,14 @@ const statusColor: Record<string, string> = {
   REJECTED: 'bg-slate-100 text-slate-600',
 }
 
+const statusBorderStrip: Record<string, string> = {
+  PENDING: 'border-l-amber-400',
+  APPROVED: 'border-l-green-500',
+  COMPLETED: 'border-l-slate-300',
+  REJECTED: 'border-l-slate-300',
+  CANCELLED: 'border-l-slate-300',
+}
+
 export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Props) {
   const [confirmedDate, setConfirmedDate] = useState(booking.confirmed_date ?? '')
   const [confirmedSlot, setConfirmedSlot] = useState<string>(booking.confirmed_slot ?? '')
@@ -61,7 +69,7 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
 
   return (
     <div
-      className={`bg-white rounded-xl border p-4 transition-colors ${highlighted ? 'border-accent bg-blue-50' : 'border-[#E2E8F0]'} ${onCardClick ? 'cursor-pointer' : ''}`}
+      className={`bg-white rounded-xl border border-l-4 p-4 transition-colors ${statusBorderStrip[booking.status] ?? 'border-l-slate-300'} ${highlighted ? 'border-accent bg-blue-50' : 'border-border'} ${onCardClick ? 'cursor-pointer' : ''}`}
       onClick={() => onCardClick?.()}
     >
       <div className="flex items-start justify-between gap-2 mb-2">

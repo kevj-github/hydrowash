@@ -68,17 +68,20 @@ export default async function AdminCustomerDetailPage({
 
       {/* Profile card */}
       <div className="bg-white rounded-xl border border-border p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1 text-sm">
-            <p><span className="text-muted-foreground w-28 inline-block">Customer No</span>{profile.customer_no ?? '—'}</p>
-            <p><span className="text-muted-foreground w-28 inline-block">Email</span>{authUser?.email ?? '—'}</p>
-            <p><span className="text-muted-foreground w-28 inline-block">Phone</span>{profile.phone}</p>
-            <p><span className="text-muted-foreground w-28 inline-block">Address</span>{profile.address ?? '—'}</p>
-            <p><span className="text-muted-foreground w-28 inline-block">Member since</span>{new Date(profile.created_at).toLocaleDateString('en-SG')}</p>
+        <div className="flex items-start gap-5">
+          <div className="w-16 h-16 rounded-full bg-accent/10 text-accent font-bold text-2xl flex items-center justify-center shrink-0">
+            {profile.name?.charAt(0)?.toUpperCase() ?? '?'}
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Total paid</p>
-            <p className="text-2xl font-bold text-primary">S${totalPaid.toFixed(2)}</p>
+          <div className="flex-1 space-y-1 text-sm">
+            <p className="font-heading font-bold text-primary text-lg leading-tight">{profile.name}</p>
+            <p className="text-muted-foreground">{authUser?.email ?? '—'}</p>
+            <p className="text-muted-foreground">{profile.phone}</p>
+            {profile.address && <p className="text-muted-foreground">{profile.address}</p>}
+            <p className="text-xs text-muted-foreground">Member since {new Date(profile.created_at).toLocaleDateString('en-SG')} · #{profile.customer_no ?? '—'}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-muted-foreground mb-0.5">Total paid</p>
+            <p className="text-2xl font-bold text-accent">S${totalPaid.toFixed(2)}</p>
           </div>
         </div>
       </div>

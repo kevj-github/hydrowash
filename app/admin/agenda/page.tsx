@@ -123,7 +123,7 @@ export default async function AdminAgendaPage({
                 const dateStr = formatDate(d)
                 const isToday = dateStr === todayStr
                 return (
-                  <th key={dateStr} className={`px-3 py-3 text-center text-xs font-medium ${isToday ? 'text-accent' : 'text-muted-foreground'}`}>
+                  <th key={dateStr} className={`px-3 py-3 text-center text-xs font-medium ${isToday ? 'bg-accent/10 text-accent rounded-t-md font-semibold' : 'text-muted-foreground'}`}>
                     <span className="block">{d.toLocaleDateString('en-SG', { weekday: 'short' })}</span>
                     <span className={`text-sm font-bold ${isToday ? 'text-accent' : 'text-primary'}`}>
                       {d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })}
@@ -136,7 +136,7 @@ export default async function AdminAgendaPage({
           <tbody>
             {SLOT_KEYS.map(slot => (
               <tr key={slot} className="border-b border-border last:border-0">
-                <td className="px-3 py-3 text-xs text-muted-foreground font-medium whitespace-nowrap align-top">
+                <td className="pr-2 py-3 text-xs text-muted-foreground text-right whitespace-nowrap align-top pl-3">
                   {SLOT_LABELS[slot as TimeSlot]}
                 </td>
                 {days.map(d => {
@@ -153,7 +153,7 @@ export default async function AdminAgendaPage({
                             <Link
                               key={b.id}
                               href={`/admin/bookings`}
-                              className="block text-xs bg-accent/10 text-accent rounded px-2 py-1 hover:bg-accent/20 transition-colors truncate"
+                              className="block text-xs bg-accent/10 text-accent rounded-md px-2 py-0.5 font-medium hover:bg-accent/20 transition-colors truncate"
                               title={`${b.customer?.name} · ${b.service_type?.name}`}
                             >
                               {b.customer?.name ?? 'Customer'}

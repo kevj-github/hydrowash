@@ -188,7 +188,7 @@ function AdminInvoicesContent() {
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-heading font-bold text-2xl text-primary">
-          Invoices
+          Invoices <span className="text-muted-foreground font-normal text-base">· {filteredInvoices.length}</span>
         </h1>
 
         <Dialog
@@ -419,12 +419,13 @@ function AdminInvoicesContent() {
               </tr>
             </thead>
             <tbody>
-              {filteredInvoices.map((inv) => (
+              {filteredInvoices.map((inv, idx) => (
                 <InvoiceRow
                   key={inv.id}
                   invoice={inv}
                   onPaid={fetchInvoices}
                   showCustomer
+                  className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/40'}
                 />
               ))}
             </tbody>

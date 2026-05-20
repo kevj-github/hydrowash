@@ -90,9 +90,18 @@ export default async function AdminCustomersPage({
             </thead>
             <tbody className="divide-y divide-border">
               {customers.map(c => (
-                <tr key={c.id} className="hover:bg-muted/30 transition-colors">
+                <tr key={c.id} className="hover:bg-accent/5 transition-colors cursor-pointer">
                   <td className="px-4 py-3 text-muted-foreground">{c.customer_no ?? '—'}</td>
-                  <td className="px-4 py-3 font-medium text-primary">{c.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-accent/10 text-accent font-semibold text-sm flex items-center justify-center shrink-0">
+                        {c.name?.charAt(0)?.toUpperCase() ?? '?'}
+                      </div>
+                      <Link href={`/admin/customers/${c.id}`} className="font-medium text-primary hover:text-accent">
+                        {c.name}
+                      </Link>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{c.phone}</td>
                   <td className="px-4 py-3 text-right">{bookingCounts[c.id] ?? 0}</td>
                   <td className="px-4 py-3 text-right">

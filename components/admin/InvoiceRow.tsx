@@ -24,11 +24,12 @@ interface Props {
   invoice: InvoiceWithCustomer
   onPaid: () => void
   showCustomer?: boolean
+  className?: string
 }
 
 const PAYMENT_METHODS: PaymentMethod[] = ['Cash', 'PayNow', 'Bank Transfer', 'Other']
 
-export default function InvoiceRow({ invoice, onPaid, showCustomer = false }: Props) {
+export default function InvoiceRow({ invoice, onPaid, showCustomer = false, className }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
   const [submitting, setSubmitting] = useState(false)
@@ -51,7 +52,7 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false }: Pr
   }
 
   return (
-    <tr className="border-b border-border/50 text-sm hover:bg-muted/40">
+    <tr className={cn('border-b border-border/50 text-sm hover:bg-accent/5 transition-colors', className)}>
       {showCustomer && (
         <td className="py-2 px-3 font-medium">{invoice.customer?.name ?? '—'}</td>
       )}

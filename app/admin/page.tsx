@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { CalendarCheck, ClipboardList } from 'lucide-react'
+import { CalendarCheck, ClipboardList, Clock, ArrowRight } from 'lucide-react'
 
 export default async function AdminOverviewPage() {
   const supabase = await createClient()
@@ -56,8 +56,26 @@ export default async function AdminOverviewPage() {
   ])
 
   const stats = [
-    { label: 'Pending Bookings', value: pendingRes.count ?? 0, href: '/admin/bookings', color: 'text-amber-500' },
-    { label: 'Approved Jobs Today', value: todayRes.count ?? 0, href: `/admin/schedule/${todayStr}`, color: 'text-accent' },
+    {
+      label: 'Pending Bookings',
+      value: pendingRes.count ?? 0,
+      href: '/admin/bookings',
+      color: 'text-amber-500',
+      borderColor: 'border-l-amber-400',
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-500',
+      Icon: Clock,
+    },
+    {
+      label: 'Approved Jobs Today',
+      value: todayRes.count ?? 0,
+      href: `/admin/schedule/${todayStr}`,
+      color: 'text-accent',
+      borderColor: 'border-l-accent',
+      iconBg: 'bg-accent/10',
+      iconColor: 'text-accent',
+      Icon: CalendarCheck,
+    },
   ]
 
   const serviceDueRows = serviceDueRes.data ?? []
@@ -78,10 +96,15 @@ export default async function AdminOverviewPage() {
           <Link
             key={s.label}
             href={s.href}
-            className="bg-white rounded-xl border border-border p-6 hover:shadow-md transition-all duration-200 cursor-pointer group"
+            className={`bg-white rounded-xl border border-border border-l-4 ${s.borderColor} p-6 hover:shadow-md transition-all duration-200 cursor-pointer group flex items-center gap-4`}
           >
-            <p className="text-sm text-muted-foreground mb-1">{s.label}</p>
-            <p className={`font-heading font-bold text-3xl ${s.color}`}>{s.value}</p>
+            <div className={`w-12 h-12 rounded-xl ${s.iconBg} flex items-center justify-center shrink-0`}>
+              <s.Icon size={22} className={s.iconColor} strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-0.5">{s.label}</p>
+              <p className={`font-heading font-bold text-3xl leading-none ${s.color}`}>{s.value}</p>
+            </div>
           </Link>
         ))}
       </div>
@@ -92,9 +115,12 @@ export default async function AdminOverviewPage() {
           href="/admin/bookings"
           className="group bg-accent text-white rounded-xl p-6 hover:bg-accent/90 transition-all duration-200 cursor-pointer"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <ClipboardList size={18} strokeWidth={1.75} />
-            <h3 className="font-heading font-semibold text-lg">Manage Bookings</h3>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <ClipboardList size={18} strokeWidth={1.75} />
+              <h3 className="font-heading font-semibold text-lg">Manage Bookings</h3>
+            </div>
+            <ArrowRight size={16} strokeWidth={2} className="transition-transform duration-150 group-hover:translate-x-1" />
           </div>
           <p className="text-white/70 text-sm">Approve, reject, and cluster maintenance bookings</p>
         </Link>
@@ -102,9 +128,12 @@ export default async function AdminOverviewPage() {
           href={`/admin/schedule/${todayStr}`}
           className="group bg-primary text-white rounded-xl p-6 hover:bg-primary/90 transition-all duration-200 cursor-pointer"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <CalendarCheck size={18} strokeWidth={1.75} />
-            <h3 className="font-heading font-semibold text-lg">Route Optimiser</h3>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <CalendarCheck size={18} strokeWidth={1.75} />
+              <h3 className="font-heading font-semibold text-lg">Route Optimiser</h3>
+            </div>
+            <ArrowRight size={16} strokeWidth={2} className="transition-transform duration-150 group-hover:translate-x-1" />
           </div>
           <p className="text-slate-400 text-sm">Plan today&apos;s route and preview stop order</p>
         </Link>
@@ -113,16 +142,23 @@ export default async function AdminOverviewPage() {
       {/* Alerts */}
       <div className="space-y-4">
         {serviceDueRows.length > 0 && (
-          <section className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-            <h2 className="font-heading font-semibold text-amber-900 mb-3">
+          <section className="bg-white border border-border border-l-4 border-l-amber-400 rounded-xl p-5">
+            <h2 className="font-heading font-semibold text-primary mb-3">
               Service Due This Month ({serviceDueRows.length})
             </h2>
-            <ul className="space-y-2">
+            <ul className="divide-y divide-border">
               {serviceDueRows.map((row: any) => (
-                <li key={row.id} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-amber-900">{row.contract?.customer?.name ?? '—'}</span>
-                  <span className="text-amber-700">{row.due_date}</span>
-                  <span className="text-amber-600 text-xs">{row.contract?.num_units} unit(s)</span>
+                <li key={row.id} className="flex items-center justify-between py-2 text-sm gap-3">
+                  <span className="font-medium text-primary">{row.contract?.customer?.name ?? '—'}</span>
+                  <span className="text-muted-foreground text-xs">{row.contract?.num_units} unit(s)</span>
+                  {row.contract?.id ? (
+                    <Link
+                      href={`/admin/contracts/${row.contract.id}`}
+                      className="ml-auto text-accent hover:underline text-xs font-medium flex items-center gap-0.5"
+                    >
+                      View <ArrowRight size={12} strokeWidth={2} />
+                    </Link>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -130,16 +166,21 @@ export default async function AdminOverviewPage() {
         )}
 
         {expiringContracts.length > 0 && (
-          <section className="bg-red-50 border border-red-200 rounded-xl p-5">
-            <h2 className="font-heading font-semibold text-red-900 mb-3">
+          <section className="bg-white border border-border border-l-4 border-l-red-400 rounded-xl p-5">
+            <h2 className="font-heading font-semibold text-primary mb-3">
               Contracts Expiring Soon ({expiringContracts.length})
             </h2>
-            <ul className="space-y-2">
+            <ul className="divide-y divide-border">
               {expiringContracts.map((c: any) => (
-                <li key={c.id} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-red-900">{c.customer?.name ?? '—'}</span>
-                  <span className="text-red-700 font-medium">Expires {c.end_date}</span>
-                  <span className="text-red-600 text-xs">{c.num_units} unit(s)</span>
+                <li key={c.id} className="flex items-center justify-between py-2 text-sm gap-3">
+                  <span className="font-medium text-primary">{c.customer?.name ?? '—'}</span>
+                  <span className="text-red-600 font-medium text-xs">Expires {c.end_date}</span>
+                  <Link
+                    href={`/admin/contracts/${c.id}`}
+                    className="ml-auto text-accent hover:underline text-xs font-medium flex items-center gap-0.5"
+                  >
+                    View <ArrowRight size={12} strokeWidth={2} />
+                  </Link>
                 </li>
               ))}
             </ul>

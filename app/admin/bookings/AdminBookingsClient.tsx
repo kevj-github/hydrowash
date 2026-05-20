@@ -247,7 +247,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                     <button
                       key={s}
                       onClick={() => setMaintStatus(s)}
-                      className={`flex-1 text-xs py-1 rounded border font-medium transition-colors ${
+                      className={`flex-1 text-xs py-1 rounded-full border font-medium transition-colors ${
                         maintStatus === s ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'
                       }`}
                     >
@@ -297,7 +297,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                     <button
                       key={s}
                       onClick={() => setFrStatus(s)}
-                      className={`flex-1 text-xs py-1 rounded border font-medium transition-colors ${
+                      className={`flex-1 text-xs py-1 rounded-full border font-medium transition-colors ${
                         frStatus === s ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'
                       }`}
                     >
@@ -347,7 +347,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                     <button
                       key={s}
                       onClick={() => setInstStatus(s)}
-                      className={`flex-1 text-xs py-1 rounded border font-medium transition-colors ${
+                      className={`flex-1 text-xs py-1 rounded-full border font-medium transition-colors ${
                         instStatus === s ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'
                       }`}
                     >
