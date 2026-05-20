@@ -81,16 +81,26 @@ app/
   admin/contracts/[id]/page.tsx   # Contract detail: service schedule + invoices
   admin/invoices/page.tsx      # Invoices list + create; client-side filters: name/phone search, created/paid date ranges, status; Create dialog uses searchable customer combobox
   admin/schedule/[date]/page.tsx  # Route optimiser — date picker, job selection, map
-  admin/settings/page.tsx      # Service types + depot settings
+  admin/customers/page.tsx     # Customer list with search, booking counts, invoice totals, active contract badge
+  admin/customers/[id]/page.tsx  # Customer detail: profile card + bookings + contracts + invoices + total paid
+  admin/agenda/page.tsx        # Week-grid view (?week=YYYY-MM-DD): 5 slot rows × 7 day cols; APPROVED/all toggle + week nav
+  admin/settings/page.tsx      # Service types + depot settings + company info fields
   api/bookings/route.ts        # POST: create booking (validates slot not blocked/taken, inserts booking + booking_unit_locations)
-  api/bookings/[id]/route.ts   # PATCH: approve / reject / complete
+  api/bookings/[id]/route.ts   # PATCH: approve / reject
+  api/bookings/[id]/reschedule/route.ts  # PATCH: customer reschedule (24h SGT cutoff); resets confirmed_date/slot; emails admin
+  api/bookings/[id]/cancel/route.ts      # PATCH: customer cancel (24h cutoff); sets CANCELLED + cancelled_at/by/reason; emails admin
+  api/bookings/[id]/complete/route.ts    # POST: admin marks APPROVED → COMPLETED; upserts job_completions; work_order_no auto-assigned by DB trigger
+  api/bookings/[id]/work-order-pdf/route.ts  # GET: admin generates Work Order PDF on-the-fly
+  api/bookings/[id]/send-work-order/route.ts # POST: admin sends Work Order PDF + PayNow QR to customer; creates UNPAID invoice
   api/bookings/bulk-approve/route.ts  # POST: bulk approve PENDING maintenance bookings with a confirmed_date
   api/availability/route.ts    # GET ?month=YYYY-MM → { byDate: { [date]: { booked: TimeSlot[], blockedSlots: (TimeSlot|null)[] } } }
   api/admin/ac-catalog/route.ts   # GET/POST/PATCH ?kind=unit_types|brands — admin CRUD for ac_unit_types and ac_brands
   api/contracts/route.ts       # POST: create contract + auto-generate service dates; GET: list
   api/contracts/request/route.ts  # POST: customer self-signup (status=PENDING_REVIEW, no price; sends confirmation email)
   api/contracts/[id]/route.ts  # PATCH: edit; DELETE: cancel or hard delete
-  api/contracts/[id]/set-price/route.ts  # PATCH: set price → AWAITING_PAYMENT + send PayNow QR email
+  api/contracts/[id]/set-price/route.ts  # PATCH: set price → AWAITING_PAYMENT (email now sent separately via send-contract-pdf)
+  api/contracts/[id]/send-contract-pdf/route.ts  # POST: generate contract PDF + PayNow QR; upload to storage; email to customer
+  api/contracts/[id]/pdf/route.ts        # GET: admin preview — returns contract PDF blob on-the-fly
   api/contracts/[id]/mark-paid/route.ts  # PATCH: AWAITING_PAYMENT → ACTIVE + generate service dates + send activation email
   api/contracts/[id]/activate/route.ts  # PATCH: admin activates PENDING_REVIEW → ACTIVE + generates service dates + emails customer (admin-created contracts)
   api/contracts/[id]/link-booking/route.ts  # PATCH: link booking to service date
@@ -114,12 +124,15 @@ components/
   booking/StepReview.tsx       # Step 2: summary of all booking data before submit
   booking/SlotCalendar.tsx     # Month-grid calendar; up to 5 dates, 3 slots each; SGT-aware past-slot blocking
   booking/UnitLocationPicker.tsx  # N per-unit <Select> dropdowns (one per unit), driven by numUnits prop; reads ac_unit_locations from Supabase browser client
-  admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync
+  admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync; JobCompletionDialog replaces "Mark Complete"
   admin/BookingsMap.tsx        # Google Map markers; InfoWindow popup on pin click (customer name, service, address, status, dates); next/dynamic ssr:false
   admin/ContractCard.tsx       # Contract list card with status/due/expiry badges; shows address if present
-  admin/ServiceDateRow.tsx     # One quarterly service visit row (table)
+  admin/ServiceDateRow.tsx     # One quarterly service visit row; displays formatDueMonth(due_month)
   admin/InvoiceRow.tsx         # One invoice row with mark-paid dialog
   admin/RouteMap.tsx           # Google Map with numbered pins + polyline (next/dynamic, ssr:false)
+  admin/JobCompletionDialog.tsx  # 3-step dialog: Step 1 (attended_by, AC details, checklist); Step 2 (pricing + additional charges); Step 3 (preview PDF + confirm & send)
+  account/RescheduleDialog.tsx   # Customer reschedule dialog wrapping SlotCalendar; uses buttonVariants() on DialogTrigger
+  account/CancelDialog.tsx       # Customer cancel confirm dialog with optional reason textarea
 
 lib/
   supabase/client.ts           # Browser Supabase client — exports createClient()
@@ -132,9 +145,13 @@ lib/
   vrp/__tests__/optimizer.test.ts
   maps/geocode.ts              # Google Geocoding API wrapper (forward geocode)
   maps/distance-matrix.ts      # Google Distance Matrix API wrapper
-  email/send.ts                # Send functions via Resend
-  email/templates/             # React Email templates (includes ContractRequestReceived, ContractPricingEmail)
-  types.ts                     # Shared TypeScript types — TimeSlot, PreferredDateSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings
+  email/send.ts                # Send functions via Resend (includes sendBookingRescheduled, sendBookingCancelled, sendContractPricing, sendWorkOrderReport)
+  email/templates/             # React Email templates (ContractRequestReceived, ContractPricingEmail, BookingRescheduled, BookingCancelled, WorkOrderEmail)
+  pdf/ContractPdfTemplate.tsx  # React-PDF 2-page contract document (navy/blue brand); props: customerName, contactNo, address, numUnits, totalAmountSgd, serviceDueMonths[], company{}
+  pdf/WorkOrderTemplate.tsx    # React-PDF single-page work order report; props: WorkOrderProps (customer, AC details, checklist, charges, PayNow)
+  pdf/generate.ts              # generateContractPdf(props) + generateWorkOrderPdf(props) → Promise<Buffer>
+  contracts/service-dates.ts   # generateServiceDates() returns due_month (YYYY-MM) + second_reminder_sent; formatDueMonth(due_month) → display string
+  types.ts                     # Shared TypeScript types — TimeSlot, PreferredDateSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings, AcUnitDetail, ChecklistItem, AdditionalCharge, JobCompletion
 
 middleware.ts                  # Auth routing (role-based redirects — admin and customer only) ⚠ Next.js 16 deprecated this filename in favour of proxy.ts — still works but will need renaming
 supabase/migrations/001_schema.sql
@@ -158,6 +175,11 @@ supabase/migrations/019_contracts_customer_insert.sql  # RLS INSERT for customer
 supabase/migrations/020_multi_slot.sql               # preferred_slots text[], confirmed_slot text; drop PENDING slot uniqueness; new APPROVED confirmed_slot unique index; drop booking_unit_locations unique constraint ✅ applied
 supabase/migrations/021_multi_date_slots.sql         # preferred_date_slots jsonb ✅ apply
 supabase/migrations/022_contract_awaiting_payment.sql # contracts status adds AWAITING_PAYMENT ✅ apply
+supabase/migrations/023_booking_cancellation.sql     # adds CANCELLED to bookings status; cancelled_at, cancelled_by, cancelled_reason columns ✅ apply
+supabase/migrations/024_month_only_service_dates.sql # adds due_month text + second_reminder_sent bool to contract_service_dates ✅ apply
+supabase/migrations/025_app_settings_company.sql     # adds company_address, company_phone, company_email, company_instagram, authorised_officer_name to app_settings ✅ apply
+supabase/migrations/026_completion_invoice.sql       # profiles.customer_no (bigint, auto-seq trigger); bookings.work_order_no + attended_by; job_completions table; RLS ✅ apply
+supabase/migrations/027_service_type_price.sql       # service_types.default_price_sgd numeric ✅ apply
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -172,16 +194,17 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 | `bookings` | Core table — `booking_date date NOT NULL`, `time_slot text NOT NULL` (first preferred slot, backward compat), `preferred_slots text[] NOT NULL DEFAULT '{}'` (up to 3 choices), `preferred_date_slots jsonb` (up to 5 date+slot entries), `confirmed_slot text`; unique index on `(confirmed_date, confirmed_slot) WHERE status = 'APPROVED'` |
 | `app_settings` | Singleton — depot location, company info, `paynow_mobile`, `contract_pricing_tiers jsonb` |
 | `contracts` | 1-year maintenance contracts; `status` = PENDING_REVIEW/AWAITING_PAYMENT/ACTIVE/EXPIRED/CANCELLED; optional `address` text column |
-| `contract_service_dates` | 4 auto-generated quarterly visit dates per contract; `booking_id` links to the booking when scheduled |
+| `contract_service_dates` | 4 auto-generated quarterly visit dates per contract; `due_month text` (YYYY-MM, month-only); `second_reminder_sent bool`; `booking_id` links to the booking when scheduled |
 | `invoices` | Manual invoices; optionally linked to a booking and/or contract |
 | `ac_unit_locations` | Admin-managed room labels (Master Bedroom, Room 1–3, Living Room, Kitchen, Study Room) |
 | `booking_unit_locations` | Join table: which room locations are included in a booking |
 | `ac_unit_types` | Admin-managed unit types for invoice finalization (Wall Mounted, Ducted Unit, Cassette Unit) |
 | `ac_brands` | Admin-managed AC brands for invoice finalization (Mitsubishi, Daikin, Panasonic, Toshiba, Samsung, Midea) |
 | `blocked_slots` | Admin-blocked full days (slot IS NULL) or individual slots; enforced at booking creation |
+| `job_completions` | One row per completed booking — AC unit details (brand/model), checklist items, additional charges, base price; UNIQUE on booking_id |
 
 - `service_type_id` is NOT NULL on all bookings — fault repair types (e.g. "AC Not Cooling") are also rows in `service_types`
-- Booking statuses: `PENDING | APPROVED | REJECTED | COMPLETED`
+- Booking statuses: `PENDING | APPROVED | REJECTED | COMPLETED | CANCELLED`
 - Contract statuses: `PENDING_REVIEW | AWAITING_PAYMENT | ACTIVE | EXPIRED | CANCELLED` — customer self-requests move to AWAITING_PAYMENT after pricing
 - Invoice statuses: `UNPAID | PAID`
 - `contract_pricing_tiers` format: `[{min_units, max_units: number|null, price_sgd}]` — `max_units: null` = per-unit rate
@@ -195,6 +218,11 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - **Geocode** (`lib/maps/geocode.ts`) includes `&region=sg` for Singapore-biased results.
 - **Distance Matrix** (`lib/maps/distance-matrix.ts`) batches in chunks of 25 to handle large route days.
 - **Contract date arithmetic** uses `T00:00:00Z` + `setUTCFullYear`/`setUTCMonth` to avoid timezone drift.
+- **Service date tracking is month-only** (`due_month: 'YYYY-MM'`). Use `formatDueMonth(due_month)` from `lib/contracts/service-dates.ts` for display. Cron fires reminders on day 1 (first) and day 15 (second) of the due month if booking not yet linked.
+- **work_order_no** auto-assigned by DB BEFORE UPDATE trigger on bookings when status → COMPLETED. Do not set it from application code.
+- **customer_no** auto-assigned by DB BEFORE INSERT trigger on profiles for role='customer'. Sequential from 1.
+- **PDF generation:** `@react-pdf/renderer` used server-side. Supabase Storage bucket `documents` (private) stores generated PDFs at `contracts/{id}/contract.pdf` and `work-orders/{id}/work-order.pdf`.
+- **Booking cancellation/reschedule**: 24h SGT cutoff check — compute effective date from `confirmed_date ?? preferred_date_slots[0].date ?? booking_date`; disallow if within 24h. Use `Awaited<ReturnType<typeof createClient>>` for the supabase type in route handlers.
 
 ## Key flows
 
@@ -233,6 +261,35 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - Server component fetches; delegates to `AccountContractsClient` for filters
 - Contract status pills include Awaiting Payment; invoice status pills + date-range filter
 
+**Customer booking self-service (`/account/bookings`):**
+- `canModify()` helper: PENDING/APPROVED only, and effective date > 24h away in SGT
+- `RescheduleDialog`: opens SlotCalendar in a Dialog; PATCH `/api/bookings/[id]/reschedule`; resets confirmed_date/slot; emails admin
+- `CancelDialog`: confirm + optional reason textarea; PATCH `/api/bookings/[id]/cancel`; sets CANCELLED status; emails admin
+- "Book Again" link to `/book?repeat=[id]` — `BookingWizard` prefills service type, units, address from past booking
+
+**Repeat booking (`/book?repeat=[id]`):**
+- `BookingWizard` detects `?repeat=` param, fetches `/api/bookings/[id]`, prefills step 0 service/units/locations + step 1 address. Preferred date slots are always cleared (fresh calendar).
+
+**Admin contract PDF flow:**
+- Admin opens contract detail → "Set Price" dialog (2-step): step 1 saves price → AWAITING_PAYMENT via `PATCH /api/contracts/[id]/set-price`; step 2 shows Preview PDF link + "Confirm & Send" button
+- Preview: `GET /api/contracts/[id]/pdf` → PDF blob rendered in new tab
+- Send: `POST /api/contracts/[id]/send-contract-pdf` → generates PDF, uploads to Storage, generates PayNow QR, emails customer with PDF attachment
+- AWAITING_PAYMENT banner on detail page also shows Preview + Resend buttons
+
+**Admin job completion + work order:**
+- `JobCompletionDialog` on `BookingCard`: 3-step — Step 1 (attended_by, job times, AC unit details table with brand/model, checklist items, job description); Step 2 (base price, additional charges, live total); Step 3 (preview PDF + confirm & send)
+- Step 3 "Preview" → `GET /api/bookings/[id]/work-order-pdf` → PDF in new tab
+- Step 3 "Confirm & Send" → `POST /api/bookings/[id]/complete` (upserts job_completions, marks COMPLETED) then `POST /api/bookings/[id]/send-work-order` (generates PDF, uploads to Storage, sends email with PDF + PayNow QR, creates UNPAID invoice row)
+
+**Admin customer 360 (`/admin/customers`):**
+- List: search by name/phone; columns: customer_no, name, phone, booking count, total paid (PAID invoices), active contract badge, View link
+- Detail `/admin/customers/[id]`: profile card (email from auth, phone, address, member since, total paid), bookings table, contracts list with next due, invoices table
+
+**Admin agenda (`/admin/agenda`):**
+- Week-grid: SLOT_KEYS rows × 7 day columns; ?week=YYYY-MM-DD param (defaults to current Monday)
+- Each cell shows booking customer name chips (links to /admin/bookings)
+- APPROVED/all active toggle; prev/next week nav; Today shortcut
+
 ## Design system
 Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-system/pages/[page-name].md`.
 
@@ -269,6 +326,11 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 - **Phase 2 — Subsystem F** — wire up automated reminder emails ✅ complete (2026-05-14)
 - **Phase 2 — Subsystem G** — alternative slot suggestions on 409 ✅ complete (2026-05-14)
 - **Phase 2 — Multi-slot + UX** — multi-slot preferences (up to 3), per-unit location dropdowns, SGT past-slot blocking, admin confirmed_slot picker, contract 403 fix ✅ complete (2026-05-19)
+- **Phase 2 — Subsystem I** — customer reschedule/cancel (24h cutoff, email notifications) + repeat booking prefill ✅ complete (2026-05-20)
+- **Phase 2 — Subsystem M** — contract PDF generation (React-PDF), PayNow QR email, two-step set-price flow, company settings ✅ complete (2026-05-20)
+- **Phase 2 — Subsystem K** — job completion workflow: JobCompletionDialog (3-step), work order PDF, PayNow QR email, auto work_order_no/customer_no, job_completions table ✅ complete (2026-05-20)
+- **Phase 2 — Subsystem J** — admin customer 360 (/admin/customers list + detail) + agenda week-grid (/admin/agenda) ✅ complete (2026-05-20)
+- **Phase 2 — Subsystem L** — mobile QA polish: tap targets ≥44px, hero text overflow fix, all customer-facing pages audited at 375px ✅ complete (2026-05-20)
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -298,5 +360,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Phase 2 Subsystems H, A, B, C, D, E, F, G all complete (2026-05-14). Multi-slot + UX improvements complete (2026-05-19): multi-slot preferences, per-unit location dropdowns, SGT past-slot blocking, admin confirmed_slot, contract 403 fix. Multi-date preferences + contract payment flow implemented (2026-05-20). Migrations through 022 added (apply 021/022). `lib/booking/slots.ts` created. `qrcode.react` + `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Current status:** All Phase 2 subsystems complete (2026-05-20). Migrations 021–027 added — apply all in Supabase SQL editor in order. Supabase Storage bucket `documents` (private) must be created for PDF storage. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
