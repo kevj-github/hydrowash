@@ -354,6 +354,27 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
   - cancel/reschedule API routes: allow admin role (was customer-only)
   - Migration 028: customer booking UPDATE RLS policy (required for cancel/reschedule)
 
+- **Frontend upgrade (2026-05-20):** Full visual refresh across all pages ✅ complete
+  - `next.config.ts`: added `images.remotePatterns` for `images.unsplash.com`
+  - `app/globals.css`: `@media (prefers-reduced-motion: no-preference)` guard on fade-up animations
+  - `components/ui/service-card.tsx`: optional `photoSrc`/`photoAlt` props render a photo banner at top of card
+  - `app/(public)/page.tsx`: hero photo (Unsplash, `fill priority`), stat strip icons, Why Choose Us split section, Testimonials 3-card grid, How It Works with `w-14 h-14` accent circles, CTA background photo
+  - `app/auth/login/page.tsx` + `app/auth/register/page.tsx`: left panel replaced with Unsplash photo + `bg-primary/70` overlay; "← Back to home" link added
+  - `components/booking/BookingWizard.tsx`: numbered circle progress bar (Check icon for completed steps, Loader2 spinner on submit); step content wrapped in `rounded-2xl border shadow-sm p-6` card
+  - `components/booking/SlotCalendar.tsx`: selected dates filled `bg-accent text-white`; today gets `ring-2 ring-accent/50`
+  - `app/account/bookings/page.tsx`: 2-chip summary strip (Total / Upcoming); CalendarOff empty state with CTA
+  - `app/account/contracts/page.tsx` + `AccountContractsClient.tsx`: FileText summary strip (Active count); FileX empty state
+  - `components/admin/AdminNav.tsx` (new): `'use client'` nav with `usePathname` active states and Lucide icons for all 8 admin nav items
+  - `app/admin/layout.tsx`: replaced inline nav with `<AdminNav />`
+  - `app/admin/page.tsx`: stat cards with `border-l-4` + icon circles; ArrowRight hover on quick actions; alert sections as `bg-white border-l-4` cards with → links to contract detail
+  - `components/admin/BookingCard.tsx`: `border-l-4` status strip (amber=PENDING, green=APPROVED, slate=rest)
+  - `app/admin/bookings/AdminBookingsClient.tsx`: filter chips use `rounded-full`
+  - `app/admin/contracts/page.tsx` + `app/admin/invoices/page.tsx`: count badge `· {n}` next to heading
+  - `components/admin/InvoiceRow.tsx`: accepts `className` prop; rows alternate `bg-white`/`bg-muted/40` with `hover:bg-accent/5`
+  - `app/admin/customers/page.tsx`: avatar initial circle (`w-8 h-8 bg-accent/10`); `hover:bg-accent/5`; name links to detail
+  - `app/admin/customers/[id]/page.tsx`: larger avatar (`w-16 h-16`); total paid in `text-accent`
+  - `app/admin/agenda/page.tsx`: booking chips `rounded-md font-medium`; today column header `bg-accent/10 font-semibold`; slot labels right-aligned
+
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
 - Plans: `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`
@@ -382,5 +403,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** All Phase 2 subsystems complete + post-release fixes applied (2026-05-20). All migrations 001–028 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Current status:** Frontend upgrade complete (2026-05-20). All Phase 2 subsystems + post-release fixes + full visual refresh applied. All migrations 001–029 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
