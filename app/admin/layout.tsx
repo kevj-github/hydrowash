@@ -6,6 +6,8 @@ import { Wind } from 'lucide-react'
 const navItems = [
   { href: '/admin', label: 'Overview' },
   { href: '/admin/bookings', label: 'Bookings' },
+  { href: '/admin/customers', label: 'Customers' },
+  { href: '/admin/agenda', label: 'Agenda' },
   { href: '/admin/availability', label: 'Availability' },
   { href: '/admin/contracts', label: 'Contracts' },
   { href: '/admin/invoices', label: 'Invoices' },
