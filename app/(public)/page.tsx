@@ -33,7 +33,7 @@ const steps = [
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const bookHref = user ? '/book' : '/auth/register'
+  const bookHref = user ? '/book' : '/auth/login?redirect=/book'
 
   return (
     <>

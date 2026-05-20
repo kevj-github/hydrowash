@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,6 +19,8 @@ interface Props {
     category: string
     num_units?: number
     unit_location_ids?: string[]
+    unit_location_others?: string[]
+    contract_id?: string
     fault_description?: string
     urgency?: string
     ac_brand?: string
@@ -35,11 +37,20 @@ const urgencyOptions = [
   { value: 'LOW', label: 'Low — minor issue' },
 ]
 
+interface ContractOption {
+  id: string
+  address: string | null
+  num_units: number
+  start_date: string
+  end_date: string
+}
+
 export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [contracts, setContracts] = useState<ContractOption[]>([])
 
   const maintenance = serviceTypes.filter(s => s.category === 'MAINTENANCE')
   const faultRepair = serviceTypes.filter(s => s.category === 'FAULT_REPAIR')
@@ -53,6 +64,22 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
 
   const selected = serviceTypes.find(s => s.id === data.service_type_id)
   const existingUrls = data.media_urls ?? []
+
+  useEffect(() => {
+    if (data.category !== 'MAINTENANCE') return
+    async function loadContracts() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: rows } = await supabase
+        .from('contracts')
+        .select('id, address, num_units, start_date, end_date')
+        .eq('customer_id', user.id)
+        .eq('status', 'ACTIVE')
+      setContracts(rows ?? [])
+    }
+    loadContracts()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.category])
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -87,7 +114,6 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
 
     onChange({ media_urls: [...existingUrls, ...uploaded] })
     setUploading(false)
-    // Reset file input so the same file can be re-selected if needed
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -103,7 +129,7 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
           value={data.service_type_id}
           onValueChange={id => {
             const s = serviceTypes.find(t => t.id === (id ?? ''))
-            onChange({ service_type_id: id ?? '', category: s?.category ?? '' })
+            onChange({ service_type_id: id ?? '', category: s?.category ?? '', contract_id: '' })
           }}
         >
           <SelectTrigger>
@@ -148,9 +174,41 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
             <UnitLocationPicker
               numUnits={data.num_units ?? 0}
               value={data.unit_location_ids ?? []}
+              otherTexts={data.unit_location_others ?? []}
               onChange={ids => onChange({ unit_location_ids: ids })}
+              onOtherTexts={texts => onChange({ unit_location_others: texts })}
             />
           </div>
+
+          {contracts.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Link to Contract <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+              <p className="text-xs text-muted-foreground">Select your maintenance contract if this booking is part of a scheduled service.</p>
+              <Select
+                value={data.contract_id ?? ''}
+                onValueChange={v => onChange({ contract_id: v ?? '' })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No contract selected">
+                    {data.contract_id
+                      ? (() => {
+                          const c = contracts.find(ct => ct.id === data.contract_id)
+                          return c ? `Contract — ${c.address ?? 'No address'} (${c.num_units} unit${c.num_units !== 1 ? 's' : ''})` : null
+                        })()
+                      : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {contracts.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.address ?? 'No address'} — {c.num_units} unit{c.num_units !== 1 ? 's' : ''} (until {new Date(c.end_date + 'T00:00:00').toLocaleDateString('en-SG', { month: 'short', year: 'numeric' })})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       )}
 

@@ -34,14 +34,7 @@ function LoginForm() {
       router.refresh()
       return
     }
-    // Determine default destination by role
-    try {
-      const { data: profile } = await supabase
-        .from('profiles').select('role').eq('id', data.user.id).single()
-      router.push(profile?.role === 'admin' ? '/admin' : '/account/bookings')
-    } catch {
-      router.push('/account/bookings')
-    }
+    router.push('/')
     router.refresh()
   }
 

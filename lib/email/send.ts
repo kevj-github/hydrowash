@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 import type { BookingWithRelations } from '@/lib/types'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = 'HydroWash <noreply@hydrowash.sg>'
+const FROM = 'HydroWash <noreply@hydrowash.services>'
 
 export async function sendBookingReceived(booking: BookingWithRelations, email: string) {
   const { BookingReceived } = await import('./templates/BookingReceived')

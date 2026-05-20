@@ -2,13 +2,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Script from 'next/script'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { BookingCard } from '@/components/admin/BookingCard'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
-import type { BookingWithRelations, TimeSlot } from '@/lib/types'
+import type { BookingWithRelations } from '@/lib/types'
 
 const BookingsMap = dynamic(
   () => import('@/components/admin/BookingsMap').then(m => ({ default: m.BookingsMap })),
@@ -41,15 +37,13 @@ export function AdminBookingsClient({ initialBookings }: Props) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING')
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Maintenance bulk-approve state
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [confirmedDate, setConfirmedDate] = useState('')
-  const [confirmedSlot, setConfirmedSlot] = useState('')
-  const [approving, setApproving] = useState(false)
-  const [approveResult, setApproveResult] = useState<{ approved: number; excluded: { id: string; customer: string }[] } | null>(null)
-
-  // Pin-click selection for Fault Repair / Installation
+  // Pin-click selection for all tabs
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+
+  // Maintenance filters
+  const [maintSearch, setMaintSearch] = useState('')
+  const [maintDateFrom, setMaintDateFrom] = useState('')
+  const [maintStatus, setMaintStatus] = useState<'ALL' | 'PENDING' | 'APPROVED'>('ALL')
 
   // Fault Repair filters
   const [frSearch, setFrSearch] = useState('')
@@ -79,7 +73,9 @@ export function AdminBookingsClient({ initialBookings }: Props) {
   }, [])
 
   // Category-filtered lists — FAULT_REPAIR and INSTALLATION exclude past jobs
-  const maintenance = bookings.filter(b => b.category === 'MAINTENANCE')
+  const maintenance = bookings.filter(
+    b => b.category === 'MAINTENANCE' && b.status !== 'COMPLETED' && b.status !== 'REJECTED'
+  )
   const faultRepair = bookings
     .filter(b => b.category === 'FAULT_REPAIR' && b.status !== 'COMPLETED' && b.status !== 'REJECTED')
     .sort((a, b) => {
@@ -89,6 +85,13 @@ export function AdminBookingsClient({ initialBookings }: Props) {
   const installation = bookings.filter(
     b => b.category === 'INSTALLATION' && b.status !== 'COMPLETED' && b.status !== 'REJECTED'
   )
+
+  const maintenanceFiltered = maintenance.filter(b => {
+    if (maintSearch && !b.customer.name.toLowerCase().includes(maintSearch.toLowerCase())) return false
+    if (maintDateFrom && b.booking_date && b.booking_date < maintDateFrom) return false
+    if (maintStatus !== 'ALL' && b.status !== maintStatus) return false
+    return true
+  })
 
   // Filtered lists for sidebar
   const faultRepairFiltered = faultRepair.filter(b => {
@@ -107,7 +110,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
 
   // Map pins for the current tab
   const mapBookings = (() => {
-    if (activeTab === 'MAINTENANCE') return maintenance.filter(b => b.status === 'PENDING')
+    if (activeTab === 'MAINTENANCE') return maintenanceFiltered
     if (activeTab === 'FAULT_REPAIR') return faultRepairFiltered
     if (activeTab === 'INSTALLATION') return installationFiltered
     if (statusFilter === 'PENDING') return bookings.filter(b => b.status === 'PENDING')
@@ -115,47 +118,9 @@ export function AdminBookingsClient({ initialBookings }: Props) {
     return bookings.filter(b => b.status === 'COMPLETED' || b.status === 'REJECTED')
   })()
 
-  // Maintenance bulk-approve
-  const pendingMaintenance = maintenance.filter(b => b.status === 'PENDING')
-
-  function toggleSelect(id: string) {
-    setSelected(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
   function switchTab(tab: Tab) {
     setActiveTab(tab)
     setSelectedJobId(null)
-  }
-
-  async function handleBulkApprove() {
-    if (!confirmedDate || selected.size === 0) return
-    setApproving(true)
-    setApproveResult(null)
-    try {
-      const res = await fetch('/api/bookings/bulk-approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          booking_ids: Array.from(selected),
-          confirmed_date: confirmedDate,
-          confirmed_slot: confirmedSlot || undefined,
-        }),
-      })
-      const data = await res.json()
-      setApproveResult(data)
-      setSelected(new Set())
-      setConfirmedDate('')
-      setConfirmedSlot('')
-    } catch {
-      setApproveResult(null)
-    } finally {
-      setApproving(false)
-      refresh()
-    }
   }
 
   const pendingCount = (list: BookingWithRelations[]) => list.filter(b => b.status === 'PENDING').length
@@ -241,12 +206,8 @@ export function AdminBookingsClient({ initialBookings }: Props) {
         <div className="flex-1 rounded-xl overflow-hidden border border-border min-w-0">
           <BookingsMap
             bookings={mapBookings}
-            selected={activeTab === 'MAINTENANCE' ? selected : selectedJobId ? new Set([selectedJobId]) : undefined}
-            onPinClick={
-              activeTab === 'MAINTENANCE'
-                ? toggleSelect
-                : (id) => setSelectedJobId(prev => prev === id ? null : id)
-            }
+            selected={selectedJobId ? new Set([selectedJobId]) : undefined}
+            onPinClick={(id) => setSelectedJobId(prev => prev === id ? null : id)}
           />
         </div>
 
@@ -262,82 +223,47 @@ export function AdminBookingsClient({ initialBookings }: Props) {
           {/* ── MAINTENANCE sidebar ── */}
           {activeTab === 'MAINTENANCE' && (
             <>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-primary">
-                  {selected.size} of {pendingMaintenance.length} selected
-                </p>
-                <button
-                  onClick={() => setSelected(new Set(pendingMaintenance.map(b => b.id)))}
-                  className="text-xs text-accent underline"
-                >
-                  Select all
-                </button>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">Confirmed Date <span className="text-red-500">*</span></Label>
+              <div className="space-y-2 shrink-0">
                 <Input
-                  type="date"
-                  value={confirmedDate}
-                  onChange={e => setConfirmedDate(e.target.value)}
-                  className="h-8 text-sm"
+                  placeholder="Search customer…"
+                  value={maintSearch}
+                  onChange={e => setMaintSearch(e.target.value)}
+                  className="h-8 text-xs"
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">Confirmed Time Slot <span className="text-red-500">*</span></Label>
-                <Select value={confirmedSlot} onValueChange={v => setConfirmedSlot(v ?? '')}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Pick a slot…">
-                      {confirmedSlot ? (SLOT_LABELS[confirmedSlot as TimeSlot] ?? confirmedSlot) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SLOT_KEYS.map(s => (
-                      <SelectItem key={s} value={s}>{SLOT_LABELS[s]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                onClick={handleBulkApprove}
-                disabled={approving || selected.size === 0 || !confirmedDate || !confirmedSlot}
-                className="bg-accent hover:bg-accent/90 text-white text-sm shrink-0"
-              >
-                {approving ? 'Approving…' : `Approve ${selected.size} Booking${selected.size !== 1 ? 's' : ''}`}
-              </Button>
-
-              {approveResult && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs shrink-0">
-                  <p className="font-semibold text-green-800">{approveResult.approved} approved ✓</p>
+                <div className="flex gap-1.5 items-center">
+                  <Input
+                    type="date"
+                    value={maintDateFrom}
+                    onChange={e => setMaintDateFrom(e.target.value)}
+                    className="h-8 text-xs flex-1"
+                    title="Show bookings with window ending on or after this date"
+                  />
+                  {maintDateFrom && (
+                    <button onClick={() => setMaintDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>
+                  )}
                 </div>
-              )}
-
-              <div className="flex-1 overflow-y-auto space-y-2 mt-1">
-                {pendingMaintenance.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-8">No pending maintenance bookings.</p>
-                ) : (
-                  pendingMaintenance.map(b => (
+                <div className="flex gap-1">
+                  {(['ALL', 'PENDING', 'APPROVED'] as const).map(s => (
                     <button
-                      key={b.id}
-                      onClick={() => toggleSelect(b.id)}
-                      className={`w-full text-left rounded-lg border p-3 text-xs transition-colors ${
-                        selected.has(b.id)
-                          ? 'border-accent bg-blue-50'
-                          : 'border-border bg-white hover:bg-muted/40'
+                      key={s}
+                      onClick={() => setMaintStatus(s)}
+                      className={`flex-1 text-xs py-1 rounded border font-medium transition-colors ${
+                        maintStatus === s ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'
                       }`}
                     >
-                      <p className="font-semibold text-primary">{b.customer?.name}</p>
-                      <p className="text-muted-foreground">{b.address}</p>
-                      <p className="text-muted-foreground mt-0.5">
-                        {b.booking_date}{' '}
-                        {(b.preferred_slots?.length
-                          ? b.preferred_slots
-                          : b.time_slot ? [b.time_slot] : []
-                        ).map((s: string) => SLOT_LABELS[s as TimeSlot] ?? s).join(' / ')}
-                      </p>
+                      {s}
                     </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-3">
+                {maintenanceFiltered.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No maintenance bookings.</p>
+                ) : (
+                  maintenanceFiltered.map(b => (
+                    <div key={b.id} data-job-id={b.id}>
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                    </div>
                   ))
                 )}
               </div>

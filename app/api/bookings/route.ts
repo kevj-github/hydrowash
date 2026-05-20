@@ -35,9 +35,11 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
-  const { preferred_date_slots, unit_location_ids } = body as {
+  const { preferred_date_slots, unit_location_ids, unit_location_others, contract_id } = body as {
     preferred_date_slots?: { date: string; slots: string[] }[]
     unit_location_ids?: string[]
+    unit_location_others?: string[]
+    contract_id?: string
     [key: string]: unknown
   }
 
@@ -113,6 +115,8 @@ export async function POST(request: NextRequest) {
       ac_model: body.ac_model ?? null,
       notes: body.notes ?? null,
       media_urls: body.media_urls ?? [],
+      unit_location_others: unit_location_others ?? [],
+      contract_id: contract_id ?? null,
     })
     .select('*, customer:profiles(name,phone), service_type:service_types(name,duration_minutes,price_sgd)')
     .single()

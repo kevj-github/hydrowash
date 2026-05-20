@@ -101,6 +101,8 @@ export interface Booking {
   ac_model: string | null
   notes: string | null
   media_urls: string[]
+  unit_location_others: string[]
+  contract_id: string | null
   status: BookingStatus
   confirmed_date: string | null
   rejection_reason: string | null

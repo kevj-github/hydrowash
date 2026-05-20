@@ -188,7 +188,7 @@ export function SlotCalendar({ value, onChange }: Props) {
 
       {value.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-primary">Your preferred dates ({value.length}/{MAX_DATES}):</p>
+          <p className="text-xs font-medium text-primary">Your preferred dates:</p>
           {value.map(entry => (
             <div
               key={entry.date}

@@ -21,6 +21,8 @@ type BookingData = {
   category: string
   preferred_date_slots: PreferredDateSlot[]
   unit_location_ids: string[]
+  unit_location_others: string[]
+  contract_id?: string
   address: string
   postal_code: string
   lat: number | null
@@ -37,12 +39,14 @@ type BookingData = {
   media_urls?: string[]
 }
 
+const OTHERS_VALUE = '__other__'
 
 const initial: BookingData = {
   service_type_id: '',
   category: '',
   preferred_date_slots: [],
   unit_location_ids: [],
+  unit_location_others: [],
   address: '',
   postal_code: '',
   lat: null,
@@ -105,7 +109,9 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
       if (data.category === 'MAINTENANCE') {
         if (!data.num_units) return false
         const locs = data.unit_location_ids ?? []
-        if (locs.length < data.num_units || locs.some(id => !id)) return false
+        const others = data.unit_location_others ?? []
+        if (locs.length < data.num_units) return false
+        if (locs.some((id, i) => !id || (id === OTHERS_VALUE && !others[i]?.trim()))) return false
       }
       if (data.category === 'FAULT_REPAIR' && !data.fault_description?.trim()) return false
       if (data.category === 'INSTALLATION' && !data.num_units) return false
@@ -131,17 +137,21 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
       const preferred_slots = firstEntry?.slots ?? []
       const time_slot = preferred_slots[0] ?? ''
 
+      const unit_location_ids = (data.unit_location_ids ?? []).filter(id => id !== OTHERS_VALUE)
+
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
+          unit_location_ids,
           address: fullAddress || data.address,
           notes: combinedNotes || undefined,
           booking_date,
           preferred_slots,
           time_slot,
           preferred_date_slots: data.preferred_date_slots,
+          contract_id: data.contract_id || undefined,
         }),
       })
 
