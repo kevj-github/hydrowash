@@ -1,46 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import crypto from 'crypto'
+import { Webhook } from 'svix'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'HydroWash <noreply@hydrowash.services>'
-
-// Supabase Auth Hooks use Svix webhook signing.
-// Secret format: "v1,whsec_<base64-encoded key>"
-// Signature is HMAC-SHA256 of "${svix-id}.${svix-timestamp}.${raw-body}"
-function verifySvixSignature(rawBody: string, headers: Headers, secret: string): boolean {
-  const msgId = headers.get('svix-id')
-  const msgTimestamp = headers.get('svix-timestamp')
-  const msgSignature = headers.get('svix-signature')
-  if (!msgId || !msgTimestamp || !msgSignature) return false
-
-  // Reject requests older than 5 minutes
-  const ts = parseInt(msgTimestamp, 10)
-  if (Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false
-
-  const rawKey = secret.replace(/^v1,whsec_/, '')
-  const keyBytes = Buffer.from(rawKey, 'base64')
-  const toSign = `${msgId}.${msgTimestamp}.${rawBody}`
-  const expected = crypto.createHmac('sha256', keyBytes).update(toSign).digest('base64')
-
-  // svix-signature can be multiple space-separated "v1,<sig>" values
-  for (const part of msgSignature.split(' ')) {
-    const sigValue = part.replace(/^v1,/, '')
-    try {
-      if (crypto.timingSafeEqual(Buffer.from(sigValue), Buffer.from(expected))) return true
-    } catch {
-      // buffers different length — not a match
-    }
-  }
-  return false
-}
 
 export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
   if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
 
   const rawBody = await request.text()
-  if (!verifySvixSignature(rawBody, request.headers, secret)) {
+
+  try {
+    const wh = new Webhook(secret)
+    wh.verify(rawBody, {
+      'svix-id': request.headers.get('svix-id') ?? '',
+      'svix-timestamp': request.headers.get('svix-timestamp') ?? '',
+      'svix-signature': request.headers.get('svix-signature') ?? '',
+    })
+  } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
