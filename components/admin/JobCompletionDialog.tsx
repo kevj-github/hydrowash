@@ -34,6 +34,8 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([])
+  const [unitTypes, setUnitTypes] = useState<{ id: string; name: string }[]>([])
+  const [locations, setLocations] = useState<{ id: string; name: string }[]>([])
 
   // Step 1 fields
   const [attendedBy, setAttendedBy] = useState('')
@@ -54,9 +56,9 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
   const [charges, setCharges] = useState<AdditionalCharge[]>([])
 
   useEffect(() => {
-    supabase.from('ac_brands').select('id, name').then(({ data }) => {
-      if (data) setBrands(data)
-    })
+    supabase.from('ac_brands').select('id, name').then(({ data }) => { if (data) setBrands(data) })
+    supabase.from('ac_unit_types').select('id, name').then(({ data }) => { if (data) setUnitTypes(data) })
+    supabase.from('ac_unit_locations').select('id, name').then(({ data }) => { if (data) setLocations(data) })
   }, [])
 
   function totalSgd() {
@@ -164,22 +166,70 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
                 <div className="grid grid-cols-5 bg-primary text-white px-2 py-1.5 font-semibold">
                   <span>No</span><span>Brand</span><span>Model</span><span>Serial No</span><span>Location</span>
                 </div>
-                {acDetails.map((unit, i) => (
-                  <div key={i} className="grid grid-cols-5 gap-1 px-2 py-1.5 border-t border-border">
-                    <span className="flex items-center">{i + 1}</span>
-                    <select
-                      className="border border-border rounded px-1 py-0.5 text-xs"
-                      value={unit.brand}
-                      onChange={e => updateAc(i, 'brand', e.target.value)}
-                    >
-                      <option value="">—</option>
-                      {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-                    </select>
-                    <Input className="h-6 text-xs px-1" value={unit.model} onChange={e => updateAc(i, 'model', e.target.value)} placeholder="Model" />
-                    <Input className="h-6 text-xs px-1" value={unit.serial_no} onChange={e => updateAc(i, 'serial_no', e.target.value)} placeholder="S/N" />
-                    <Input className="h-6 text-xs px-1" value={unit.location} onChange={e => updateAc(i, 'location', e.target.value)} placeholder="Room" />
-                  </div>
-                ))}
+                {acDetails.map((unit, i) => {
+                  const brandNames = brands.map(b => b.name)
+                  const typeNames = unitTypes.map(t => t.name)
+                  const locationNames = locations.map(l => l.name)
+                  const brandIsOther = !!unit.brand && !brandNames.includes(unit.brand)
+                  const modelIsOther = !!unit.model && !typeNames.includes(unit.model)
+                  const locationIsOther = !!unit.location && !locationNames.includes(unit.location)
+                  return (
+                    <div key={i} className="grid grid-cols-5 gap-1 px-2 py-2 border-t border-border items-start">
+                      <span className="flex items-center pt-1">{i + 1}</span>
+
+                      {/* Brand */}
+                      <div className="space-y-1">
+                        <select
+                          className="w-full border border-border rounded px-1 py-0.5 text-xs"
+                          value={brandIsOther ? '__other__' : unit.brand}
+                          onChange={e => updateAc(i, 'brand', e.target.value === '__other__' ? '' : e.target.value)}
+                        >
+                          <option value="">—</option>
+                          {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                          <option value="__other__">Others</option>
+                        </select>
+                        {brandIsOther && (
+                          <Input className="h-6 text-xs px-1" value={unit.brand} onChange={e => updateAc(i, 'brand', e.target.value)} placeholder="Specify brand…" autoFocus />
+                        )}
+                      </div>
+
+                      {/* Model (unit type) */}
+                      <div className="space-y-1">
+                        <select
+                          className="w-full border border-border rounded px-1 py-0.5 text-xs"
+                          value={modelIsOther ? '__other__' : unit.model}
+                          onChange={e => updateAc(i, 'model', e.target.value === '__other__' ? '' : e.target.value)}
+                        >
+                          <option value="">—</option>
+                          {unitTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                          <option value="__other__">Others</option>
+                        </select>
+                        {modelIsOther && (
+                          <Input className="h-6 text-xs px-1" value={unit.model} onChange={e => updateAc(i, 'model', e.target.value)} placeholder="Specify model…" autoFocus />
+                        )}
+                      </div>
+
+                      {/* Serial No — plain text */}
+                      <Input className="h-6 text-xs px-1" value={unit.serial_no} onChange={e => updateAc(i, 'serial_no', e.target.value)} placeholder="S/N" />
+
+                      {/* Location */}
+                      <div className="space-y-1">
+                        <select
+                          className="w-full border border-border rounded px-1 py-0.5 text-xs"
+                          value={locationIsOther ? '__other__' : unit.location}
+                          onChange={e => updateAc(i, 'location', e.target.value === '__other__' ? '' : e.target.value)}
+                        >
+                          <option value="">—</option>
+                          {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+                          <option value="__other__">Others</option>
+                        </select>
+                        {locationIsOther && (
+                          <Input className="h-6 text-xs px-1" value={unit.location} onChange={e => updateAc(i, 'location', e.target.value)} placeholder="Specify location…" autoFocus />
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
