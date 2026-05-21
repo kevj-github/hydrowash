@@ -82,29 +82,30 @@ export async function POST(
     // Non-fatal — continue with email
   }
 
-  // Generate PayNow QR
+  // Generate PayNow QR (optional — only if paynow_mobile is configured)
   let qrDataUrl: string | undefined
+  let referenceId: string | undefined
   if (settings?.paynow_mobile) {
-    const referenceId = `CONTRACT-${id.slice(0, 8).toUpperCase()}`
+    referenceId = `CONTRACT-${id.slice(0, 8).toUpperCase()}`
     const payload = buildPayNowPayload(settings.paynow_mobile, priceNum, referenceId)
     qrDataUrl = await QRCode.toDataURL(payload, { width: 300, margin: 2 })
-
-    await sendContractPricing(
-      {
-        customerName: contract.customer?.name ?? 'Customer',
-        numUnits: contract.num_units,
-        priceSgd: priceNum,
-        startDate: contract.start_date,
-        endDate: contract.end_date,
-        address: contract.address ?? undefined,
-        paynowQrDataUrl: qrDataUrl,
-        paynowMobile: settings.paynow_mobile,
-        referenceId,
-      },
-      customerUser.email,
-      pdfBuf
-    )
   }
+
+  await sendContractPricing(
+    {
+      customerName: contract.customer?.name ?? 'Customer',
+      numUnits: contract.num_units,
+      priceSgd: priceNum,
+      startDate: contract.start_date,
+      endDate: contract.end_date,
+      address: contract.address ?? undefined,
+      paynowQrDataUrl: qrDataUrl,
+      paynowMobile: settings?.paynow_mobile ?? undefined,
+      referenceId,
+    },
+    customerUser.email,
+    pdfBuf
+  )
 
   return NextResponse.json({ ok: true })
 }

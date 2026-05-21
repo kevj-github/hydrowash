@@ -41,7 +41,7 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes }: Pr
     depot_address: '', depot_lat: 0, depot_lng: 0, company_name: 'HydroWash', contact_email: '',
     company_address: '404B Fernvale Lane, S792404', company_phone: '(+65) 8811 1105',
     company_email: 'hydrowash20@gmail.com', company_instagram: '@Hydrowash.sg',
-    authorised_officer_name: 'Gilbert Chen',
+    authorised_officer_name: 'Gilbert Chen', paynow_mobile: '',
   })
   const [serviceTypes, setServiceTypes] = useState(initialServiceTypes)
   const [saving, setSaving] = useState(false)
@@ -185,6 +185,10 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes }: Pr
           <div className="space-y-1.5">
             <Label>Authorised Officer Name (PDF signature)</Label>
             <Input value={settings.authorised_officer_name ?? ''} onChange={e => setSettings(s => ({ ...s, authorised_officer_name: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>PayNow Mobile Number (for QR code on invoices &amp; contracts)</Label>
+            <Input value={settings.paynow_mobile ?? ''} onChange={e => setSettings(s => ({ ...s, paynow_mobile: e.target.value }))} placeholder="+6591234567" />
           </div>
           <div className="space-y-1.5">
             <Label>Depot Address (used as VRP start point)</Label>
