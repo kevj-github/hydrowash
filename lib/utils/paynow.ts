@@ -34,7 +34,7 @@ export function buildPayNowPayload(mobile: string, amountSgd: number, ref: strin
   const proxyValue = normaliseMobile(mobile)
 
   // Tag 26: Merchant Account — SG.PAYNOW
-  const merchantAccount = tlv('00', 'SG.PAYNOW') + tlv('01', '2') + tlv('02', proxyValue) + tlv('03', '0')
+  const merchantAccount = tlv('00', 'SG.PAYNOW') + tlv('01', '0') + tlv('02', proxyValue) + tlv('03', '0')
 
   const body =
     tlv('00', '01') +        // Payload format indicator

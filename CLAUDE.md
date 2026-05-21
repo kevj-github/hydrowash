@@ -358,6 +358,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
   - Fixed broken Unsplash photo URLs (hero + installation card + auth pages) — replaced 404 IDs with working ones
   - `app/admin/settings/AdminSettingsClient.tsx`: added PayNow Mobile Number input field (was missing, preventing QR generation)
   - `app/api/contracts/[id]/send-contract-pdf/route.ts`: contract PDF email now sends unconditionally — PayNow QR is optional (included only when `paynow_mobile` is configured); previously email was silently skipped when `paynow_mobile` was null
+  - `lib/utils/paynow.ts`: fixed PayNow QR proxy type — was `'2'` (UEN) instead of `'0'` (mobile number); banks were rejecting scans with "Contact number isn't registered for PayNow"
 
 - **Frontend upgrade (2026-05-20):** Full visual refresh across all pages ✅ complete
   - `next.config.ts`: added `images.remotePatterns` for `images.unsplash.com`
