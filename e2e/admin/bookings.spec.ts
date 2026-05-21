@@ -32,7 +32,8 @@ test.describe('Admin bookings', () => {
 
   test('all tab renders', async ({ page }, testInfo) => {
     await page.goto('/admin/bookings')
-    await page.getByRole('button', { name: /^All$/i }).click()
+    // Tab "All" is the 4th tab button in the tab bar
+    await page.locator('button').filter({ hasText: /^All$/ }).first().click()
     await page.screenshot({
       path: `e2e/screenshots/admin/bookings-all-${testInfo.project.name}.png`,
       fullPage: true,

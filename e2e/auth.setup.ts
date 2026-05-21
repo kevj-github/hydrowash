@@ -15,10 +15,15 @@ async function globalSetup() {
   async function login(email: string, password: string, statePath: string) {
     const page = await browser.newPage()
     await page.goto('http://localhost:3000/auth/login')
+    await page.waitForLoadState('networkidle') // wait for React hydration
     await page.fill('#email', email)
     await page.fill('#password', password)
     await page.click('button[type="submit"]')
-    await page.waitForURL('http://localhost:3000/', { timeout: 10000 })
+    // Next.js router.push is a client-side history navigation — fixed wait is reliable
+    await page.waitForTimeout(6000)
+    if (page.url().includes('/auth')) {
+      throw new Error(`Login failed for ${email} — still on ${page.url()}`)
+    }
     await page.context().storageState({ path: statePath })
     await page.close()
   }
