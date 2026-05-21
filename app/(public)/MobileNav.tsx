@@ -40,7 +40,7 @@ export function MobileNav({ isLoggedIn, isAdmin }: MobileNavProps) {
       </button>
 
       {open && (
-        <div className="absolute top-16 left-0 right-0 bg-[#0F172A] border-t border-white/10 shadow-lg z-50 px-4 py-4 flex flex-col gap-1">
+        <div className="absolute top-16 left-0 right-0 bg-primary border-t border-white/10 shadow-lg z-50 px-4 py-4 flex flex-col gap-1">
           {isLoggedIn ? (
             <>
               {isAdmin && (
@@ -71,7 +71,7 @@ export function MobileNav({ isLoggedIn, isAdmin }: MobileNavProps) {
               <Link
                 href="/book"
                 onClick={() => setOpen(false)}
-                className="text-sm text-white bg-[#0369A1] hover:bg-[#0284C7] transition-colors px-3 py-2 rounded-md font-semibold mt-1"
+                className="text-sm text-white bg-accent hover:bg-accent/90 transition-colors px-3 py-2 rounded-md font-semibold mt-1"
               >
                 Book Now
               </Link>
@@ -94,7 +94,7 @@ export function MobileNav({ isLoggedIn, isAdmin }: MobileNavProps) {
               <Link
                 href="/book"
                 onClick={() => setOpen(false)}
-                className="text-sm text-white bg-[#0369A1] hover:bg-[#0284C7] transition-colors px-3 py-2 rounded-md font-semibold mt-1"
+                className="text-sm text-white bg-accent hover:bg-accent/90 transition-colors px-3 py-2 rounded-md font-semibold mt-1"
               >
                 Book Now
               </Link>

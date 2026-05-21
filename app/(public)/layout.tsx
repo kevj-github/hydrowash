@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Wind } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { PublicHeader } from './PublicHeader'
+import { CustomerBottomNav } from '@/components/ui/CustomerBottomNav'
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -16,8 +17,9 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <>
       <PublicHeader isLoggedIn={!!user} isAdmin={isAdmin} />
-      <main className="flex-1">{children}</main>
-      <footer className="bg-[#0F172A] border-t border-white/10 text-slate-400 py-12 mt-auto">
+      <main className="flex-1 pb-14 md:pb-0">{children}</main>
+      <CustomerBottomNav isLoggedIn={!!user} />
+      <footer className="bg-primary border-t border-white/10 text-slate-400 py-12 mt-auto mb-14 md:mb-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between gap-8">
             <div className="max-w-xs">

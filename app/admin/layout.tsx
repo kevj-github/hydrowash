@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Wind } from 'lucide-react'
 import { AdminNav } from '@/components/admin/AdminNav'
+import { AdminBottomNav } from '@/components/admin/AdminBottomNav'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -25,7 +26,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="text-white/30 mx-2 text-sm hidden sm:block">|</span>
             <span className="text-slate-400 text-sm font-medium hidden sm:block">Admin</span>
           </div>
-          <AdminNav />
+          <div className="hidden md:flex">
+            <AdminNav />
+          </div>
           <Link
             href="/"
             className="text-sm text-slate-500 hover:text-slate-300 px-3 py-1.5 rounded-md hover:bg-white/10 transition-all duration-150 shrink-0 hidden lg:block"
@@ -34,9 +37,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
         </div>
       </header>
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 pb-20 md:pb-8">
         {children}
       </main>
+      <AdminBottomNav />
     </div>
   )
 }
