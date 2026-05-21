@@ -5,39 +5,46 @@ import crypto from 'crypto'
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'HydroWash <noreply@hydrowash.services>'
 
-// Supabase signs Auth Hook requests as HS256 JWTs.
+// Supabase Auth Hooks use Svix webhook signing.
 // Secret format: "v1,whsec_<base64-encoded key>"
-function verifyHookSignature(authHeader: string | null): boolean {
-  const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
-  if (!secret || !authHeader?.startsWith('Bearer ')) return false
+// Signature is HMAC-SHA256 of "${svix-id}.${svix-timestamp}.${raw-body}"
+function verifySvixSignature(rawBody: string, headers: Headers, secret: string): boolean {
+  const msgId = headers.get('svix-id')
+  const msgTimestamp = headers.get('svix-timestamp')
+  const msgSignature = headers.get('svix-signature')
+  if (!msgId || !msgTimestamp || !msgSignature) return false
 
-  const token = authHeader.slice(7)
-  const parts = token.split('.')
-  if (parts.length !== 3) return false
+  // Reject requests older than 5 minutes
+  const ts = parseInt(msgTimestamp, 10)
+  if (Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false
 
-  const [header, payload, signature] = parts
-  const rawKey = secret.replace('v1,whsec_', '')
+  const rawKey = secret.replace(/^v1,whsec_/, '')
   const keyBytes = Buffer.from(rawKey, 'base64')
+  const toSign = `${msgId}.${msgTimestamp}.${rawBody}`
+  const expected = crypto.createHmac('sha256', keyBytes).update(toSign).digest('base64')
 
-  const expected = crypto
-    .createHmac('sha256', keyBytes)
-    .update(`${header}.${payload}`)
-    .digest('base64url')
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
-  } catch {
-    return false
+  // svix-signature can be multiple space-separated "v1,<sig>" values
+  for (const part of msgSignature.split(' ')) {
+    const sigValue = part.replace(/^v1,/, '')
+    try {
+      if (crypto.timingSafeEqual(Buffer.from(sigValue), Buffer.from(expected))) return true
+    } catch {
+      // buffers different length — not a match
+    }
   }
+  return false
 }
 
 export async function POST(request: NextRequest) {
-  if (!verifyHookSignature(request.headers.get('authorization'))) {
+  const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
+  if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
+
+  const rawBody = await request.text()
+  if (!verifySvixSignature(rawBody, request.headers, secret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json()
-  const { user, email_data } = body as {
+  const { user, email_data } = JSON.parse(rawBody) as {
     user: { email: string }
     email_data: {
       token_hash: string
@@ -48,7 +55,6 @@ export async function POST(request: NextRequest) {
   }
 
   const { email_action_type, token_hash, site_url } = email_data
-  const toEmail = user.email
   const confirmUrl = `${site_url}/auth/callback?token_hash=${token_hash}&type=${email_action_type}`
 
   try {
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
       const { EmailConfirmation } = await import('@/lib/email/templates/EmailConfirmation')
       await resend.emails.send({
         from: FROM,
-        to: toEmail,
+        to: user.email,
         subject: 'Confirm your HydroWash account',
         react: EmailConfirmation({ confirmUrl }),
       })
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
       const { PasswordReset } = await import('@/lib/email/templates/PasswordReset')
       await resend.emails.send({
         from: FROM,
-        to: toEmail,
+        to: user.email,
         subject: 'Reset your HydroWash password',
         react: PasswordReset({ resetUrl: confirmUrl }),
       })
