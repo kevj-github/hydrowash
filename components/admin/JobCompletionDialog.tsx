@@ -336,13 +336,18 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
             >
               Preview Work Order PDF ↗
             </a>
-            <Button
-              className="w-full bg-accent hover:bg-accent/90 text-white"
-              onClick={handleSendWorkOrder}
-              disabled={sending}
-            >
-              {sending ? 'Sending…' : 'Confirm & Send to Customer'}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
+                ← Back to Pricing
+              </Button>
+              <Button
+                className="flex-1 bg-accent hover:bg-accent/90 text-white"
+                onClick={handleSendWorkOrder}
+                disabled={sending}
+              >
+                {sending ? 'Sending…' : 'Confirm & Send to Customer'}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

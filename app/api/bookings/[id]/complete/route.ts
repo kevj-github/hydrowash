@@ -21,8 +21,8 @@ export async function POST(
   const { data: booking } = await supabase
     .from('bookings').select('*').eq('id', id).single()
   if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
-  if (booking.status !== 'APPROVED') {
-    return NextResponse.json({ error: 'Only APPROVED bookings can be completed' }, { status: 409 })
+  if (!['APPROVED', 'COMPLETED'].includes(booking.status)) {
+    return NextResponse.json({ error: 'Only APPROVED or COMPLETED bookings can be updated' }, { status: 409 })
   }
 
   const body = await req.json() as {
@@ -41,13 +41,16 @@ export async function POST(
   const additionalCharges = body.additional_charges ?? []
   const total_sgd = body.base_price_sgd + additionalCharges.reduce((sum, c) => sum + c.amount_sgd, 0)
 
-  // Update booking status + attended_by (work_order_no auto-assigned by bigserial on first update if NULL)
-  const { error: bookingError } = await supabase
-    .from('bookings')
-    .update({ status: 'COMPLETED', attended_by: body.attended_by })
-    .eq('id', id)
-  if (bookingError) {
-    return NextResponse.json({ error: bookingError.message }, { status: 500 })
+  // Mark COMPLETED only if still APPROVED — work_order_no is auto-assigned by DB trigger on this transition
+  if (booking.status === 'APPROVED') {
+    const { error: bookingError } = await supabase
+      .from('bookings')
+      .update({ status: 'COMPLETED', attended_by: body.attended_by })
+      .eq('id', id)
+    if (bookingError) return NextResponse.json({ error: bookingError.message }, { status: 500 })
+  } else {
+    // Already COMPLETED — just update attended_by, leave status/work_order_no unchanged
+    await supabase.from('bookings').update({ attended_by: body.attended_by }).eq('id', id)
   }
 
   // Upsert job_completions
