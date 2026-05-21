@@ -32,8 +32,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { email_action_type, token_hash, site_url } = email_data
-  const confirmUrl = `${site_url}/auth/callback?token_hash=${token_hash}&type=${email_action_type}`
+  const { email_action_type, token_hash, redirect_to, site_url } = email_data
+  // Use the origin from redirect_to so pre-prod signups link back to pre-prod,
+  // not the production site_url
+  const appOrigin = redirect_to ? new URL(redirect_to).origin : site_url
+  const confirmUrl = `${appOrigin}/auth/callback?token_hash=${token_hash}&type=${email_action_type}`
 
   try {
     if (email_action_type === 'signup' || email_action_type === 'email_change') {
