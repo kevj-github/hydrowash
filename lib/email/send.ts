@@ -155,9 +155,9 @@ export async function sendContractPricing(
     startDate: string
     endDate: string
     address?: string
-    paynowQrDataUrl: string
-    paynowMobile: string
-    referenceId: string
+    paynowQrDataUrl?: string
+    paynowMobile?: string
+    referenceId?: string
   },
   email: string,
   pdfBuffer?: Buffer
