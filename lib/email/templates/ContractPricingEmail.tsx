@@ -7,9 +7,9 @@ interface Props {
   startDate: string
   endDate: string
   address?: string
-  paynowQrDataUrl: string
-  paynowMobile: string
-  referenceId: string
+  paynowQrDataUrl?: string
+  paynowMobile?: string
+  referenceId?: string
 }
 
 export function ContractPricingEmail({
@@ -46,24 +46,30 @@ export function ContractPricingEmail({
             </Text>
           </Container>
 
-          <Text style={{ fontWeight: 'bold' }}>Pay via PayNow</Text>
-          <Text>
-            Scan the QR code below with your banking app, or send{' '}
-            <strong>S${priceSgd.toFixed(2)}</strong> to{' '}
-            <strong>{paynowMobile}</strong> with reference <strong>{referenceId}</strong>.
-          </Text>
-
-          <Img
-            src={paynowQrDataUrl}
-            alt="PayNow QR Code"
-            width={200}
-            height={200}
-            style={{ display: 'block', margin: '16px auto' }}
-          />
-
-          <Text style={{ fontSize: 12, color: '#64748b', textAlign: 'center' as const }}>
-            Reference: {referenceId}
-          </Text>
+          {paynowMobile && (
+            <>
+              <Text style={{ fontWeight: 'bold' }}>Pay via PayNow</Text>
+              <Text>
+                Scan the QR code below with your banking app, or send{' '}
+                <strong>S${priceSgd.toFixed(2)}</strong> to{' '}
+                <strong>{paynowMobile}</strong>{referenceId ? <> with reference <strong>{referenceId}</strong></> : ''}.
+              </Text>
+              {paynowQrDataUrl && (
+                <Img
+                  src={paynowQrDataUrl}
+                  alt="PayNow QR Code"
+                  width={200}
+                  height={200}
+                  style={{ display: 'block', margin: '16px auto' }}
+                />
+              )}
+              {referenceId && (
+                <Text style={{ fontSize: 12, color: '#64748b', textAlign: 'center' as const }}>
+                  Reference: {referenceId}
+                </Text>
+              )}
+            </>
+          )}
 
           <Text>
             Once we confirm your payment, your contract will be activated and your quarterly
