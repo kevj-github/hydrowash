@@ -359,6 +359,9 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
   - `app/admin/settings/AdminSettingsClient.tsx`: added PayNow Mobile Number input field (was missing, preventing QR generation)
   - `app/api/contracts/[id]/send-contract-pdf/route.ts`: contract PDF email now sends unconditionally — PayNow QR is optional (included only when `paynow_mobile` is configured); previously email was silently skipped when `paynow_mobile` was null
   - `lib/utils/paynow.ts`: fixed PayNow QR proxy type — was `'2'` (UEN) instead of `'0'` (mobile number); banks were rejecting scans with "Contact number isn't registered for PayNow"
+  - `lib/email/templates/BookingReceived.tsx` + `BookingRescheduled.tsx`: emails now list all preferred date/slot entries instead of only first preference; `send.ts` and reschedule route updated to pass `newDateSlots` instead of `newDates`
+  - `app/admin/contracts/page.tsx`: contract creation dialog address field replaced with Home (customer's saved address) / My Location / Other (Places Autocomplete) picker; Maps JS API loaded via `next/script`
+  - **Removed first-preference concept across all UI:** `StepReview`, `account/bookings/page.tsx`, `BookingCard`, `BookingsMap` InfoWindow, and `admin/customers/[id]/page.tsx` all now show every preferred date+slot equally — no "First preference / Preference N" labels. Admin customer detail merged Date+Slot columns into one; confirmed bookings show confirmed date+slot in green.
 
 - **Frontend upgrade (2026-05-20):** Full visual refresh across all pages ✅ complete
   - `next.config.ts`: added `images.remotePatterns` for `images.unsplash.com`
@@ -409,5 +412,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Bug fixes applied (2026-05-21). Frontend upgrade complete. All Phase 2 subsystems + post-release fixes + full visual refresh applied. All migrations 001–029 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Current status:** Bug fixes + slot display overhaul applied (2026-05-21). Frontend upgrade complete. All Phase 2 subsystems + post-release fixes + full visual refresh applied. All migrations 001–029 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
