@@ -59,7 +59,7 @@ export async function sendDayBeforeReminder(booking: BookingWithRelations, email
 }
 
 export async function sendBookingRescheduled(
-  data: { customerName: string; bookingId: string; serviceType: string; newDates: string[] },
+  data: { customerName: string; bookingId: string; serviceType: string; newDateSlots: { date: string; slots: string[] }[] },
   adminEmail: string
 ) {
   const { BookingRescheduled } = await import('./templates/BookingRescheduled')

@@ -3,6 +3,8 @@ import { SLOT_LABELS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 
 export function BookingReceived({ booking }: { booking: BookingWithRelations }) {
+  const dateSlots = booking.preferred_date_slots ?? []
+
   return (
     <Html>
       <Head />
@@ -13,7 +15,12 @@ export function BookingReceived({ booking }: { booking: BookingWithRelations }) 
           <Text>Hi {booking.customer.name},</Text>
           <Text>We have received your booking for <strong>{booking.service_type.name}</strong>.</Text>
           <Text>Address: {booking.address}</Text>
-          <Text>Date: {booking.booking_date} · {SLOT_LABELS[booking.time_slot as TimeSlot] ?? booking.time_slot}</Text>
+          <Text style={{ marginBottom: 4 }}>Your preferred dates and times:</Text>
+          {dateSlots.map((ds, i) => (
+            <Text key={i} style={{ margin: '2px 0', paddingLeft: 12 }}>
+              {ds.date} — {ds.slots.map(s => SLOT_LABELS[s as TimeSlot] ?? s).join(', ')}
+            </Text>
+          ))}
           <Text>We will review your booking and confirm a date shortly.</Text>
           <Text style={{ color: '#64748b', fontSize: 12 }}>HydroWash · Singapore</Text>
         </Container>

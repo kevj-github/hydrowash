@@ -115,11 +115,12 @@ export async function PATCH(
         customerName: profile.name ?? 'Customer',
         bookingId: updated.id,
         serviceType: updated.service_type?.name ?? 'Service',
-        newDates: sanitisedEntries.map(entry =>
-          new Date(`${entry.date}T00:00:00`).toLocaleDateString('en-SG', {
+        newDateSlots: sanitisedEntries.map(entry => ({
+          date: new Date(`${entry.date}T00:00:00`).toLocaleDateString('en-SG', {
             day: 'numeric', month: 'short', year: 'numeric',
-          })
-        ),
+          }),
+          slots: entry.slots,
+        })),
       },
       adminEmail
     ).catch(err =>
