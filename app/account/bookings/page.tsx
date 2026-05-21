@@ -115,13 +115,25 @@ export default async function AccountBookingsPage({
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>Date: {booking.booking_date} · {SLOT_LABELS[booking.time_slot as TimeSlot] ?? booking.time_slot}</span>
-                {booking.confirmed_date && (
-                  <span className="text-green-700 font-medium">Confirmed: {booking.confirmed_date}</span>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {booking.confirmed_date ? (
+                  <p className="text-green-700 font-medium">
+                    Confirmed: {booking.confirmed_date}
+                    {booking.confirmed_slot ? ` · ${SLOT_LABELS[booking.confirmed_slot as TimeSlot] ?? booking.confirmed_slot}` : ''}
+                  </p>
+                ) : (
+                  <div>
+                    <p className="font-medium text-slate-600 mb-0.5">Preferred dates:</p>
+                    {(booking.preferred_date_slots ?? []).map(ds => (
+                      <p key={ds.date}>
+                        {new Date(ds.date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {ds.slots.length > 0 && ` · ${ds.slots.map(s => SLOT_LABELS[s as TimeSlot] ?? s).join(', ')}`}
+                      </p>
+                    ))}
+                  </div>
                 )}
                 {booking.rejection_reason && (
-                  <span className="text-red-600">Reason: {booking.rejection_reason}</span>
+                  <p className="text-red-600">Reason: {booking.rejection_reason}</p>
                 )}
               </div>
               {canModify(booking) && (

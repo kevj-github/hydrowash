@@ -2,7 +2,8 @@
 import { useCallback, useState } from 'react'
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api'
 import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
-import type { BookingWithRelations } from '@/lib/types'
+import { SLOT_LABELS } from '@/lib/types'
+import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 
 const MAP_CENTER = { lat: 1.3521, lng: 103.8198 }
 
@@ -88,10 +89,12 @@ export function BookingsMap({ bookings, selected, onPinClick }: Props) {
             <p style={{ color: '#64748B', marginBottom: 4 }}>{activeBooking.customer?.phone}</p>
             <p style={{ fontWeight: 600, color: '#0369A1', marginBottom: 2 }}>{activeBooking.service_type?.name}</p>
             <p style={{ color: '#475569', marginBottom: 2 }}>{activeBooking.address}, S{activeBooking.postal_code}</p>
-            <p style={{ color: '#475569', marginBottom: 4 }}>
-              {activeBooking.booking_date ?? '—'}
-              {activeBooking.time_slot ? ` · ${activeBooking.time_slot}` : ''}
-            </p>
+            {(activeBooking.preferred_date_slots ?? []).map((ds: { date: string; slots: string[] }) => (
+              <p key={ds.date} style={{ color: '#475569', marginBottom: 2 }}>
+                {new Date(ds.date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })}
+                {ds.slots.length > 0 && ` · ${ds.slots.map(s => SLOT_LABELS[s as TimeSlot] ?? s).join(', ')}`}
+              </p>
+            ))}
             {activeBooking.confirmed_date && (
               <p style={{ fontWeight: 600, color: '#0369A1', marginBottom: 4 }}>
                 Confirmed: {activeBooking.confirmed_date}

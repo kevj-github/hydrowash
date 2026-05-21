@@ -95,9 +95,8 @@ export default async function AdminCustomerDetailPage({
           <table className="w-full text-sm">
             <thead className="text-xs text-muted-foreground uppercase">
               <tr>
-                <th className="text-left pb-2">Date</th>
+                <th className="text-left pb-2">Date / Slots</th>
                 <th className="text-left pb-2">Service</th>
-                <th className="text-left pb-2">Slot</th>
                 <th className="text-left pb-2">Status</th>
                 <th className="text-left pb-2">Address</th>
               </tr>
@@ -105,17 +104,30 @@ export default async function AdminCustomerDetailPage({
             <tbody className="divide-y divide-border">
               {bookings.map(b => (
                 <tr key={b.id}>
-                  <td className="py-2 pr-3">{b.confirmed_date ?? b.booking_date}</td>
-                  <td className="py-2 pr-3">{b.service_type?.name}</td>
-                  <td className="py-2 pr-3 text-xs text-muted-foreground">
-                    {SLOT_LABELS[b.confirmed_slot as TimeSlot ?? b.time_slot as TimeSlot] ?? '—'}
+                  <td className="py-2 pr-3 align-top">
+                    {b.confirmed_date ? (
+                      <p className="text-xs font-semibold text-green-700">
+                        {b.confirmed_date}
+                        {b.confirmed_slot ? ` · ${SLOT_LABELS[b.confirmed_slot as TimeSlot] ?? b.confirmed_slot}` : ''}
+                      </p>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {(b.preferred_date_slots ?? []).map((ds: { date: string; slots: string[] }) => (
+                          <p key={ds.date} className="text-xs text-muted-foreground">
+                            {ds.date}
+                            {ds.slots.length > 0 && ` · ${ds.slots.map((s: string) => SLOT_LABELS[s as TimeSlot] ?? s).join(', ')}`}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </td>
-                  <td className="py-2 pr-3">
+                  <td className="py-2 pr-3 align-top">{b.service_type?.name}</td>
+                  <td className="py-2 pr-3 align-top">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${statusColor[b.status]}`}>
                       {b.status}
                     </span>
                   </td>
-                  <td className="py-2 text-xs text-muted-foreground truncate max-w-[200px]">{b.address}</td>
+                  <td className="py-2 text-xs text-muted-foreground truncate max-w-[200px] align-top">{b.address}</td>
                 </tr>
               ))}
             </tbody>

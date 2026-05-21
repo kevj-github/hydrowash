@@ -43,9 +43,7 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
   const [showReject, setShowReject] = useState(false)
   const [loading, setLoading] = useState<'approve' | 'reject' | null>(null)
 
-  const preferredSlots: TimeSlot[] = (booking.preferred_slots?.length
-    ? booking.preferred_slots
-    : booking.time_slot ? [booking.time_slot] : []) as TimeSlot[]
+  const preferredDateSlots = booking.preferred_date_slots ?? []
 
   async function act(action: 'approve' | 'reject') {
     setLoading(action)
@@ -92,23 +90,23 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
       <p className="text-sm font-medium text-accent mb-1">{booking.service_type.name}</p>
       <p className="text-xs text-slate-500 mb-1">{booking.address}, S{booking.postal_code}</p>
 
-      <div className="mb-1">
-        <p className="text-xs text-slate-500">
-          Requested:{' '}
-          {booking.booking_date
-            ? new Date(booking.booking_date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
-            : '—'}
-        </p>
-        {preferredSlots.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-0.5">
-            {preferredSlots.map(s => (
-              <span key={s} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                {SLOT_LABELS[s]}
+      {preferredDateSlots.length > 0 && (
+        <div className="mb-1 space-y-0.5">
+          <p className="text-xs text-slate-500">Preferred:</p>
+          {preferredDateSlots.map(ds => (
+            <div key={ds.date} className="flex flex-wrap items-center gap-1">
+              <span className="text-xs text-slate-600 font-medium">
+                {new Date(ds.date + 'T00:00:00').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
-            ))}
-          </div>
-        )}
-      </div>
+              {ds.slots.map(s => (
+                <span key={s} className="text-[10px] font-medium bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                  {SLOT_LABELS[s as TimeSlot]}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
 
       {booking.confirmed_date && (
         <p className="text-xs font-semibold text-accent mb-2">
