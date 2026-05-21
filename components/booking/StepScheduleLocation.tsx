@@ -164,6 +164,7 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
         {preset === 'other' && (
           <div className="space-y-1.5">
             <Label>Street Address <span className="text-red-500">*</span></Label>
+            <div className="relative w-full max-w-full overflow-hidden">
             <Input
               ref={inputRef}
               defaultValue={data.address}
@@ -171,7 +172,9 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
               disabled={!isLoaded}
               onChange={handleInputChange}
               autoComplete="off"
+              className="w-full"
             />
+            </div>
             {data.lat ? (
               <p className="text-xs text-green-700">✓ Location confirmed</p>
             ) : (

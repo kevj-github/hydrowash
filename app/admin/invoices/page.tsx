@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { SlidersHorizontal } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ function AdminInvoicesContent() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   // List filters
   const [invoiceSearch, setInvoiceSearch] = useState('')
@@ -349,12 +351,24 @@ function AdminInvoicesContent() {
 
       {/* List filters */}
       <div className="space-y-3 bg-white border border-border rounded-xl p-4">
-        <Input
-          placeholder="Search by customer name or phone…"
-          value={invoiceSearch}
-          onChange={e => setInvoiceSearch(e.target.value)}
-          className="h-8 text-sm"
-        />
+        <div className="flex gap-2">
+          <Input
+            placeholder="Search by customer name or phone…"
+            value={invoiceSearch}
+            onChange={e => setInvoiceSearch(e.target.value)}
+            className="h-8 text-sm flex-1"
+          />
+          <button
+            onClick={() => setFiltersOpen(o => !o)}
+            className={`md:hidden flex items-center gap-1 px-3 h-8 rounded-lg border text-xs font-medium transition-colors ${
+              filtersOpen ? 'bg-accent text-white border-accent' : 'border-border text-slate-500'
+            }`}
+          >
+            <SlidersHorizontal size={13} />
+            Filters
+          </button>
+        </div>
+        <div className={`${filtersOpen ? 'flex' : 'hidden'} md:block flex-col gap-3`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1">Created date</p>
@@ -372,6 +386,7 @@ function AdminInvoicesContent() {
               <Input type="date" value={paidTo} onChange={e => setPaidTo(e.target.value)} className="h-8 text-xs flex-1" />
             </div>
           </div>
+        </div>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
@@ -405,32 +420,53 @@ function AdminInvoicesContent() {
       ) : filteredInvoices.length === 0 ? (
         <p className="text-muted-foreground">No invoices found.</p>
       ) : (
-        <div className="bg-white border rounded-xl overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="border-b border-border">
-              <tr className="text-xs text-muted-foreground">
-                <th className="py-2 px-3">Customer</th>
-                <th className="py-2 px-3">Description</th>
-                <th className="py-2 px-3">Amount</th>
-                <th className="py-2 px-3">Status</th>
-                <th className="py-2 px-3">Created</th>
-                <th className="py-2 px-3">Paid</th>
-                <th className="py-2 px-3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInvoices.map((inv, idx) => (
-                <InvoiceRow
-                  key={inv.id}
-                  invoice={inv}
-                  onPaid={fetchInvoices}
-                  showCustomer
-                  className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/40'}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white border rounded-xl overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="border-b border-border">
+                <tr className="text-xs text-muted-foreground">
+                  <th className="py-2 px-3">Customer</th>
+                  <th className="py-2 px-3">Description</th>
+                  <th className="py-2 px-3">Amount</th>
+                  <th className="py-2 px-3">Status</th>
+                  <th className="py-2 px-3">Created</th>
+                  <th className="py-2 px-3">Paid</th>
+                  <th className="py-2 px-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredInvoices.map((inv, idx) => (
+                  <InvoiceRow
+                    key={inv.id}
+                    invoice={inv}
+                    onPaid={fetchInvoices}
+                    showCustomer
+                    className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/40'}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden space-y-3">
+            {filteredInvoices.map(inv => (
+              <div key={inv.id} className="bg-white border border-border rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-primary">{inv.customer?.name ?? '—'}</p>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                  }`}>{inv.status}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{inv.customer?.phone}</p>
+                <p className="text-xs text-muted-foreground truncate">{inv.description}</p>
+                <p className="text-sm font-bold text-primary">S${Number(inv.amount_sgd ?? 0).toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Created {inv.created_at.split('T')[0]}</p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

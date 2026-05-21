@@ -44,7 +44,7 @@ export function RescheduleDialog({ bookingId, onSuccess }: Props) {
       <DialogTrigger className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-primary min-h-[44px]')}>
         Reschedule
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Reschedule Booking</DialogTitle>
         </DialogHeader>

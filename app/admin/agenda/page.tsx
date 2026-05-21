@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
-import type { TimeSlot } from '@/lib/types'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { SLOT_KEYS } from '@/lib/types'
+import { AdminAgendaClient } from '@/components/admin/AdminAgendaClient'
 
 function getMondayOf(dateStr: string): Date {
   const d = new Date(`${dateStr}T00:00:00Z`)
@@ -72,13 +72,14 @@ export default async function AdminAgendaPage({
   }
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const dayStrings = days.map(d => formatDate(d))
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-heading font-bold text-2xl text-primary">Agenda</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Status toggle */}
           <div className="flex border border-border rounded-lg overflow-hidden text-sm">
             <Link
@@ -99,7 +100,7 @@ export default async function AdminAgendaPage({
             <Link href={`/admin/agenda?week=${prevWeek}&status=${status}`} className="p-1.5 rounded hover:bg-muted transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </Link>
-            <span className="text-sm font-medium px-2">
+            <span className="text-sm font-medium px-2 hidden sm:inline">
               {weekStart.toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })} –{' '}
               {weekEnd.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
@@ -113,62 +114,15 @@ export default async function AdminAgendaPage({
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="bg-white rounded-xl border border-border overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left px-3 py-3 w-28 text-muted-foreground text-xs font-medium">Slot</th>
-              {days.map(d => {
-                const dateStr = formatDate(d)
-                const isToday = dateStr === todayStr
-                return (
-                  <th key={dateStr} className={`px-3 py-3 text-center text-xs font-medium ${isToday ? 'bg-accent/10 text-accent rounded-t-md font-semibold' : 'text-muted-foreground'}`}>
-                    <span className="block">{d.toLocaleDateString('en-SG', { weekday: 'short' })}</span>
-                    <span className={`text-sm font-bold ${isToday ? 'text-accent' : 'text-primary'}`}>
-                      {d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })}
-                    </span>
-                  </th>
-                )
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {SLOT_KEYS.map(slot => (
-              <tr key={slot} className="border-b border-border last:border-0">
-                <td className="pr-2 py-3 text-xs text-muted-foreground text-right whitespace-nowrap align-top pl-3">
-                  {SLOT_LABELS[slot as TimeSlot]}
-                </td>
-                {days.map(d => {
-                  const dateStr = formatDate(d)
-                  const cellBookings = grid[slot][dateStr] ?? []
-                  const isToday = dateStr === todayStr
-                  return (
-                    <td key={dateStr} className={`px-2 py-2 align-top border-l border-border ${isToday ? 'bg-accent/5' : ''}`}>
-                      {cellBookings.length === 0 ? (
-                        <span className="text-muted-foreground/40 text-xs">—</span>
-                      ) : (
-                        <div className="space-y-1">
-                          {cellBookings.map(b => (
-                            <Link
-                              key={b.id}
-                              href={`/admin/bookings`}
-                              className="block text-xs bg-accent/10 text-accent rounded-md px-2 py-0.5 font-medium hover:bg-accent/20 transition-colors truncate"
-                              title={`${b.customer?.name} · ${b.service_type?.name}`}
-                            >
-                              {b.customer?.name ?? 'Customer'}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AdminAgendaClient
+        days={dayStrings}
+        grid={grid}
+        todayStr={todayStr}
+        weekStartStr={weekStartStr}
+        status={status}
+        prevWeek={prevWeek}
+        nextWeek={nextWeek}
+      />
 
       {!bookings?.length && (
         <p className="text-center text-muted-foreground text-sm mt-8">No bookings this week.</p>

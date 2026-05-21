@@ -194,7 +194,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-16 sm:w-24 h-0.5 mx-2 mb-5 transition-colors duration-200 ${i < step ? 'bg-accent' : 'bg-border'}`} />
+              <div className={`w-8 sm:w-24 h-0.5 mx-1 sm:mx-2 mb-5 transition-colors duration-200 ${i < step ? 'bg-accent' : 'bg-border'}`} />
             )}
           </div>
         ))}

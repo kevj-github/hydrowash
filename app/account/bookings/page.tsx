@@ -137,7 +137,7 @@ export default async function AccountBookingsPage({
                 )}
               </div>
               {canModify(booking) && (
-                <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2">
+                <div className="mt-4 pt-4 border-t border-border flex flex-col sm:flex-row gap-2">
                   <RescheduleDialog bookingId={booking.id} />
                   <CancelDialog bookingId={booking.id} />
                 </div>

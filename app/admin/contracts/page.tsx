@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { Home, MapPin, Pencil } from 'lucide-react'
+import { Home, MapPin, Pencil, SlidersHorizontal } from 'lucide-react'
 import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
 
 type LocationPreset = 'home' | 'current' | 'other'
@@ -52,6 +52,7 @@ export default function AdminContractsPage() {
   const [serviceDueTo, setServiceDueTo] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const [customers, setCustomers] = useState<CustomerOption[]>([])
 
@@ -496,12 +497,24 @@ export default function AdminContractsPage() {
 
         {/* Filters */}
         <div className="space-y-3 bg-white border border-border rounded-xl p-4">
-          <Input
-            placeholder="Search by customer name or phone…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="h-8 text-sm"
-          />
+          <div className="flex gap-2">
+            <Input
+              placeholder="Search by customer name or phone…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="h-8 text-sm flex-1"
+            />
+            <button
+              onClick={() => setFiltersOpen(o => !o)}
+              className={`md:hidden flex items-center gap-1 px-3 h-8 rounded-lg border text-xs font-medium transition-colors ${
+                filtersOpen ? 'bg-accent text-white border-accent' : 'border-border text-slate-500'
+              }`}
+            >
+              <SlidersHorizontal size={13} />
+              Filters
+            </button>
+          </div>
+          <div className={`${filtersOpen ? 'flex' : 'hidden'} md:block flex-col gap-3`}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Start date</p>
@@ -527,6 +540,7 @@ export default function AdminContractsPage() {
                 <Input type="date" value={serviceDueTo} onChange={e => setServiceDueTo(e.target.value)} className="h-8 text-xs flex-1" />
               </div>
             </div>
+          </div>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex gap-2 flex-wrap">
@@ -560,11 +574,20 @@ export default function AdminContractsPage() {
         ) : filteredContracts.length === 0 ? (
           <p className="text-muted-foreground">No contracts found.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {filteredContracts.map((c) => (
-              <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} />
-            ))}
-          </div>
+          <>
+            {/* Desktop: 2-col grid */}
+            <div className="hidden sm:grid gap-4 sm:grid-cols-2">
+              {filteredContracts.map((c) => (
+                <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} />
+              ))}
+            </div>
+            {/* Mobile: single column */}
+            <div className="sm:hidden space-y-3">
+              {filteredContracts.map((c) => (
+                <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </>

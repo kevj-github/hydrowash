@@ -29,6 +29,20 @@ export default function AdminAvailabilityPage() {
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
 
+  // Mobile week navigation — tracks Sunday of the currently shown week
+  const [mobileWeekStart, setMobileWeekStart] = useState<Date>(() => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - d.getDay())
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
+  function prevMobileWeek() {
+    setMobileWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })
+  }
+  function nextMobileWeek() {
+    setMobileWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })
+  }
+
   const [byDate, setByDate] = useState<Record<string, DayData>>({})
   const [fetching, setFetching] = useState(false)
 
@@ -195,8 +209,51 @@ export default function AdminAvailabilityPage() {
         </span>
       </div>
 
-      {/* Calendar grid */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+      {/* Mobile week strip (< md) */}
+      <div className="md:hidden mb-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <button onClick={prevMobileWeek} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted">
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-semibold text-primary">
+            {mobileWeekStart.toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })} –{' '}
+            {new Date(mobileWeekStart.getTime() + 6 * 86400000).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          <button onClick={nextMobileWeek} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(mobileWeekStart.getTime() + i * 86400000)
+            const dateStr = isoDate(d.getFullYear(), d.getMonth() + 1, d.getDate())
+            const isPast = dateStr < todayStr
+            const status = getDayStatus(dateStr)
+            const data = byDate[dateStr]
+            return (
+              <button
+                key={dateStr}
+                onClick={() => !isPast && openDay(dateStr)}
+                disabled={isPast}
+                className={[
+                  'flex flex-col items-center py-2 rounded-xl text-xs transition-colors',
+                  isPast ? 'opacity-40 cursor-default' : 'cursor-pointer',
+                  status === 'full' ? 'bg-red-100 text-red-700' : status === 'partial' ? 'bg-amber-100 text-amber-700' : 'hover:bg-muted text-primary',
+                  dateStr === todayStr ? 'ring-2 ring-accent/50' : '',
+                ].join(' ')}
+              >
+                <span className="text-[10px] font-medium">{DAY_LABELS[d.getDay()]}</span>
+                <span className="font-bold">{d.getDate()}</span>
+                {(data?.booked.length ?? 0) > 0 && <span className="w-1.5 h-1.5 rounded-full bg-accent mt-0.5" />}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground text-center">Tap a day to manage blocked slots</p>
+      </div>
+
+      {/* Desktop calendar grid (≥ md) */}
+      <div className="hidden md:block bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-border">
           {DAY_LABELS.map(d => (

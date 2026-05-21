@@ -58,10 +58,13 @@ export function AdminBookingsClient({ initialBookings }: Props) {
   // All tab filters
   const [allSearch, setAllSearch] = useState('')
 
-  // Draggable sidebar
+  // Draggable sidebar (desktop)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const isDragging = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Mobile map bottom sheet
+  const [mapSheetOpen, setMapSheetOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/bookings?admin=1')
@@ -200,8 +203,150 @@ export function AdminBookingsClient({ initialBookings }: Props) {
         })}
       </div>
 
-      {/* Map + Drag handle + Sidebar */}
-      <div ref={containerRef} className="flex flex-1 min-h-0">
+      {/* ── Mobile: card list + Show Map FAB ── */}
+      <div className="md:hidden flex flex-col flex-1 min-h-0 relative">
+        {/* Mobile map bottom sheet backdrop */}
+        {mapSheetOpen && (
+          <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setMapSheetOpen(false)} />
+        )}
+        {/* Mobile map bottom sheet */}
+        {mapSheetOpen && (
+          <div className="fixed bottom-14 left-0 right-0 z-50 h-[50vh] rounded-t-2xl overflow-hidden border-t border-border bg-white">
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-slate-300" />
+            <div className="w-full h-full pt-4">
+              <BookingsMap
+                bookings={mapBookings}
+                selected={selectedJobId ? new Set([selectedJobId]) : undefined}
+                onPinClick={(id) => setSelectedJobId(prev => prev === id ? null : id)}
+              />
+            </div>
+            <button
+              onClick={() => setMapSheetOpen(false)}
+              className="absolute top-3 right-3 text-xs bg-white border border-border rounded-lg px-3 py-1.5 text-primary font-medium shadow-sm"
+            >
+              Close
+            </button>
+          </div>
+        )}
+
+        {/* Card list (full width on mobile) */}
+        <div className="flex flex-col gap-3 overflow-y-auto flex-1 pb-20">
+          {activeTab === 'MAINTENANCE' && (
+            <>
+              <div className="space-y-2 shrink-0">
+                <Input placeholder="Search customer…" value={maintSearch} onChange={e => setMaintSearch(e.target.value)} className="h-8 text-xs" />
+                <div className="flex gap-1.5 items-center">
+                  <Input type="date" value={maintDateFrom} onChange={e => setMaintDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
+                  {maintDateFrom && <button onClick={() => setMaintDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
+                </div>
+                <div className="flex gap-1">
+                  {(['ALL', 'PENDING', 'APPROVED'] as const).map(s => (
+                    <button key={s} onClick={() => setMaintStatus(s)} className={`flex-1 text-xs py-1 rounded-full border font-medium transition-colors ${maintStatus === s ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'}`}>{s}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                {maintenanceFiltered.length === 0
+                  ? <p className="text-sm text-muted-foreground text-center py-8">No maintenance bookings.</p>
+                  : maintenanceFiltered.map(b => (
+                      <div key={b.id} data-job-id={b.id}>
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      </div>
+                    ))
+                }
+              </div>
+            </>
+          )}
+          {activeTab === 'FAULT_REPAIR' && (
+            <>
+              <div className="space-y-2 shrink-0">
+                <Input placeholder="Search customer…" value={frSearch} onChange={e => setFrSearch(e.target.value)} className="h-8 text-xs" />
+                <div className="flex gap-1.5 items-center">
+                  <Input type="date" value={frDateFrom} onChange={e => setFrDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
+                  {frDateFrom && <button onClick={() => setFrDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
+                </div>
+                <div className="flex gap-1">
+                  {(['ALL', 'PENDING', 'APPROVED'] as const).map(s => (
+                    <button key={s} onClick={() => setFrStatus(s)} className={`flex-1 text-xs py-1 rounded-full border font-medium transition-colors ${frStatus === s ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'}`}>{s}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                {faultRepairFiltered.length === 0
+                  ? <p className="text-sm text-muted-foreground text-center py-8">No fault repair bookings.</p>
+                  : faultRepairFiltered.map(b => (
+                      <div key={b.id} data-job-id={b.id}>
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      </div>
+                    ))
+                }
+              </div>
+            </>
+          )}
+          {activeTab === 'INSTALLATION' && (
+            <>
+              <div className="space-y-2 shrink-0">
+                <Input placeholder="Search customer…" value={instSearch} onChange={e => setInstSearch(e.target.value)} className="h-8 text-xs" />
+                <div className="flex gap-1.5 items-center">
+                  <Input type="date" value={instDateFrom} onChange={e => setInstDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
+                  {instDateFrom && <button onClick={() => setInstDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
+                </div>
+                <div className="flex gap-1">
+                  {(['ALL', 'PENDING', 'APPROVED'] as const).map(s => (
+                    <button key={s} onClick={() => setInstStatus(s)} className={`flex-1 text-xs py-1 rounded-full border font-medium transition-colors ${instStatus === s ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'}`}>{s}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                {installationFiltered.length === 0
+                  ? <p className="text-sm text-muted-foreground text-center py-8">No installation bookings.</p>
+                  : installationFiltered.map(b => (
+                      <div key={b.id} data-job-id={b.id}>
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      </div>
+                    ))
+                }
+              </div>
+            </>
+          )}
+          {activeTab === 'ALL' && (
+            <>
+              <div className="space-y-2 shrink-0">
+                <Input placeholder="Search customer…" value={allSearch} onChange={e => setAllSearch(e.target.value)} className="h-8 text-xs" />
+                <div className="flex gap-1">
+                  {STATUS_FILTERS.map(f => (
+                    <button key={f.id} onClick={() => setStatusFilter(f.id)} className={`flex-1 text-xs py-1.5 rounded-lg border font-medium transition-colors ${statusFilter === f.id ? 'bg-accent text-white border-accent' : 'border-border text-slate-500 hover:bg-muted/40'}`}>{f.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                {allFiltered.length === 0
+                  ? <p className="text-sm text-muted-foreground text-center py-8">No bookings here.</p>
+                  : allFiltered.map(b => (
+                      <div key={b.id} data-job-id={b.id}>
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      </div>
+                    ))
+                }
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Show Map FAB */}
+        <button
+          onClick={() => setMapSheetOpen(o => !o)}
+          className="fixed bottom-20 right-4 z-30 bg-accent text-white rounded-full px-4 py-3 text-sm font-semibold shadow-lg flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          {mapSheetOpen ? 'Hide Map' : 'Show Map'}
+        </button>
+      </div>
+
+      {/* ── Desktop: map + drag handle + sidebar ── */}
+      <div ref={containerRef} className="hidden md:flex flex-1 min-h-0">
         {/* Map */}
         <div className="flex-1 rounded-xl overflow-hidden border border-border min-w-0">
           <BookingsMap
