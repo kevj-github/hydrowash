@@ -354,6 +354,11 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
   - cancel/reschedule API routes: allow admin role (was customer-only)
   - Migration 028: customer booking UPDATE RLS policy (required for cancel/reschedule)
 
+- **Bug fixes (2026-05-21):**
+  - Fixed broken Unsplash photo URLs (hero + installation card + auth pages) — replaced 404 IDs with working ones
+  - `app/admin/settings/AdminSettingsClient.tsx`: added PayNow Mobile Number input field (was missing, preventing QR generation)
+  - `app/api/contracts/[id]/send-contract-pdf/route.ts`: contract PDF email now sends unconditionally — PayNow QR is optional (included only when `paynow_mobile` is configured); previously email was silently skipped when `paynow_mobile` was null
+
 - **Frontend upgrade (2026-05-20):** Full visual refresh across all pages ✅ complete
   - `next.config.ts`: added `images.remotePatterns` for `images.unsplash.com`
   - `app/globals.css`: `@media (prefers-reduced-motion: no-preference)` guard on fade-up animations
@@ -403,5 +408,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Turbopack + Windows:** Dynamic `[param]` route segments are not compiled at `npm run dev` startup. Touch the route file (add/remove a blank line) to force HMR. Affected routes: `api/bookings/[id]`, `admin/contracts/[id]`, `api/contracts/[id]/link-booking`, `api/invoices/[id]/pay`.
 - **Custom combobox pattern:** Use `onMouseDown` + `e.preventDefault()` on dropdown items (not `onClick`) to prevent blur firing before selection.
 - **Draggable resize:** `isDragging` is a `useRef<boolean>`, not state — avoids re-renders; document-level listeners in a single `useEffect`.
-- **Current status:** Frontend upgrade complete (2026-05-20). All Phase 2 subsystems + post-release fixes + full visual refresh applied. All migrations 001–029 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Current status:** Bug fixes applied (2026-05-21). Frontend upgrade complete. All Phase 2 subsystems + post-release fixes + full visual refresh applied. All migrations 001–029 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed. Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
