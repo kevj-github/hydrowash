@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What this is
-A Next.js 15 web app for online booking at a Singapore aircon servicing company. Customers book online; the owner manages jobs via an admin dashboard with geographic clustering and route optimisation. Includes 1-year maintenance contracts, quarterly service reminders, and manual invoice tracking.
+A Next.js 16 web app for online booking at a Singapore aircon servicing company. Customers book online; the owner manages jobs via an admin dashboard with geographic clustering and route optimisation. Includes 1-year maintenance contracts, quarterly service reminders, and manual invoice tracking.
 
 ## Commands
 
@@ -11,7 +11,7 @@ A Next.js 15 web app for online booking at a Singapore aircon servicing company.
 npm run dev        # Start dev server (localhost:3000)
 npm run build      # Production build
 npm run lint       # ESLint
-npm test           # Run all Jest tests (if script exists)
+npx jest           # Run all Jest tests
 npx jest vrp       # Run VRP test file
 ```
 
@@ -32,6 +32,7 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY   # client-side Maps JS API + Places Autocomplet
 GOOGLE_MAPS_API_KEY               # server-side geocoding + distance matrix + reverse geocoding
 RESEND_API_KEY
 CRON_SECRET
+SUPABASE_AUTH_HOOK_SECRET  # Supabase auth hook HMAC secret (v1,whsec_ format); required in both .env.local and Vercel
 ```
 
 ## Two user roles
@@ -73,6 +74,8 @@ app/
   account/bookings/page.tsx    # Customer booking history
   account/contracts/page.tsx   # Server wrapper: fetches contracts + invoices, delegates to AccountContractsClient
   account/AccountContractsClient.tsx  # Client: contract status filter + invoice status/date-range filters
+  account/settings/page.tsx    # Customer account settings
+  account/AccountSettingsClient.tsx  # Client: edit name, phone, address
   admin/layout.tsx             # Admin auth guard + nav
   admin/page.tsx               # Overview dashboard (stats + Phase 1B widgets)
   admin/bookings/page.tsx      # 4-tab: Maintenance (map) / Fault / Installation / All
@@ -112,6 +115,7 @@ app/
   api/availability/suggest/route.ts  # GET ?from=YYYY-MM-DD&slot=S10_12&days=14 → top 5 (date,slot) suggestions
   api/cron/reminders/route.ts  # GET: day-before reminder cron (uses booking_date, not confirmed_date)
   api/cron/contracts/route.ts  # GET: quarterly service due emails + contract expiry emails (uses expiry_reminder_sent)
+  api/auth/send-email/route.ts # POST: Supabase auth hook — handles signup/email_change (→ EmailConfirmation.tsx) and recovery (→ PasswordReset.tsx) via Resend; verifies svix HMAC signature
 
 components/
   ui/section.tsx               # <Section> full-width wrapper + <SectionInner> max-w-6xl centered
@@ -126,6 +130,8 @@ components/
   booking/UnitLocationPicker.tsx  # N per-unit <Select> dropdowns (one per unit), driven by numUnits prop; reads ac_unit_locations from Supabase browser client
   admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync; JobCompletionDialog replaces "Mark Complete"
   admin/BookingsMap.tsx        # Google Map markers; InfoWindow popup on pin click (customer name, service, address, status, dates); next/dynamic ssr:false
+  admin/AdminBottomNav.tsx     # Mobile bottom nav bar for admin (5 tabs + More sheet); shown on <md
+  admin/AdminAgendaClient.tsx  # Client: mobile day-list view (selectedDay state) + desktop week-grid for agenda page
   admin/ContractCard.tsx       # Contract list card with status/due/expiry badges; shows address if present
   admin/ServiceDateRow.tsx     # One quarterly service visit row; displays formatDueMonth(due_month)
   admin/InvoiceRow.tsx         # One invoice row with mark-paid dialog
@@ -133,6 +139,7 @@ components/
   admin/JobCompletionDialog.tsx  # 3-step dialog: Step 1 (attended_by, AC details, checklist); Step 2 (pricing + additional charges); Step 3 (preview PDF + confirm & send)
   account/RescheduleDialog.tsx   # Customer reschedule dialog wrapping SlotCalendar; uses buttonVariants() on DialogTrigger
   account/CancelDialog.tsx       # Customer cancel confirm dialog with optional reason textarea
+  ui/CustomerBottomNav.tsx     # Mobile bottom nav bar for customers (Home, Book Now, Bookings, Account); shown on <md
 
 lib/
   supabase/client.ts           # Browser Supabase client — exports createClient()
@@ -146,7 +153,7 @@ lib/
   maps/geocode.ts              # Google Geocoding API wrapper (forward geocode)
   maps/distance-matrix.ts      # Google Distance Matrix API wrapper
   email/send.ts                # Send functions via Resend (includes sendBookingRescheduled, sendBookingCancelled, sendContractPricing, sendWorkOrderReport)
-  email/templates/             # React Email templates (ContractRequestReceived, ContractPricingEmail, BookingRescheduled, BookingCancelled, WorkOrderEmail)
+  email/templates/             # React Email templates: BookingReceived, BookingApproved, BookingRejected, BookingRescheduled, BookingCancelled, DayBeforeReminder, ScheduleConfirmed, ContractRequestReceived, ContractPricingEmail, ContractActivated, ContractExpiring, ContractServiceDue, WorkOrderEmail, EmailConfirmation, PasswordReset
   pdf/ContractPdfTemplate.tsx  # React-PDF 2-page contract document (navy/blue brand); props: customerName, contactNo, address, numUnits, totalAmountSgd, serviceDueMonths[], company{}
   pdf/WorkOrderTemplate.tsx    # React-PDF single-page work order report; props: WorkOrderProps (customer, AC details, checklist, charges, PayNow)
   pdf/generate.ts              # generateContractPdf(props) + generateWorkOrderPdf(props) → Promise<Buffer>
@@ -267,10 +274,7 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - `canModify()` helper: PENDING/APPROVED only, and effective date > 24h away in SGT
 - `RescheduleDialog`: opens SlotCalendar in a Dialog; PATCH `/api/bookings/[id]/reschedule`; resets confirmed_date/slot; emails admin
 - `CancelDialog`: confirm + optional reason textarea; PATCH `/api/bookings/[id]/cancel`; sets CANCELLED status; emails admin
-- "Book Again" link to `/book?repeat=[id]` — `BookingWizard` prefills service type, units, address from past booking
-
-**Repeat booking (`/book?repeat=[id]`):**
-- `BookingWizard` detects `?repeat=` param, fetches `/api/bookings/[id]`, prefills step 0 service/units/locations + step 1 address. Preferred date slots are always cleared (fresh calendar).
+- The "Book Again" UI link was removed from the customer bookings page. The `?repeat=[id]` URL param is still supported by `BookingWizard` (prefills service/units/address from past booking; date slots cleared) but no longer exposed in the UI.
 
 **Admin contract PDF flow:**
 - Admin opens contract detail → "Set Price" dialog (2-step): step 1 saves price → AWAITING_PAYMENT via `PATCH /api/contracts/[id]/set-price`; step 2 shows Preview PDF link + "Confirm & Send" button
@@ -333,6 +337,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 - **Phase 2 — Subsystem K** — job completion workflow: JobCompletionDialog (3-step), work order PDF, PayNow QR email, auto work_order_no/customer_no, job_completions table ✅ complete (2026-05-20)
 - **Phase 2 — Subsystem J** — admin customer 360 (/admin/customers list + detail) + agenda week-grid (/admin/agenda) ✅ complete (2026-05-20)
 - **Phase 2 — Subsystem L** — mobile QA polish: tap targets ≥44px, hero text overflow fix, all customer-facing pages audited at 375px ✅ complete (2026-05-20)
+- **Phase 2 — Mobile UX Redesign** — bottom nav bars (CustomerBottomNav, AdminBottomNav), SlotCalendar week-strip, admin bookings map bottom sheet, dialog max-h dvh fixes, JobCompletionDialog mobile AC cards, admin list pages mobile card views, collapsible filter bars, AdminAgendaClient day-list view, availability week-strip, booking wizard progress bar + autocomplete overflow fix, account booking button stacking ✅ complete (2026-05-21)
 - **Phase 3 initial changes (2026-05-20):**
   - Admin Maintenance tab: replaced bulk-approve with per-card approval (same UX as Fault/Installation)
   - Post-login/signup redirect: all users (customer + admin) go to landing page `/` after auth
@@ -364,26 +369,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
   - **Removed first-preference concept across all UI:** `StepReview`, `account/bookings/page.tsx`, `BookingCard`, `BookingsMap` InfoWindow, and `admin/customers/[id]/page.tsx` all now show every preferred date+slot equally — no "First preference / Preference N" labels. Admin customer detail merged Date+Slot columns into one; confirmed bookings show confirmed date+slot in green.
   - **Auth emails via Resend (Supabase Auth Hook):** `app/api/auth/send-email/route.ts` — POST endpoint that Supabase calls instead of sending its own auth emails; verifies Supabase HS256 JWT signature using `v1,whsec_` secret (HMAC-SHA256 with `crypto.timingSafeEqual`); handles `signup`/`email_change` (→ `EmailConfirmation.tsx`) and `recovery` (→ `PasswordReset.tsx`); sends from `noreply@hydrowash.services` via Resend. Hook registered in Supabase dashboard (Authentication → Hooks → Send Email → HTTP). `SUPABASE_AUTH_HOOK_SECRET` env var set in `.env.local` and must also be added to Vercel. Email confirmation enabled in Supabase Authentication → Settings.
 
-- **Frontend upgrade (2026-05-20):** Full visual refresh across all pages ✅ complete
-  - `next.config.ts`: added `images.remotePatterns` for `images.unsplash.com`
-  - `app/globals.css`: `@media (prefers-reduced-motion: no-preference)` guard on fade-up animations
-  - `components/ui/service-card.tsx`: optional `photoSrc`/`photoAlt` props render a photo banner at top of card
-  - `app/(public)/page.tsx`: hero photo (Unsplash, `fill priority`), stat strip icons, Why Choose Us split section, Testimonials 3-card grid, How It Works with `w-14 h-14` accent circles, CTA background photo
-  - `app/auth/login/page.tsx` + `app/auth/register/page.tsx`: left panel replaced with Unsplash photo + `bg-primary/70` overlay; "← Back to home" link added
-  - `components/booking/BookingWizard.tsx`: numbered circle progress bar (Check icon for completed steps, Loader2 spinner on submit); step content wrapped in `rounded-2xl border shadow-sm p-6` card
-  - `components/booking/SlotCalendar.tsx`: selected dates filled `bg-accent text-white`; today gets `ring-2 ring-accent/50`
-  - `app/account/bookings/page.tsx`: 2-chip summary strip (Total / Upcoming); CalendarOff empty state with CTA
-  - `app/account/contracts/page.tsx` + `AccountContractsClient.tsx`: FileText summary strip (Active count); FileX empty state
-  - `components/admin/AdminNav.tsx` (new): `'use client'` nav with `usePathname` active states and Lucide icons for all 8 admin nav items
-  - `app/admin/layout.tsx`: replaced inline nav with `<AdminNav />`
-  - `app/admin/page.tsx`: stat cards with `border-l-4` + icon circles; ArrowRight hover on quick actions; alert sections as `bg-white border-l-4` cards with → links to contract detail
-  - `components/admin/BookingCard.tsx`: `border-l-4` status strip (amber=PENDING, green=APPROVED, slate=rest)
-  - `app/admin/bookings/AdminBookingsClient.tsx`: filter chips use `rounded-full`
-  - `app/admin/contracts/page.tsx` + `app/admin/invoices/page.tsx`: count badge `· {n}` next to heading
-  - `components/admin/InvoiceRow.tsx`: accepts `className` prop; rows alternate `bg-white`/`bg-muted/40` with `hover:bg-accent/5`
-  - `app/admin/customers/page.tsx`: avatar initial circle (`w-8 h-8 bg-accent/10`); `hover:bg-accent/5`; name links to detail
-  - `app/admin/customers/[id]/page.tsx`: larger avatar (`w-16 h-16`); total paid in `text-accent`
-  - `app/admin/agenda/page.tsx`: booking chips `rounded-md font-medium`; today column header `bg-accent/10 font-semibold`; slot labels right-aligned
+- **Frontend upgrade (2026-05-20):** Full visual refresh across all pages — Unsplash hero/auth photos, stat strip, Why Choose Us + Testimonials sections, booking wizard progress bar, admin nav with active states (`AdminNav.tsx`), booking card status strips, empty states with CTAs ✅ complete
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
