@@ -1,14 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import crypto from 'crypto'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'HydroWash <noreply@hydrowash.services>'
 
-export async function POST(request: NextRequest) {
-  // Verify the shared secret Supabase sends in the Authorization header
-  const authHeader = request.headers.get('authorization')
+// Supabase signs Auth Hook requests as HS256 JWTs.
+// Secret format: "v1,whsec_<base64-encoded key>"
+function verifyHookSignature(authHeader: string | null): boolean {
   const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!secret || !authHeader?.startsWith('Bearer ')) return false
+
+  const token = authHeader.slice(7)
+  const parts = token.split('.')
+  if (parts.length !== 3) return false
+
+  const [header, payload, signature] = parts
+  const rawKey = secret.replace('v1,whsec_', '')
+  const keyBytes = Buffer.from(rawKey, 'base64')
+
+  const expected = crypto
+    .createHmac('sha256', keyBytes)
+    .update(`${header}.${payload}`)
+    .digest('base64url')
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  } catch {
+    return false
+  }
+}
+
+export async function POST(request: NextRequest) {
+  if (!verifyHookSignature(request.headers.get('authorization'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -16,7 +40,6 @@ export async function POST(request: NextRequest) {
   const { user, email_data } = body as {
     user: { email: string }
     email_data: {
-      token: string
       token_hash: string
       redirect_to: string
       email_action_type: string
@@ -26,8 +49,6 @@ export async function POST(request: NextRequest) {
 
   const { email_action_type, token_hash, site_url } = email_data
   const toEmail = user.email
-
-  // Build the verification URL pointing to our own callback
   const confirmUrl = `${site_url}/auth/callback?token_hash=${token_hash}&type=${email_action_type}`
 
   try {
@@ -48,7 +69,6 @@ export async function POST(request: NextRequest) {
         react: PasswordReset({ resetUrl: confirmUrl }),
       })
     }
-    // For other types (invite, magic_link) fall through — Supabase will use its default
   } catch (err) {
     console.error('[auth/send-email] Resend error:', err)
     return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
