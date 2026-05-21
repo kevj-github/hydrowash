@@ -83,12 +83,21 @@ export async function POST(
   }
 
   // Generate PayNow QR (optional — only if paynow_mobile is configured)
-  let qrDataUrl: string | undefined
+  let qrImageUrl: string | undefined
   let referenceId: string | undefined
   if (settings?.paynow_mobile) {
     referenceId = `CONTRACT-${id.slice(0, 8).toUpperCase()}`
     const payload = buildPayNowPayload(settings.paynow_mobile, priceNum, referenceId)
-    qrDataUrl = await QRCode.toDataURL(payload, { width: 300, margin: 2 })
+    // Generate as PNG buffer and upload to Storage — data URLs are blocked by email clients
+    const qrBuffer = await QRCode.toBuffer(payload, { width: 300, margin: 2 })
+    const qrPath = `contracts/${id}/qr.png`
+    await adminClient.storage
+      .from('documents')
+      .upload(qrPath, qrBuffer, { contentType: 'image/png', upsert: true })
+    const { data: signedData } = await adminClient.storage
+      .from('documents')
+      .createSignedUrl(qrPath, 60 * 60 * 24 * 365) // 1 year
+    qrImageUrl = signedData?.signedUrl
   }
 
   await sendContractPricing(
@@ -99,7 +108,7 @@ export async function POST(
       startDate: contract.start_date,
       endDate: contract.end_date,
       address: contract.address ?? undefined,
-      paynowQrDataUrl: qrDataUrl,
+      paynowQrDataUrl: qrImageUrl,
       paynowMobile: settings?.paynow_mobile ?? undefined,
       referenceId,
     },

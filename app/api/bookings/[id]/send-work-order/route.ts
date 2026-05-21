@@ -111,12 +111,20 @@ export async function POST(
 
   await supabase.from('job_completions').update({ pdf_url: storagePath }).eq('booking_id', id)
 
-  // Generate PayNow QR
+  // Generate PayNow QR — upload PNG to Storage so email clients can display it
   const referenceId = `WO-${booking.work_order_no ?? id.slice(0, 8).toUpperCase()}`
-  let qrDataUrl = ''
+  let qrImageUrl = ''
   if (settings?.paynow_mobile) {
     const payload = buildPayNowPayload(settings.paynow_mobile, totalSgd, referenceId)
-    qrDataUrl = await QRCode.toDataURL(payload, { width: 300, margin: 2 })
+    const qrBuffer = await QRCode.toBuffer(payload, { width: 300, margin: 2 })
+    const qrPath = `work-orders/${id}/qr.png`
+    await adminClient.storage
+      .from('documents')
+      .upload(qrPath, qrBuffer, { contentType: 'image/png', upsert: true })
+    const { data: signedData } = await adminClient.storage
+      .from('documents')
+      .createSignedUrl(qrPath, 60 * 60 * 24 * 365) // 1 year
+    qrImageUrl = signedData?.signedUrl ?? ''
   }
 
   await sendWorkOrderReport(
@@ -127,7 +135,7 @@ export async function POST(
       serviceType: linkedCsd ? 'Annual Contract' : 'AdHoc',
       address: booking.address ?? '',
       totalSgd,
-      paynowQrDataUrl: qrDataUrl,
+      paynowQrDataUrl: qrImageUrl,
       paynowMobile: settings?.paynow_mobile ?? '',
       referenceId,
     },
