@@ -8,10 +8,13 @@ export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
   if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
 
+  const allHeaders: Record<string, string> = {}
+  request.headers.forEach((value, key) => { allHeaders[key] = key.toLowerCase().includes('auth') ? value : value })
+  console.log('[auth/send-email] Headers:', JSON.stringify(allHeaders))
+
   const authHeader = request.headers.get('Authorization')
-  console.log('[auth/send-email] Authorization header:', authHeader ?? 'MISSING')
-  console.log('[auth/send-email] Expected:', `Bearer ${secret?.slice(0, 10)}...`)
   if (!authHeader || authHeader !== `Bearer ${secret}`) {
+    console.log('[auth/send-email] Auth failed. Header:', authHeader ?? 'MISSING')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
