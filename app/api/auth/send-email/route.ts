@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import { Webhook } from 'svix'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'HydroWash <noreply@hydrowash.services>'
@@ -9,18 +8,12 @@ export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
   if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
 
-  const rawBody = await request.text()
-
-  try {
-    const wh = new Webhook(secret)
-    wh.verify(rawBody, {
-      'svix-id': request.headers.get('svix-id') ?? '',
-      'svix-timestamp': request.headers.get('svix-timestamp') ?? '',
-      'svix-signature': request.headers.get('svix-signature') ?? '',
-    })
-  } catch {
+  const authHeader = request.headers.get('Authorization')
+  if (!authHeader || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const rawBody = await request.text()
 
   const { user, email_data } = JSON.parse(rawBody) as {
     user: { email: string }

@@ -84,6 +84,12 @@ export default function RegisterPage() {
       return
     }
 
+    if ((data.user.identities ?? []).length === 0) {
+      setError('An account with this email already exists. Please sign in instead.')
+      setLoading(false)
+      return
+    }
+
     if (!data.session) {
       setVerifyEmail(form.email)
     } else {
