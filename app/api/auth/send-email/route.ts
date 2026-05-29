@@ -9,6 +9,8 @@ export async function POST(request: NextRequest) {
   if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
 
   const authHeader = request.headers.get('Authorization')
+  console.log('[auth/send-email] Authorization header:', authHeader ?? 'MISSING')
+  console.log('[auth/send-email] Expected:', `Bearer ${secret?.slice(0, 10)}...`)
   if (!authHeader || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
