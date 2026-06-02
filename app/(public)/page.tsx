@@ -7,12 +7,12 @@ import { SectionHeading } from '@/components/ui/section-heading'
 import { ServiceCard } from '@/components/ui/service-card'
 import { StepItem } from '@/components/ui/step-item'
 
-const PHOTO_HERO = 'https://image.pollinations.ai/prompt/professional%20aircon%20technician%20servicing%20wall-mounted%20air%20conditioner%20in%20modern%20Singapore%20apartment%2C%20clean%20white%20walls%2C%20photorealistic%2C%20bright%20natural%20lighting?width=1920&height=1080&nologo=true&seed=42'
-const PHOTO_SERVICE_MAINTENANCE = 'https://image.pollinations.ai/prompt/close-up%20aircon%20technician%20cleaning%20air%20conditioner%20filter%2C%20professional%20maintenance%20service%2C%20Singapore%20home%2C%20photorealistic?width=800&height=600&nologo=true&seed=101'
-const PHOTO_SERVICE_FAULT = 'https://image.pollinations.ai/prompt/aircon%20technician%20diagnosing%20faulty%20air%20conditioning%20unit%20with%20tools%2C%20professional%20repair%20service%2C%20photorealistic%2C%20detailed?width=800&height=600&nologo=true&seed=202'
-const PHOTO_SERVICE_INSTALL = 'https://image.pollinations.ai/prompt/professional%20installation%20of%20new%20split-unit%20air%20conditioner%20on%20wall%2C%20Singapore%20home%2C%20clean%20modern%20interior%2C%20photorealistic?width=800&height=600&nologo=true&seed=303'
-const PHOTO_WHY_US = 'https://image.pollinations.ai/prompt/professional%20aircon%20service%20team%20in%20uniform%20with%20equipment%2C%20Singapore%2C%20confident%20smiling%20technicians%2C%20photorealistic%2C%20bright?width=1200&height=800&nologo=true&seed=404'
-const PHOTO_CTA = 'https://image.pollinations.ai/prompt/cool%20modern%20Singapore%20living%20room%20interior%20with%20wall-mounted%20air%20conditioner%2C%20comfortable%20family%20relaxing%2C%20bright%20airy%2C%20photorealistic?width=1920&height=1080&nologo=true&seed=505'
+const PHOTO_HERO = 'https://images.unsplash.com/photo-3iLFQj2bXq0?auto=format&fit=crop&w=1920&q=80'
+const PHOTO_SERVICE_MAINTENANCE = 'https://images.unsplash.com/photo-kpZiPQqZSpc?auto=format&fit=crop&w=800&q=80'
+const PHOTO_SERVICE_FAULT = 'https://images.unsplash.com/photo-vG7-nbVmTM0?auto=format&fit=crop&w=800&q=80'
+const PHOTO_SERVICE_INSTALL = 'https://images.unsplash.com/photo-HsNtqUNWOqk?auto=format&fit=crop&w=800&q=80'
+const PHOTO_WHY_US = 'https://images.unsplash.com/photo-iS5GDeLDk0E?auto=format&fit=crop&w=1200&q=80'
+const PHOTO_CTA = 'https://images.unsplash.com/photo-pbfibyECpy8?auto=format&fit=crop&w=1920&q=80'
 
 const services = [
   {
