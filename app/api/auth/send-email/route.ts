@@ -8,10 +8,11 @@ export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
   if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
 
-  // Vercel's proxy intercepts the Authorization header Supabase sends and
-  // stashes the original value in x-vercel-proxy-signature instead.
+  const allHeaders: Record<string, string> = {}
+  request.headers.forEach((value, key) => { allHeaders[key] = key.toLowerCase().includes('auth') ? value : value })
+  console.log('[auth/send-email] Headers:', JSON.stringify(allHeaders))
+
   const authHeader = request.headers.get('Authorization')
-    ?? request.headers.get('x-vercel-proxy-signature')
   if (!authHeader || authHeader !== `Bearer ${secret}`) {
     console.log('[auth/send-email] Auth failed. Header:', authHeader ?? 'MISSING')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
