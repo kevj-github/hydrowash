@@ -7,12 +7,12 @@ import { SectionHeading } from '@/components/ui/section-heading'
 import { ServiceCard } from '@/components/ui/service-card'
 import { StepItem } from '@/components/ui/step-item'
 
-const PHOTO_HERO = 'https://images.unsplash.com/photo-3iLFQj2bXq0?auto=format&fit=crop&w=1920&q=80'
-const PHOTO_SERVICE_MAINTENANCE = 'https://images.unsplash.com/photo-kpZiPQqZSpc?auto=format&fit=crop&w=800&q=80'
-const PHOTO_SERVICE_FAULT = 'https://images.unsplash.com/photo-vG7-nbVmTM0?auto=format&fit=crop&w=800&q=80'
-const PHOTO_SERVICE_INSTALL = 'https://images.unsplash.com/photo-HsNtqUNWOqk?auto=format&fit=crop&w=800&q=80'
-const PHOTO_WHY_US = 'https://images.unsplash.com/photo-iS5GDeLDk0E?auto=format&fit=crop&w=1200&q=80'
-const PHOTO_CTA = 'https://images.unsplash.com/photo-pbfibyECpy8?auto=format&fit=crop&w=1920&q=80'
+const PHOTO_HERO = 'https://images.pexels.com/photos/6471913/pexels-photo-6471913.jpeg?auto=compress&cs=tinysrgb&w=1920'
+const PHOTO_SERVICE_MAINTENANCE = 'https://images.pexels.com/photos/32588555/pexels-photo-32588555.jpeg?auto=compress&cs=tinysrgb&w=800'
+const PHOTO_SERVICE_FAULT = 'https://images.pexels.com/photos/6471912/pexels-photo-6471912.jpeg?auto=compress&cs=tinysrgb&w=800'
+const PHOTO_SERVICE_INSTALL = 'https://images.pexels.com/photos/7347538/pexels-photo-7347538.jpeg?auto=compress&cs=tinysrgb&w=800'
+const PHOTO_WHY_US = 'https://images.pexels.com/photos/5463576/pexels-photo-5463576.jpeg?auto=compress&cs=tinysrgb&w=1200'
+const PHOTO_CTA = 'https://images.pexels.com/photos/7587368/pexels-photo-7587368.jpeg?auto=compress&cs=tinysrgb&w=1920'
 
 const services = [
   {
