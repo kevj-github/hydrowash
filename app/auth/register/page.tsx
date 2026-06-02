@@ -109,7 +109,7 @@ export default function RegisterPage() {
   const leftPanel = (
     <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
       <Image
-        src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80"
+        src="https://image.pollinations.ai/prompt/professional%20aircon%20technician%20servicing%20wall-mounted%20air%20conditioner%20in%20modern%20Singapore%20apartment%2C%20clean%20white%20walls%2C%20photorealistic%2C%20bright%20natural%20lighting?width=1200&height=900&nologo=true&seed=42"
         alt="HydroWash aircon technician"
         fill
         className="object-cover"
