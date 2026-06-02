@@ -6,11 +6,150 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import type { AppSettings, ServiceType } from '@/lib/types'
+import type { AppSettings, ServiceType, AcBrand, AcUnitType, AcUnitLocation } from '@/lib/types'
+
+type CatalogItem = { id: string; label: string; display_order: number; is_active: boolean }
+
+function CatalogSection({
+  title,
+  tableName,
+  initialItems,
+}: {
+  title: string
+  tableName: 'ac_brands' | 'ac_unit_types' | 'ac_unit_locations'
+  initialItems: CatalogItem[]
+}) {
+  const supabase = createClient()
+  const [items, setItems] = useState(initialItems)
+  const [showForm, setShowForm] = useState(false)
+  const [newLabel, setNewLabel] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editLabel, setEditLabel] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  function flash(m: string, isErr = false) {
+    if (isErr) { setErr(m); setMsg('') } else { setMsg(m); setErr('') }
+    setTimeout(() => { setMsg(''); setErr('') }, 4000)
+  }
+
+  async function addItem() {
+    if (!newLabel.trim()) return
+    const nextOrder = items.length > 0 ? Math.max(...items.map(i => i.display_order)) + 1 : 1
+    const { data, error } = await supabase
+      .from(tableName)
+      .insert({ label: newLabel.trim(), display_order: nextOrder })
+      .select()
+      .single()
+    if (error) { flash('Error: ' + error.message, true); return }
+    setItems(prev => [...prev, data as CatalogItem])
+    setNewLabel('')
+    setShowForm(false)
+    flash('Added.')
+  }
+
+  async function saveEdit(id: string) {
+    if (!editLabel.trim()) return
+    const { error } = await supabase.from(tableName).update({ label: editLabel.trim() }).eq('id', id)
+    if (error) { flash('Error: ' + error.message, true); return }
+    setItems(prev => prev.map(i => i.id === id ? { ...i, label: editLabel.trim() } : i))
+    setEditingId(null)
+    flash('Saved.')
+  }
+
+  async function toggleActive(item: CatalogItem) {
+    await supabase.from(tableName).update({ is_active: !item.is_active }).eq('id', item.id)
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: !i.is_active } : i))
+  }
+
+  async function deleteItem(id: string) {
+    const { error } = await supabase.from(tableName).delete().eq('id', id)
+    if (error) {
+      setConfirmDeleteId(null)
+      flash(error.code === '23503' ? 'Cannot delete: referenced by existing data. Deactivate instead.' : 'Error: ' + error.message, true)
+      return
+    }
+    setItems(prev => prev.filter(i => i.id !== id))
+    setConfirmDeleteId(null)
+    flash('Deleted.')
+  }
+
+  return (
+    <section className="bg-white rounded-xl border border-border p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-heading font-semibold text-primary">{title} ({items.length})</h2>
+        <Button size="sm" onClick={() => { setShowForm(v => !v); setNewLabel('') }} className="bg-accent hover:bg-accent/90 text-white text-xs">
+          {showForm ? 'Cancel' : '+ Add'}
+        </Button>
+      </div>
+      {msg && <p className="text-sm text-green-700 mb-3">{msg}</p>}
+      {err && <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mb-3">{err}</p>}
+
+      {showForm && (
+        <div className="mb-4 flex gap-2">
+          <Input
+            value={newLabel}
+            onChange={e => setNewLabel(e.target.value)}
+            placeholder="Name…"
+            className="h-8 text-sm"
+            onKeyDown={e => e.key === 'Enter' && addItem()}
+            autoFocus
+          />
+          <Button onClick={addItem} disabled={!newLabel.trim()} className="bg-accent hover:bg-accent/90 text-white text-sm h-8 shrink-0">Add</Button>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {items.map(item => (
+          <div key={item.id} className="border border-border rounded-lg overflow-hidden">
+            {editingId === item.id ? (
+              <div className="flex gap-2 p-2">
+                <Input
+                  value={editLabel}
+                  onChange={e => setEditLabel(e.target.value)}
+                  className="h-8 text-sm flex-1"
+                  onKeyDown={e => e.key === 'Enter' && saveEdit(item.id)}
+                  autoFocus
+                />
+                <Button onClick={() => saveEdit(item.id)} className="bg-accent hover:bg-accent/90 text-white text-xs h-8">Save</Button>
+                <Button variant="outline" onClick={() => setEditingId(null)} className="text-xs h-8">Cancel</Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between px-4 py-2">
+                <span className={`text-sm font-medium ${item.is_active ? 'text-primary' : 'text-muted-foreground line-through'}`}>
+                  {item.label}
+                </span>
+                <div className="flex gap-1.5 shrink-0">
+                  <Button size="sm" variant="outline" onClick={() => { setEditingId(item.id); setEditLabel(item.label) }} className="text-xs h-7">Edit</Button>
+                  <Button size="sm" variant="outline" onClick={() => toggleActive(item)} className="text-xs h-7">
+                    {item.is_active ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  {confirmDeleteId === item.id ? (
+                    <>
+                      <Button size="sm" variant="destructive" onClick={() => deleteItem(item.id)} className="text-xs h-7">Confirm</Button>
+                      <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(null)} className="text-xs h-7">Cancel</Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(item.id)} className="text-xs h-7 text-red-600 hover:text-red-700 hover:border-red-300">Delete</Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No items yet.</p>}
+      </div>
+    </section>
+  )
+}
 
 interface Props {
   initialSettings: AppSettings | null
   initialServiceTypes: ServiceType[]
+  initialBrands: AcBrand[]
+  initialUnitTypes: AcUnitType[]
+  initialLocations: AcUnitLocation[]
 }
 
 const CATEGORIES = [
@@ -35,7 +174,7 @@ interface ServiceTypeForm {
 
 const emptyForm: ServiceTypeForm = { name: '', category: 'MAINTENANCE', description: '', duration_minutes: '', price_sgd: '' }
 
-export function AdminSettingsClient({ initialSettings, initialServiceTypes }: Props) {
+export function AdminSettingsClient({ initialSettings, initialServiceTypes, initialBrands, initialUnitTypes, initialLocations }: Props) {
   const supabase = createClient()
   const [settings, setSettings] = useState(initialSettings ?? {
     depot_address: '', depot_lat: 0, depot_lng: 0, company_name: 'HydroWash', contact_email: '',
@@ -151,7 +290,7 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes }: Pr
   }
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-8 pb-8">
       <h1 className="font-heading font-bold text-2xl text-primary">Settings</h1>
 
       {/* Depot */}
@@ -336,6 +475,10 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes }: Pr
           ))}
         </div>
       </section>
+
+      <CatalogSection title="AC Brands" tableName="ac_brands" initialItems={initialBrands} />
+      <CatalogSection title="AC Unit Types (Model)" tableName="ac_unit_types" initialItems={initialUnitTypes} />
+      <CatalogSection title="Unit Locations" tableName="ac_unit_locations" initialItems={initialLocations} />
     </div>
   )
 }

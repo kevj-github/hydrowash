@@ -44,11 +44,11 @@ export async function middleware(request: NextRequest) {
       )
     }
 
-    // Customers must have an address on file before they can book
+    // Customers must have an address on file before they can book (admin exempt)
     if (pathname.startsWith('/book')) {
       const { data: profile } = await supabase
-        .from('profiles').select('address').eq('id', user.id).single()
-      if (!profile?.address) {
+        .from('profiles').select('address, role').eq('id', user.id).single()
+      if (profile?.role !== 'admin' && !profile?.address) {
         return NextResponse.redirect(new URL('/account/settings?reason=address', request.url))
       }
     }

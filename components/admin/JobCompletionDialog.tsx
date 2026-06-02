@@ -56,9 +56,9 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
   const [charges, setCharges] = useState<AdditionalCharge[]>([])
 
   useEffect(() => {
-    supabase.from('ac_brands').select('id, name').then(({ data }) => { if (data) setBrands(data) })
-    supabase.from('ac_unit_types').select('id, name').then(({ data }) => { if (data) setUnitTypes(data) })
-    supabase.from('ac_unit_locations').select('id, name').then(({ data }) => { if (data) setLocations(data) })
+    supabase.from('ac_brands').select('id, label').order('display_order').then(({ data }) => { if (data) setBrands(data.map(b => ({ id: b.id, name: b.label }))) })
+    supabase.from('ac_unit_types').select('id, label').order('display_order').then(({ data }) => { if (data) setUnitTypes(data.map(t => ({ id: t.id, name: t.label }))) })
+    supabase.from('ac_unit_locations').select('id, label').order('display_order').then(({ data }) => { if (data) setLocations(data.map(l => ({ id: l.id, name: l.label }))) })
   }, [])
 
   function totalSgd() {
@@ -66,44 +66,62 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
     return base + charges.reduce((s, c) => s + (c.amount_sgd || 0), 0)
   }
 
+  function buildPayload() {
+    return {
+      attended_by: attendedBy,
+      time_arrived: timeArrived,
+      time_completed: timeCompleted,
+      ac_details: acDetails,
+      checklist,
+      job_description: jobDescription,
+      job_rendered: jobRendered,
+      remarks,
+      additional_charges: charges,
+      base_price_sgd: parseFloat(basePrice) || 0,
+    }
+  }
+
   async function handleSaveCompletion() {
     setSaving(true)
     setError('')
+    // save_only: saves job_completions without marking the booking as COMPLETED yet
     const res = await fetch(`/api/bookings/${booking.id}/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        attended_by: attendedBy,
-        time_arrived: timeArrived,
-        time_completed: timeCompleted,
-        ac_details: acDetails,
-        checklist,
-        job_description: jobDescription,
-        job_rendered: jobRendered,
-        remarks,
-        additional_charges: charges,
-        base_price_sgd: parseFloat(basePrice) || 0,
-      }),
+      body: JSON.stringify({ ...buildPayload(), save_only: true }),
     })
     setSaving(false)
     if (res.ok) {
       setStep(3)
     } else {
       const body = await res.json()
-      setError(body.error ?? 'Failed to save completion')
+      setError(body.error ?? 'Failed to save job data')
     }
   }
 
   async function handleSendWorkOrder() {
     setSending(true)
     setError('')
-    const res = await fetch(`/api/bookings/${booking.id}/send-work-order`, { method: 'POST' })
+    // Mark booking COMPLETED (saves final data + triggers work_order_no DB trigger)
+    const completeRes = await fetch(`/api/bookings/${booking.id}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildPayload()),
+    })
+    if (!completeRes.ok) {
+      const body = await completeRes.json()
+      setSending(false)
+      setError(body.error ?? 'Failed to mark job complete')
+      return
+    }
+    // Send work order PDF + create invoice
+    const sendRes = await fetch(`/api/bookings/${booking.id}/send-work-order`, { method: 'POST' })
     setSending(false)
-    if (res.ok) {
+    if (sendRes.ok) {
       setOpen(false)
       onSuccess()
     } else {
-      const body = await res.json()
+      const body = await sendRes.json()
       setError(body.error ?? 'Failed to send work order')
     }
   }
@@ -351,7 +369,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
 
         {step === 3 && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Job marked complete. Preview the Work Order Report before sending to the customer.</p>
+            <p className="text-sm text-muted-foreground">Preview the Work Order Report, then click &quot;Confirm &amp; Send&quot; to mark the job complete and email the customer.</p>
             <a
               href={`/api/bookings/${booking.id}/work-order-pdf`}
               target="_blank"

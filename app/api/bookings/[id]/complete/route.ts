@@ -36,21 +36,25 @@ export async function POST(
     remarks?: string
     additional_charges?: AdditionalCharge[]
     base_price_sgd: number
+    save_only?: boolean
   }
 
   const additionalCharges = body.additional_charges ?? []
   const total_sgd = body.base_price_sgd + additionalCharges.reduce((sum, c) => sum + c.amount_sgd, 0)
 
-  // Mark COMPLETED only if still APPROVED — work_order_no is auto-assigned by DB trigger on this transition
-  if (booking.status === 'APPROVED') {
-    const { error: bookingError } = await supabase
-      .from('bookings')
-      .update({ status: 'COMPLETED', attended_by: body.attended_by })
-      .eq('id', id)
-    if (bookingError) return NextResponse.json({ error: bookingError.message }, { status: 500 })
-  } else {
-    // Already COMPLETED — just update attended_by, leave status/work_order_no unchanged
-    await supabase.from('bookings').update({ attended_by: body.attended_by }).eq('id', id)
+  // save_only: persist job_completions without changing booking status (used by step 2 preview)
+  if (!body.save_only) {
+    // Mark COMPLETED only if still APPROVED — work_order_no is auto-assigned by DB trigger on this transition
+    if (booking.status === 'APPROVED') {
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .update({ status: 'COMPLETED', attended_by: body.attended_by })
+        .eq('id', id)
+      if (bookingError) return NextResponse.json({ error: bookingError.message }, { status: 500 })
+    } else {
+      // Already COMPLETED — just update attended_by, leave status/work_order_no unchanged
+      await supabase.from('bookings').update({ attended_by: body.attended_by }).eq('id', id)
+    }
   }
 
   // Upsert job_completions

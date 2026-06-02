@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Script from 'next/script'
 import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ interface Props {
 
 export default function AccountSettingsClient({ profile }: Props) {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const reasonAddress = searchParams.get('reason') === 'address'
 
   const [name, setName] = useState(profile.name)
@@ -88,6 +89,9 @@ export default function AccountSettingsClient({ profile }: Props) {
         return
       }
       setSaved(true)
+      if (reasonAddress && addressData) {
+        setTimeout(() => router.push('/book'), 1200)
+      }
     } catch {
       setError('Network error. Please try again.')
     } finally {
