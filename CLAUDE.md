@@ -13,6 +13,7 @@ npm run build      # Production build
 npm run lint       # ESLint
 npx jest           # Run all Jest tests
 npx jest vrp       # Run VRP test file
+# Migrations: create supabase/migrations/0NN_name.sql → apply via Supabase dashboard SQL editor
 ```
 
 ## Tech stack
@@ -92,7 +93,7 @@ app/
   api/bookings/[id]/route.ts   # PATCH: approve / reject
   api/bookings/[id]/reschedule/route.ts  # PATCH: customer reschedule (24h SGT cutoff); resets confirmed_date/slot; emails admin
   api/bookings/[id]/cancel/route.ts      # PATCH: customer cancel (24h cutoff); sets CANCELLED + cancelled_at/by/reason; emails admin
-  api/bookings/[id]/complete/route.ts    # POST: admin marks APPROVED → COMPLETED; upserts job_completions; work_order_no auto-assigned by DB trigger
+  api/bookings/[id]/complete/route.ts    # POST: upserts job_completions; marks APPROVED → COMPLETED unless save_only:true (step 2 preview); work_order_no auto-assigned by DB trigger
   api/bookings/[id]/work-order-pdf/route.ts  # GET: admin generates Work Order PDF on-the-fly
   api/bookings/[id]/send-work-order/route.ts # POST: admin sends Work Order PDF + PayNow QR to customer; creates UNPAID invoice
   api/bookings/bulk-approve/route.ts  # POST: bulk approve PENDING maintenance bookings with a confirmed_date
@@ -285,7 +286,8 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 **Admin job completion + work order:**
 - `JobCompletionDialog` on `BookingCard`: 3-step — Step 1 (attended_by, job times, AC unit details table with brand/model, checklist items, job description); Step 2 (base price, additional charges, live total); Step 3 (preview PDF + confirm & send)
 - Step 3 "Preview" → `GET /api/bookings/[id]/work-order-pdf` → PDF in new tab
-- Step 3 "Confirm & Send" → `POST /api/bookings/[id]/complete` (upserts job_completions, marks COMPLETED) then `POST /api/bookings/[id]/send-work-order` (generates PDF, uploads to Storage, sends email with PDF + PayNow QR, creates UNPAID invoice row)
+- Step 2 "Save & Preview PDF" → `POST /api/bookings/[id]/complete` with `save_only:true` (upserts job_completions, does NOT change booking status — booking stays APPROVED)
+- Step 3 "Confirm & Send" → `POST /api/bookings/[id]/complete` (marks APPROVED → COMPLETED) then `POST /api/bookings/[id]/send-work-order` (generates PDF, uploads to Storage, emails customer with PDF + PayNow QR, creates UNPAID invoice)
 
 **Admin customer 360 (`/admin/customers`):**
 - List: search by name/phone; columns: customer_no, name, phone, booking count, total paid (PAID invoices), active contract badge, View link
@@ -316,68 +318,15 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 
 **Animation utilities:** `.animate-fade-up`, `.animate-fade-up-delay-1/2/3` in `globals.css`. Hero elements only.
 
-## Phases
-- **Phase 1** — booking portal + admin dashboard ✅ complete
-- **Phase 1B** — contract management + invoice tracking ✅ complete
-- **Phase 1C** — route optimiser redesign ✅ complete (2026-05-08)
-- **Phase 1D** — admin bookings UX + contract improvements ✅ complete (2026-05-08)
-- **Phase 1E** — UI modernization across all pages ✅ complete (2026-05-08)
-- **Phase 1F** — search, filters, and bidirectional map sync ✅ complete (2026-05-08)
-- **Phase 2 — Subsystem H** — landing page copy refresh ✅ complete (2026-05-14)
-- **Phase 2 — Subsystem A** — slot model + booking calendar + AC locations + availability API ✅ complete (2026-05-14)
-- **Phase 2 — Subsystem B** — profile address at registration + account settings ✅ complete (2026-05-14)
-- **Phase 2 — Subsystem C** — admin date/slot blocking UI ✅ complete (2026-05-14)
-- **Phase 2 — Subsystem D** — customer contract self-signup ✅ complete (2026-05-14)
-- **Phase 2 — Subsystem E** — invoice PayNow QR display ✅ complete (2026-05-14)
-- **Phase 2 — Subsystem F** — wire up automated reminder emails ✅ complete (2026-05-14)
-- **Phase 2 — Subsystem G** — alternative slot suggestions on 409 ✅ complete (2026-05-14)
-- **Phase 2 — Multi-slot + UX** — multi-slot preferences (up to 3), per-unit location dropdowns, SGT past-slot blocking, admin confirmed_slot picker, contract 403 fix ✅ complete (2026-05-19)
-- **Phase 2 — Subsystem I** — customer reschedule/cancel (24h cutoff, email notifications) + repeat booking prefill ✅ complete (2026-05-20)
-- **Phase 2 — Subsystem M** — contract PDF generation (React-PDF), PayNow QR email, two-step set-price flow, company settings ✅ complete (2026-05-20)
-- **Phase 2 — Subsystem K** — job completion workflow: JobCompletionDialog (3-step), work order PDF, PayNow QR email, auto work_order_no/customer_no, job_completions table ✅ complete (2026-05-20)
-- **Phase 2 — Subsystem J** — admin customer 360 (/admin/customers list + detail) + agenda week-grid (/admin/agenda) ✅ complete (2026-05-20)
-- **Phase 2 — Subsystem L** — mobile QA polish: tap targets ≥44px, hero text overflow fix, all customer-facing pages audited at 375px ✅ complete (2026-05-20)
-- **Phase 2 — Mobile UX Redesign** — bottom nav bars (CustomerBottomNav, AdminBottomNav), SlotCalendar week-strip, admin bookings map bottom sheet, dialog max-h dvh fixes, JobCompletionDialog mobile AC cards, admin list pages mobile card views, collapsible filter bars, AdminAgendaClient day-list view, availability week-strip, booking wizard progress bar + autocomplete overflow fix, account booking button stacking ✅ complete (2026-05-21)
-- **Phase 3 initial changes (2026-05-20):**
-  - Admin Maintenance tab: replaced bulk-approve with per-card approval (same UX as Fault/Installation)
-  - Post-login/signup redirect: all users (customer + admin) go to landing page `/` after auth
-  - "Book Now" for guests: goes to `/auth/login?redirect=/book` so they return to booking after login
-  - `UnitLocationPicker`: added "Others" option with inline free-text input; stored in `bookings.unit_location_others`
-  - `SlotCalendar`: removed "(N/5)" count from preferred dates label
-  - MAINTENANCE booking wizard: optional "Link to Contract" dropdown shows customer's ACTIVE contracts; stored as `bookings.contract_id`
-  - Email FROM domain updated to `noreply@hydrowash.services` (Resend domain verified, DKIM confirmed)
-  - Migration 029: `unit_location_others text[]` + `contract_id uuid` on bookings ✅ applied
-
-- **Post-Phase 2 fixes (2026-05-20):**
-  - Removed "Book Again" feature from customer bookings page
-  - `SlotCalendar`: max 3 slots **total** across all dates (not per-date); multi-date still supported
-  - Admin `BookingCard` confirmed slot dropdown now shows all 5 time slots (not just customer's preferred)
-  - Contract PDF (`/api/contracts/[id]/pdf`) and work order PDF (`/api/bookings/[id]/work-order-pdf`) now accessible to the owning customer (not admin-only)
-  - `ContractCard`: Preview PDF button for AWAITING_PAYMENT/ACTIVE contracts
-  - `InvoiceRow`: View PDF button when `booking_id` present
-  - Customer contracts page: View Contract PDF link; customer invoices table: View PDF link
-  - cancel/reschedule API routes: allow admin role (was customer-only)
-  - Migration 028: customer booking UPDATE RLS policy (required for cancel/reschedule)
-
-- **Bug fixes (2026-05-21):**
-  - Fixed broken Unsplash photo URLs (hero + installation card + auth pages) — replaced 404 IDs with working ones
-  - `app/admin/settings/AdminSettingsClient.tsx`: added PayNow Mobile Number input field (was missing, preventing QR generation)
-  - `app/api/contracts/[id]/send-contract-pdf/route.ts`: contract PDF email now sends unconditionally — PayNow QR is optional (included only when `paynow_mobile` is configured); previously email was silently skipped when `paynow_mobile` was null
-  - `lib/utils/paynow.ts`: fixed PayNow QR proxy type — was `'2'` (UEN) instead of `'0'` (mobile number); banks were rejecting scans with "Contact number isn't registered for PayNow"
-  - `lib/email/templates/BookingReceived.tsx` + `BookingRescheduled.tsx`: emails now list all preferred date/slot entries instead of only first preference; `send.ts` and reschedule route updated to pass `newDateSlots` instead of `newDates`
-  - `app/admin/contracts/page.tsx`: contract creation dialog address field replaced with Home (customer's saved address) / My Location / Other (Places Autocomplete) picker; Maps JS API loaded via `next/script`
-  - **Removed first-preference concept across all UI:** `StepReview`, `account/bookings/page.tsx`, `BookingCard`, `BookingsMap` InfoWindow, and `admin/customers/[id]/page.tsx` all now show every preferred date+slot equally — no "First preference / Preference N" labels. Admin customer detail merged Date+Slot columns into one; confirmed bookings show confirmed date+slot in green.
-  - **Auth emails via Resend (Supabase Auth Hook):** `app/api/auth/send-email/route.ts` — POST endpoint that Supabase calls instead of sending its own auth emails; verifies `Authorization: Bearer <SUPABASE_AUTH_HOOK_SECRET>` header (Supabase Auth Hooks use HTTP Bearer token auth, NOT svix); handles `signup`/`email_change` (→ `EmailConfirmation.tsx`) and `recovery` (→ `PasswordReset.tsx`); sends from `noreply@hydrowash.services` via Resend. Hook registered in Supabase dashboard (Authentication → Hooks → Send Email → HTTP, auth type = HTTP Bearer Token). `SUPABASE_AUTH_HOOK_SECRET` must match the secret pasted in Supabase dashboard, set in `.env.local`, and added to Vercel. Email confirmation enabled in Supabase Authentication → Settings.
-
-- **Frontend upgrade (2026-05-20):** Full visual refresh across all pages — Unsplash hero/auth photos, stat strip, Why Choose Us + Testimonials sections, booking wizard progress bar, admin nav with active states (`AdminNav.tsx`), booking card status strips, empty states with CTAs ✅ complete
-
-- **Bug fixes + settings improvements (2026-06-02):**
-  - **AC catalog CRUD in admin settings:** `app/admin/settings/AdminSettingsClient.tsx` now has three new `CatalogSection` components for `ac_brands`, `ac_unit_types`, and `ac_unit_locations` — add, inline edit, activate/deactivate, delete (FK-safe). Admin can manage all dropdown options for the job completion form. `app/admin/settings/page.tsx` fetches initial data for all three tables server-side.
-  - **`JobCompletionDialog` dropdowns were empty:** `components/admin/JobCompletionDialog.tsx` was querying `ac_brands`, `ac_unit_types`, `ac_unit_locations` with `.select('id, name')` — actual column is `label`. Fixed to `.select('id, label')` with `.map()` to `{ id, name }`. Also added `.order('display_order')`.
-  - **Premature job completion fixed:** Clicking "Save & Preview PDF" in step 2 was marking the booking as COMPLETED before the work order was sent. Fixed with `save_only: true` flag on `POST /api/bookings/[id]/complete` — step 2 saves `job_completions` data without changing booking status. Step 3 "Confirm & Send" is the only action that transitions APPROVED → COMPLETED. `complete` route now checks `body.save_only` and skips the booking status update when true.
-  - **Booking confirmed email now includes time slot:** `lib/email/templates/BookingApproved.tsx` now shows `confirmed_slot` using `SLOT_LABELS` (e.g. "10:00 – 12:00").
-  - **Admin users can access `/book` without a home address:** `middleware.ts` address-check now skips admin role — `profile?.role !== 'admin' && !profile?.address` — so admins aren't bounced to settings when testing the booking flow.
-  - **Settings address redirect:** `app/account/settings/AccountSettingsClient.tsx` — after successfully saving a profile with `?reason=address` in the URL and an address confirmed, redirects to `/book` after 1.2 s so the customer lands directly on the booking page.
+## Feature completeness (as of 2026-06-02)
+All features shipped. See git log for change history.
+- Booking portal (3-step wizard, multi-date slots, SGT-aware calendar, "Others" locations) ✅
+- Admin dashboard (bookings map, route optimiser, agenda week-grid, customer 360) ✅
+- Contracts + invoices (PDF generation, PayNow QR, quarterly reminders, customer self-signup) ✅
+- Job completion workflow (3-step dialog, save_only preview, work order PDF, auto work_order_no) ✅
+- Auth via Supabase hook → Resend; custom domain `noreply@hydrowash.services` ✅
+- Mobile UX (CustomerBottomNav, AdminBottomNav, week-strip calendar, responsive dialogs) ✅
+- Admin settings: CRUD for service types, AC brands, unit types, unit locations ✅
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -411,5 +360,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Job completion back button:** Step 3 of `JobCompletionDialog` now has "← Back to Pricing" button. `complete` route accepts `save_only: true` (saves job_completions without status change — used by step 2 preview) and accepts COMPLETED bookings (re-upserts job_completions without re-transitioning status/work_order_no); only APPROVED → COMPLETED transition happens when "Confirm & Send" is clicked in step 3.
 - **Auth hook deployment note:** `SUPABASE_AUTH_HOOK_SECRET` must be added to Vercel env vars (not just `.env.local`) for the hook to work in production. Hook URL in Supabase dashboard must point to the Vercel production domain (`https://www.hydrowash.services/api/auth/send-email`), not localhost. Auth hook uses HTTP Bearer token auth — Supabase sends `Authorization: Bearer <secret>`; do NOT use svix (that is for Database Webhooks, not Auth Hooks).
 - **Multi-domain setup (prod + pre-prod):** Production is `www.hydrowash.services`; pre-prod is `hydrowash-ten.vercel.app`. Both share the same Supabase project. Supabase config: Site URL = `https://www.hydrowash.services`; Redirect URLs includes both `https://www.hydrowash.services/**` and `https://hydrowash-ten.vercel.app/**`. Auth hook URL stays at production (`https://www.hydrowash.services/api/auth/send-email`). `app/api/auth/send-email/route.ts` uses `redirect_to` origin (not `site_url`) to build `confirmUrl` — so confirmation links point back to whichever domain the user signed up from.
-- **Current status:** AC catalog CRUD in settings + premature completion fix + booking confirmed email time slot + middleware admin bypass + address redirect applied (2026-06-02). Auth hook fixed (Bearer token, svix removed) + duplicate email detection on register (2026-05-29). Bug fixes + slot display overhaul + auth email hook + AC details dropdowns + multi-domain redirect_to fix applied (2026-05-21). Frontend upgrade complete. All Phase 2 subsystems + post-release fixes + full visual refresh applied. All migrations 001–029 applied. Supabase Storage bucket `documents` (private) created. `@react-pdf/renderer`, `qrcode.react`, `qrcode` installed (`svix` removed — was incorrect for auth hooks). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Last updated:** 2026-06-02. All migrations 001–029 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
