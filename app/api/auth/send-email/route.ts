@@ -1,24 +1,52 @@
+import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'HydroWash <noreply@hydrowash.services>'
 
+// Svix-format webhook signature verification.
+// Vercel's proxy strips the Authorization header Supabase sends, so we verify
+// using the webhook-id / webhook-timestamp / webhook-signature headers instead.
+function verifyWebhookSignature(
+  secret: string,
+  webhookId: string,
+  webhookTimestamp: string,
+  rawBody: string,
+  webhookSig: string,
+): boolean {
+  const ts = parseInt(webhookTimestamp, 10)
+  if (isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false
+
+  const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`
+  // Support whsec_<base64> format (Svix) or raw UTF-8 string
+  const key = secret.startsWith('whsec_')
+    ? Buffer.from(secret.slice(7), 'base64')
+    : Buffer.from(secret, 'utf8')
+  const expectedSig = crypto.createHmac('sha256', key).update(signedContent).digest('base64')
+
+  return webhookSig.split(' ').some(part => {
+    const [version, b64] = part.split(',')
+    return version === 'v1' && b64 === expectedSig
+  })
+}
+
 export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
   if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
 
-  const allHeaders: Record<string, string> = {}
-  request.headers.forEach((value, key) => { allHeaders[key] = key.toLowerCase().includes('auth') ? value : value })
-  console.log('[auth/send-email] Headers:', JSON.stringify(allHeaders))
+  // Read body before verification (needed for HMAC)
+  const rawBody = await request.text()
 
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader || authHeader !== `Bearer ${secret}`) {
-    console.log('[auth/send-email] Auth failed. Header:', authHeader ?? 'MISSING')
+  const webhookId = request.headers.get('webhook-id')
+  const webhookTimestamp = request.headers.get('webhook-timestamp')
+  const webhookSig = request.headers.get('webhook-signature')
+
+  if (!webhookId || !webhookTimestamp || !webhookSig ||
+      !verifyWebhookSignature(secret, webhookId, webhookTimestamp, rawBody, webhookSig)) {
+    console.log('[auth/send-email] Auth failed:', { webhookId, webhookTimestamp, hasSig: !!webhookSig })
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-
-  const rawBody = await request.text()
 
   const { user, email_data } = JSON.parse(rawBody) as {
     user: { email: string }
