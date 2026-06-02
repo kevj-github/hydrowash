@@ -5,8 +5,11 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'HydroWash <noreply@hydrowash.services>'
 
-// Svix-format HMAC verification — tries multiple key encodings since Supabase's
-// exact key derivation from the bearer token secret is not documented.
+// Svix / Standard Webhooks format: HMAC-SHA256(key, "{id}.{timestamp}.{body}")
+// Supabase auth hooks sign every request this way. Vercel strips the Authorization
+// header, so this webhook signature is our only verification path.
+// We try multiple key encodings because Supabase's exact key derivation from the
+// bearer token secret is not documented.
 function verifyWebhookSignature(
   secret: string,
   webhookId: string,
@@ -20,53 +23,46 @@ function verifyWebhookSignature(
   const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`
 
   const candidates: Buffer[] = [
-    // whsec_<base64> Svix format
+    // Standard Webhooks / Svix whsec_<base64> format
     ...(secret.startsWith('whsec_') ? [Buffer.from(secret.slice(7), 'base64')] : []),
     Buffer.from(secret, 'utf8'),
     Buffer.from(secret, 'base64'),
     Buffer.from(secret, 'hex'),
   ]
 
-  return candidates.some(key => {
+  const receivedSigs = webhookSig.split(' ')
+    .filter(p => p.startsWith('v1,'))
+    .map(p => p.slice(3))
+
+  for (const key of candidates) {
     try {
-      const expected = crypto.createHmac('sha256', key).update(signedContent).digest('base64')
-      return webhookSig.split(' ').some(part => {
-        const [version, b64] = part.split(',')
-        return version === 'v1' && b64 === expected
-      })
-    } catch {
-      return false
-    }
-  })
+      const computed = crypto.createHmac('sha256', key).update(signedContent).digest('base64')
+      if (receivedSigs.some(sig => sig.length === computed.length &&
+          crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(computed)))) {
+        return true
+      }
+    } catch { /* invalid key bytes for this encoding — skip */ }
+  }
+  return false
 }
 
 export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
   if (!secret) return NextResponse.json({ error: 'Hook secret not configured' }, { status: 500 })
 
-  // Read body first (needed for HMAC verification)
+  // Read body before verification (HMAC needs the raw payload)
   const rawBody = await request.text()
 
-  // Auth method 1: URL query token — requires Supabase hook URL to be:
-  //   https://www.hydrowash.services/api/auth/send-email?token=<SUPABASE_AUTH_HOOK_SECRET>
-  // This is immune to Vercel's proxy stripping the Authorization header.
-  const urlToken = request.nextUrl.searchParams.get('token')
-
-  // Auth method 2: Svix-format webhook signature that Supabase sends on every hook call
   const webhookId = request.headers.get('webhook-id')
   const webhookTimestamp = request.headers.get('webhook-timestamp')
   const webhookSig = request.headers.get('webhook-signature')
-  const sigValid = !!(webhookId && webhookTimestamp && webhookSig &&
-    verifyWebhookSignature(secret, webhookId, webhookTimestamp, rawBody, webhookSig))
 
-  if (urlToken !== secret && !sigValid) {
-    console.log('[auth/send-email] Auth failed:', {
-      urlToken: urlToken ? 'present-wrong' : 'absent',
-      sigValid,
-      webhookId,
-      webhookTimestamp,
-      hasSig: !!webhookSig,
-    })
+  if (!webhookId || !webhookTimestamp || !webhookSig ||
+      !verifyWebhookSignature(secret, webhookId, webhookTimestamp, rawBody, webhookSig)) {
+    // Log the received sig prefix to help diagnose key-format mismatches without
+    // leaking the secret itself.
+    const receivedPrefix = webhookSig ? webhookSig.slice(0, 12) + '…' : 'absent'
+    console.log('[auth/send-email] Auth failed:', { webhookId, webhookTimestamp, receivedSigPrefix: receivedPrefix })
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
