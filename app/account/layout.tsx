@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Wind } from 'lucide-react'
 import { LogoutButton } from '@/app/(public)/LogoutButton'
+import { CustomerBottomNav } from '@/components/ui/CustomerBottomNav'
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -10,7 +11,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
   if (!user) redirect('/auth/login?redirect=/account/bookings')
 
   return (
-    <>
+    <div className="overflow-x-hidden">
       <header className="sticky top-0 z-40 bg-primary border-b border-white/10 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group cursor-pointer">
@@ -19,7 +20,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
             </div>
             <span className="font-heading font-bold text-lg text-white tracking-tight">HydroWash</span>
           </Link>
-          <nav className="flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1">
             <Link
               href="/account/bookings"
               className="text-sm text-slate-300 hover:text-white px-3 py-2 rounded-md hover:bg-white/10 transition-all duration-150"
@@ -50,9 +51,10 @@ export default async function AccountLayout({ children }: { children: React.Reac
           </nav>
         </div>
       </header>
-      <main className="flex-1 min-h-screen bg-background">
+      <main className="flex-1 min-h-screen bg-background pb-14 md:pb-0">
         {children}
       </main>
-    </>
+      <CustomerBottomNav isLoggedIn={true} />
+    </div>
   )
 }
