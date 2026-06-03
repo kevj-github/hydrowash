@@ -93,7 +93,7 @@ export function SlotCalendar({ value, onChange }: Props) {
     const exists = value.find(e => e.date === date)
     if (exists) {
       setActiveDate(date)
-    } else if (value.length < MAX_DATES) {
+    } else if (value.length < MAX_DATES && totalSlots < MAX_TOTAL_SLOTS) {
       const next = [...value, { date, slots: [] }]
       onChange(next)
       setActiveDate(date)
@@ -183,7 +183,7 @@ export function SlotCalendar({ value, onChange }: Props) {
             const isSelected = value.some(e => e.date === date)
             const isActiveMobile = date === activeDate
             const isToday = date === todaySGT
-            const atMax = value.length >= MAX_DATES && !isSelected
+            const atMax = !isSelected && (value.length >= MAX_DATES || totalSlots >= MAX_TOTAL_SLOTS)
             const disabled = isPast || fullyBlocked || atMax
             const dow = new Date(date + 'T00:00:00').toLocaleString('en-SG', { weekday: 'narrow' })
             const dayNum = date.slice(8)
@@ -223,7 +223,7 @@ export function SlotCalendar({ value, onChange }: Props) {
 
       {totalSlots >= MAX_TOTAL_SLOTS && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          Maximum {MAX_TOTAL_SLOTS} time slots selected. You can still add more dates but no further slots.
+          Maximum {MAX_TOTAL_SLOTS} time slots reached — remove a slot to add more.
         </p>
       )}
       {value.length >= MAX_DATES && totalSlots < MAX_TOTAL_SLOTS && (
@@ -307,7 +307,7 @@ export function SlotCalendar({ value, onChange }: Props) {
       <div className="md:hidden space-y-1">
         {totalSlots >= MAX_TOTAL_SLOTS && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Maximum {MAX_TOTAL_SLOTS} time slots selected.
+            Maximum {MAX_TOTAL_SLOTS} time slots reached — remove a slot to add more.
           </p>
         )}
         {value.length >= MAX_DATES && totalSlots < MAX_TOTAL_SLOTS && (
