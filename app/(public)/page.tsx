@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Wind, Wrench, Zap, Package, ArrowRight, CalendarCheck, Cpu, MapPin, ShieldCheck, FileText, Star } from 'lucide-react'
+import { Wind, Wrench, Zap, Package, ArrowRight, CalendarCheck, Cpu, MapPin, ShieldCheck, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Section, SectionInner } from '@/components/ui/section'
 import { SectionHeading } from '@/components/ui/section-heading'
@@ -51,23 +51,6 @@ const whyFeatures = [
   { icon: FileText,    label: '1-year maintenance contracts', desc: 'Quarterly servicing, fully managed for you.' },
 ]
 
-const testimonials = [
-  {
-    name: 'Jason T.',
-    location: 'Jurong West',
-    quote: 'Booked at 9am, technician arrived by noon. Chemical wash done perfectly. Highly recommend!',
-  },
-  {
-    name: 'Priya S.',
-    location: 'Bishan',
-    quote: 'Finally an aircon company with transparent pricing. No surprise charges at all.',
-  },
-  {
-    name: 'Wei Liang C.',
-    location: 'Tampines',
-    quote: 'Signed up for the annual contract. Best decision — no more chasing for servicing dates.',
-  },
-]
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -217,38 +200,6 @@ export default async function HomePage() {
                 ))}
               </ul>
             </div>
-          </div>
-        </SectionInner>
-      </Section>
-
-      {/* Testimonials */}
-      <Section className="bg-muted py-20">
-        <SectionInner>
-          <SectionHeading
-            label="Reviews"
-            title="What our customers say"
-            subtitle="Real feedback from homeowners across Singapore."
-          />
-          <div className="grid sm:grid-cols-3 gap-6">
-            {testimonials.map(t => (
-              <div key={t.name} className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} size={14} className="text-amber-400 fill-amber-400" />
-                  ))}
-                </div>
-                <p className="text-sm text-foreground leading-relaxed mb-5 italic">&ldquo;{t.quote}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-accent/10 text-accent font-semibold text-sm flex items-center justify-center shrink-0">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-primary">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.location}, Singapore</p>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </SectionInner>
       </Section>
