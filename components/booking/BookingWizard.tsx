@@ -11,7 +11,7 @@ import type { ServiceType, PreferredDateSlot } from '@/lib/types'
 
 interface Props {
   serviceTypes: ServiceType[]
-  profileAddress?: { address: string; postal_code: string; lat: number; lng: number } | null
+  profileAddress?: { address: string; postal_code: string; lat: number; lng: number; unit_floor?: string; building_name?: string } | null
   repeatId?: string
 }
 

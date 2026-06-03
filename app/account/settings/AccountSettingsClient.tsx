@@ -15,6 +15,8 @@ interface ProfileData {
   address_lat: number | null
   address_lng: number | null
   postal_code: string | null
+  unit_floor: string | null
+  building_name: string | null
 }
 
 interface Props {
@@ -36,6 +38,8 @@ export default function AccountSettingsClient({ profile }: Props) {
       ? { address: profile.address, postal_code: profile.postal_code ?? '', lat: profile.address_lat, lng: profile.address_lng! }
       : null
   )
+  const [unitFloor, setUnitFloor] = useState(profile.unit_floor ?? '')
+  const [buildingName, setBuildingName] = useState(profile.building_name ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -81,6 +85,8 @@ export default function AccountSettingsClient({ profile }: Props) {
           address_lat: addressData?.lat ?? null,
           address_lng: addressData?.lng ?? null,
           postal_code: addressData?.postal_code ?? null,
+          unit_floor: unitFloor || null,
+          building_name: buildingName || null,
         }),
       })
       if (!res.ok) {
@@ -98,6 +104,8 @@ export default function AccountSettingsClient({ profile }: Props) {
       setSaving(false)
     }
   }
+
+  const opt = <span className="ml-1 text-muted-foreground font-normal text-xs">(optional)</span>
 
   return (
     <div className="max-w-lg mx-auto py-10 px-4">
@@ -120,30 +128,19 @@ export default function AccountSettingsClient({ profile }: Props) {
       <form onSubmit={handleSave} className="space-y-5 bg-white rounded-2xl border border-border p-6 shadow-sm">
         <div className="space-y-1.5">
           <Label htmlFor="name" className="text-sm font-medium text-primary">Full Name</Label>
-          <Input
-            id="name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            className="h-11"
-          />
+          <Input id="name" value={name} onChange={e => setName(e.target.value)} required className="h-11" />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="phone" className="text-sm font-medium text-primary">Phone Number</Label>
-          <Input
-            id="phone"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            required
-            className="h-11"
-          />
+          <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} required className="h-11" />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="address" className="text-sm font-medium text-primary">
             Home Address
             <span className="ml-1 text-muted-foreground font-normal text-xs">(used for quick booking)</span>
+            {opt}
           </Label>
           <div className="relative">
             <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -167,6 +164,36 @@ export default function AccountSettingsClient({ profile }: Props) {
             <p className="text-xs text-slate-400">Select an address from the dropdown suggestions.</p>
           ) : null}
         </div>
+
+        {addressData && (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="unit_floor" className="text-sm font-medium text-primary">
+                Unit / Floor {opt}
+              </Label>
+              <Input
+                id="unit_floor"
+                value={unitFloor}
+                onChange={e => setUnitFloor(e.target.value)}
+                placeholder="e.g. #04-05"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="building_name" className="text-sm font-medium text-primary">
+                Building Name {opt}
+              </Label>
+              <Input
+                id="building_name"
+                value={buildingName}
+                onChange={e => setBuildingName(e.target.value)}
+                placeholder="e.g. Watergate Condominium"
+                className="h-11"
+              />
+            </div>
+          </>
+        )}
 
         {error && (
           <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">

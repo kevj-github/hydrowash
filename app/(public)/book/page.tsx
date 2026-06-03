@@ -14,7 +14,7 @@ export default async function BookPage({
   const [serviceTypesRes, profileRes] = await Promise.all([
     supabase.from('service_types').select('*').eq('active', true).order('category'),
     user
-      ? supabase.from('profiles').select('address, address_lat, address_lng, postal_code').eq('id', user.id).single()
+      ? supabase.from('profiles').select('address, address_lat, address_lng, postal_code, unit_floor, building_name').eq('id', user.id).single()
       : Promise.resolve({ data: null }),
   ])
 
@@ -26,6 +26,8 @@ export default async function BookPage({
           postal_code: profile.postal_code ?? '',
           lat: profile.address_lat,
           lng: profile.address_lng!,
+          unit_floor: profile.unit_floor ?? '',
+          building_name: profile.building_name ?? '',
         }
       : null
 

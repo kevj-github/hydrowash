@@ -12,11 +12,11 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   return (
     <div className="overflow-x-hidden">
-      <header className="sticky top-0 z-40 bg-primary border-b border-white/10 shadow-sm">
+      <header className="sticky top-0 z-40 bg-primary border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-            <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
-              <Wind size={14} className="text-sky-300" strokeWidth={2} />
+            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center transition-colors duration-200 group-hover:bg-accent/30">
+              <Wind size={16} className="text-sky-300" strokeWidth={2} />
             </div>
             <span className="font-heading font-bold text-lg text-white tracking-tight">HydroWash</span>
           </Link>

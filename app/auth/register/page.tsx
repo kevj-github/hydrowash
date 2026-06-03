@@ -30,6 +30,8 @@ interface AddressData {
 export default function RegisterPage() {
   const [form, setForm] = useState<Record<FormKey, string>>({ name: '', phone: '', email: '', password: '' })
   const [addressData, setAddressData] = useState<AddressData | null>(null)
+  const [unitFloor, setUnitFloor] = useState('')
+  const [buildingName, setBuildingName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [verifyEmail, setVerifyEmail] = useState('')
@@ -99,6 +101,8 @@ export default function RegisterPage() {
           address_lat: addressData.lat,
           address_lng: addressData.lng,
           postal_code: addressData.postal_code,
+          unit_floor: unitFloor || null,
+          building_name: buildingName || null,
         }).eq('id', data.user.id)
       }
       router.push('/')
@@ -208,7 +212,7 @@ export default function RegisterPage() {
               </div>
             ))}
 
-            {/* Optional address field */}
+            {/* Optional address fields */}
             <div className="space-y-1.5">
               <Label htmlFor="address" className="text-sm font-medium text-primary">
                 Home Address{' '}
@@ -232,6 +236,35 @@ export default function RegisterPage() {
                 <p className="text-xs text-muted-foreground">Select an address from the dropdown.</p>
               )}
             </div>
+
+            {addressData && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="reg-unit" className="text-sm font-medium text-primary">
+                    Unit / Floor <span className="text-muted-foreground font-normal text-xs">(optional)</span>
+                  </Label>
+                  <Input
+                    id="reg-unit"
+                    value={unitFloor}
+                    onChange={e => setUnitFloor(e.target.value)}
+                    placeholder="e.g. #04-05"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="reg-building" className="text-sm font-medium text-primary">
+                    Building Name <span className="text-muted-foreground font-normal text-xs">(optional)</span>
+                  </Label>
+                  <Input
+                    id="reg-building"
+                    value={buildingName}
+                    onChange={e => setBuildingName(e.target.value)}
+                    placeholder="e.g. Watergate Condominium"
+                    className="h-11"
+                  />
+                </div>
+              </>
+            )}
 
             {error && (
               <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">

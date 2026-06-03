@@ -24,7 +24,7 @@ interface StepData {
 interface Props {
   data: StepData
   onChange: (updates: Partial<StepData>) => void
-  profileAddress?: { address: string; postal_code: string; lat: number; lng: number } | null
+  profileAddress?: { address: string; postal_code: string; lat: number; lng: number; unit_floor?: string; building_name?: string } | null
 }
 
 export function StepScheduleLocation({ data, onChange, profileAddress }: Props) {
@@ -65,6 +65,8 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
       postal_code: profileAddress.postal_code,
       lat: profileAddress.lat,
       lng: profileAddress.lng,
+      unit_floor: profileAddress.unit_floor ?? '',
+      building_name: profileAddress.building_name ?? '',
     })
   }
 
@@ -200,7 +202,7 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
         {data.lat && (
           <>
             <div className="space-y-1.5">
-              <Label>Unit / Floor</Label>
+              <Label>Unit / Floor <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
               <Input
                 value={data.unit_floor ?? ''}
                 onChange={e => onChange({ unit_floor: e.target.value })}
@@ -208,19 +210,19 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Building Name</Label>
+              <Label>Building Name <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
               <Input
                 value={data.building_name ?? ''}
                 onChange={e => onChange({ building_name: e.target.value })}
-                placeholder="e.g. Watergate Condominium (optional)"
+                placeholder="e.g. Watergate Condominium"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Landmark / Access Notes</Label>
+              <Label>Landmark / Access Notes <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
               <Textarea
                 value={data.access_notes ?? ''}
                 onChange={e => onChange({ access_notes: e.target.value })}
-                placeholder="e.g. Gate code 1234, ring buzzer for unit (optional)"
+                placeholder="e.g. Gate code 1234, ring buzzer for unit"
                 rows={2}
               />
             </div>

@@ -60,13 +60,22 @@ export function MobileNav({ isLoggedIn, isAdmin }: MobileNavProps) {
                 My Bookings
               </Link>
               {!isAdmin && (
-                <Link
-                  href="/account/contracts"
-                  onClick={() => setOpen(false)}
-                  className="text-sm text-slate-300 hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-md"
-                >
-                  Contracts &amp; Invoices
-                </Link>
+                <>
+                  <Link
+                    href="/account/contracts"
+                    onClick={() => setOpen(false)}
+                    className="text-sm text-slate-300 hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-md"
+                  >
+                    Contracts &amp; Invoices
+                  </Link>
+                  <Link
+                    href="/account/settings"
+                    onClick={() => setOpen(false)}
+                    className="text-sm text-slate-300 hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-md"
+                  >
+                    Settings
+                  </Link>
+                </>
               )}
               <Link
                 href="/book"

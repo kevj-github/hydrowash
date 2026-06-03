@@ -25,10 +25,8 @@ export function PublicHeader({ isLoggedIn, isAdmin }: PublicHeaderProps) {
 
   return (
     <header
-      className={`sticky top-0 z-40 transition-all duration-300 ${
-        scrolled
-          ? 'bg-[#0F172A]/95 backdrop-blur-md shadow-lg border-b border-white/10'
-          : 'bg-[#0F172A] border-b border-white/10'
+      className={`sticky top-0 z-40 bg-primary border-b border-white/10 transition-all duration-300 ${
+        scrolled ? 'bg-primary/95 backdrop-blur-md shadow-lg' : ''
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -59,12 +57,20 @@ export function PublicHeader({ isLoggedIn, isAdmin }: PublicHeaderProps) {
                 My Bookings
               </Link>
               {!isAdmin && (
-                <Link
-                  href="/account/contracts"
-                  className="text-sm text-slate-300 hover:text-white px-3 py-2 rounded-md hover:bg-white/10 transition-all duration-150"
-                >
-                  Contracts &amp; Invoices
-                </Link>
+                <>
+                  <Link
+                    href="/account/contracts"
+                    className="text-sm text-slate-300 hover:text-white px-3 py-2 rounded-md hover:bg-white/10 transition-all duration-150"
+                  >
+                    Contracts &amp; Invoices
+                  </Link>
+                  <Link
+                    href="/account/settings"
+                    className="text-sm text-slate-300 hover:text-white px-3 py-2 rounded-md hover:bg-white/10 transition-all duration-150"
+                  >
+                    Settings
+                  </Link>
+                </>
               )}
               <Link
                 href="/book"
