@@ -29,10 +29,12 @@ const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
 
 interface Props {
   initialBookings: BookingWithRelations[]
+  initialVisitMap?: Record<string, { visitNo: number; totalVisits: number }>
 }
 
-export function AdminBookingsClient({ initialBookings }: Props) {
+export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: Props) {
   const [bookings, setBookings] = useState(initialBookings)
+  const [visitMap, setVisitMap] = useState<Record<string, { visitNo: number; totalVisits: number }>>(initialVisitMap)
   const [activeTab, setActiveTab] = useState<Tab>('MAINTENANCE')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -69,7 +71,9 @@ export function AdminBookingsClient({ initialBookings }: Props) {
   const refresh = useCallback(async () => {
     const res = await fetch('/api/bookings?admin=1')
     if (res.ok) {
-      setBookings(await res.json())
+      const body = await res.json()
+      setBookings(body.bookings ?? body)
+      if (body.visitMap) setVisitMap(body.visitMap)
     } else {
       setRefreshKey(k => k + 1)
     }
@@ -250,7 +254,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                   ? <p className="text-sm text-muted-foreground text-center py-8">No maintenance bookings.</p>
                   : maintenanceFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                       </div>
                     ))
                 }
@@ -276,7 +280,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                   ? <p className="text-sm text-muted-foreground text-center py-8">No fault repair bookings.</p>
                   : faultRepairFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                       </div>
                     ))
                 }
@@ -302,7 +306,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                   ? <p className="text-sm text-muted-foreground text-center py-8">No installation bookings.</p>
                   : installationFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                       </div>
                     ))
                 }
@@ -324,7 +328,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                   ? <p className="text-sm text-muted-foreground text-center py-8">No bookings here.</p>
                   : allFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                       </div>
                     ))
                 }
@@ -407,7 +411,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                 ) : (
                   maintenanceFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                     </div>
                   ))
                 )}
@@ -457,7 +461,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                 ) : (
                   faultRepairFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                     </div>
                   ))
                 )}
@@ -507,7 +511,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                 ) : (
                   installationFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                     </div>
                   ))
                 )}
@@ -547,7 +551,7 @@ export function AdminBookingsClient({ initialBookings }: Props) {
                 ) : (
                   allFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
                     </div>
                   ))
                 )}

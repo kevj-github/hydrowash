@@ -21,6 +21,11 @@ export function BookingReceived({ booking }: { booking: BookingWithRelations }) 
               {ds.date} — {ds.slots.map(s => SLOT_LABELS[s as TimeSlot] ?? s).join(', ')}
             </Text>
           ))}
+          {booking.contract_id && (
+            <Text style={{ color: '#3730a3', background: '#eef2ff', borderRadius: 6, padding: '6px 10px', fontSize: 13 }}>
+              This visit is part of your annual maintenance contract.
+            </Text>
+          )}
           <Text>We will review your booking and confirm a date shortly.</Text>
           <Text style={{ color: '#64748b', fontSize: 12 }}>HydroWash · Singapore</Text>
         </Container>

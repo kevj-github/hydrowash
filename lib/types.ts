@@ -112,6 +112,7 @@ export interface Booking {
 export interface BookingWithRelations extends Booking {
   customer: Pick<Profile, 'name' | 'phone'>
   service_type: Pick<ServiceType, 'name' | 'duration_minutes' | 'price_sgd'>
+  contract_service_dates?: { id: string; due_month: string; contract_id: string }[]
 }
 
 export interface RouteStop {

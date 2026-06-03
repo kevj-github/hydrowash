@@ -16,6 +16,11 @@ export function BookingApproved({ booking }: { booking: BookingWithRelations }) 
           <Text>Date: <strong>{booking.confirmed_date}</strong></Text>
           <Text>Time: <strong>{slotLabel}</strong></Text>
           <Text>Address: {booking.address}</Text>
+          {booking.contract_id && (
+            <Text style={{ color: '#3730a3', background: '#eef2ff', borderRadius: 6, padding: '6px 10px', fontSize: 13 }}>
+              This visit is part of your annual maintenance contract.
+            </Text>
+          )}
           <Text>Our team will be in touch on the day. Thank you for choosing HydroWash.</Text>
           <Text style={{ color: '#64748b', fontSize: 12 }}>HydroWash · Singapore</Text>
         </Container>

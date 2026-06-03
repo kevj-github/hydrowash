@@ -13,6 +13,7 @@ interface Props {
   onUpdate: () => void
   highlighted?: boolean
   onCardClick?: () => void
+  contractVisitInfo?: { visitNo: number; totalVisits: number }
 }
 
 const urgencyColor: Record<string, string> = {
@@ -36,7 +37,7 @@ const statusBorderStrip: Record<string, string> = {
   CANCELLED: 'border-l-slate-300',
 }
 
-export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Props) {
+export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contractVisitInfo }: Props) {
   const [confirmedDate, setConfirmedDate] = useState(booking.confirmed_date ?? '')
   const [confirmedSlot, setConfirmedSlot] = useState<string>(booking.confirmed_slot ?? '')
   const [rejectionReason, setRejectionReason] = useState('')
@@ -76,6 +77,11 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick }: Pro
           <p className="text-xs text-slate-500">{booking.customer.phone}</p>
         </div>
         <div className="flex flex-wrap gap-1 justify-end">
+          {booking.contract_id && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+              Contract{contractVisitInfo ? ` · Visit ${contractVisitInfo.visitNo}/${contractVisitInfo.totalVisits}` : ''}
+            </span>
+          )}
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor[booking.status] ?? 'bg-slate-100 text-slate-600'}`}>
             {booking.status}
           </span>

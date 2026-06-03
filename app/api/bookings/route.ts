@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   const query = supabase
     .from('bookings')
-    .select('*, customer:profiles(name,phone), service_type:service_types(name,duration_minutes,price_sgd)')
+    .select('*, customer:profiles(name,phone), service_type:service_types(name,duration_minutes,price_sgd), contract_service_dates(id,due_month,contract_id)')
     .order('created_at', { ascending: false })
 
   if (!isAdmin || profile.role !== 'admin') {
@@ -25,6 +25,41 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Build visitMap: bookingId → { visitNo, totalVisits } for linked service dates
+  const visitMap: Record<string, { visitNo: number; totalVisits: number }> = {}
+  const linkedContractIds = [...new Set(
+    (data ?? [])
+      .flatMap(b => (b.contract_service_dates ?? []).map((c: { contract_id: string }) => c.contract_id))
+      .filter(Boolean)
+  )]
+
+  if (linkedContractIds.length > 0) {
+    const { data: allCsds } = await supabase
+      .from('contract_service_dates')
+      .select('id, contract_id, due_month')
+      .in('contract_id', linkedContractIds)
+      .order('due_month', { ascending: true })
+
+    const byContract = (allCsds ?? []).reduce<Record<string, { id: string }[]>>((acc, c) => {
+      acc[c.contract_id] = acc[c.contract_id] ?? []
+      acc[c.contract_id].push(c)
+      return acc
+    }, {})
+
+    for (const b of data ?? []) {
+      const csd = (b.contract_service_dates ?? [])[0] as { id: string; contract_id: string } | undefined
+      if (!csd) continue
+      const list = byContract[csd.contract_id] ?? []
+      const idx = list.findIndex((c: { id: string }) => c.id === csd.id)
+      if (idx >= 0) visitMap[b.id] = { visitNo: idx + 1, totalVisits: list.length }
+    }
+  }
+
+  // Return object shape when admin=1 to include visitMap; plain array otherwise
+  if (isAdmin && profile.role === 'admin') {
+    return NextResponse.json({ bookings: data, visitMap })
+  }
   return NextResponse.json(data)
 }
 

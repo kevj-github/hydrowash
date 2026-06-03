@@ -12,6 +12,11 @@ export function DayBeforeReminder({ booking }: { booking: BookingWithRelations }
           <Text>Hi {booking.customer.name},</Text>
           <Text>This is a reminder that your <strong>{booking.service_type.name}</strong> appointment is scheduled for tomorrow, <strong>{booking.confirmed_date}</strong>.</Text>
           <Text>Address: {booking.address}</Text>
+          {booking.contract_id && (
+            <Text style={{ color: '#3730a3', background: '#eef2ff', borderRadius: 6, padding: '6px 10px', fontSize: 13 }}>
+              This visit is part of your annual maintenance contract.
+            </Text>
+          )}
           <Text>Please ensure access is available. See you tomorrow!</Text>
           <Text style={{ color: '#64748b', fontSize: 12 }}>HydroWash · Singapore</Text>
         </Container>

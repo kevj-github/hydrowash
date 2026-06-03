@@ -33,9 +33,36 @@ export default async function AccountBookingsPage({
 
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('*, customer:profiles(name,phone), service_type:service_types(name,duration_minutes,price_sgd)')
+    .select('*, customer:profiles(name,phone), service_type:service_types(name,duration_minutes,price_sgd), contract_service_dates(id,due_month,contract_id)')
     .eq('customer_id', user!.id)
     .order('created_at', { ascending: false })
+
+  // Compute contract visit numbers server-side
+  const visitMap: Record<string, { visitNo: number; totalVisits: number }> = {}
+  const linkedContractIds = [...new Set(
+    (bookings ?? [])
+      .flatMap(b => (b.contract_service_dates ?? []).map((c: { contract_id: string }) => c.contract_id))
+      .filter(Boolean)
+  )]
+  if (linkedContractIds.length > 0) {
+    const { data: allCsds } = await supabase
+      .from('contract_service_dates')
+      .select('id, contract_id, due_month')
+      .in('contract_id', linkedContractIds)
+      .order('due_month', { ascending: true })
+    const byContract = (allCsds ?? []).reduce<Record<string, { id: string }[]>>((acc, c) => {
+      acc[c.contract_id] = acc[c.contract_id] ?? []
+      acc[c.contract_id].push(c)
+      return acc
+    }, {})
+    for (const b of bookings ?? []) {
+      const csd = (b.contract_service_dates ?? [])[0] as { id: string; contract_id: string } | undefined
+      if (!csd) continue
+      const list = byContract[csd.contract_id] ?? []
+      const idx = list.findIndex((c: { id: string }) => c.id === csd.id)
+      if (idx >= 0) visitMap[b.id] = { visitNo: idx + 1, totalVisits: list.length }
+    }
+  }
 
   const totalBookings = bookings?.length ?? 0
   const upcomingBookings = bookings?.filter(b =>
@@ -110,9 +137,19 @@ export default async function AccountBookingsPage({
                   </h3>
                   <p className="text-sm text-muted-foreground mt-0.5">{booking.address}</p>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${statusColor[booking.status]}`}>
-                  {booking.status}
-                </span>
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {booking.contract_id && (() => {
+                    const vi = visitMap[booking.id]
+                    return (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-indigo-100 text-indigo-800">
+                        Contract{vi ? ` · Visit ${vi.visitNo}/${vi.totalVisits}` : ''}
+                      </span>
+                    )
+                  })()}
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${statusColor[booking.status]}`}>
+                    {booking.status}
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-1 text-xs text-muted-foreground">
