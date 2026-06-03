@@ -16,34 +16,42 @@ function verifyWebhookSignature(
   webhookTimestamp: string,
   rawBody: string,
   webhookSig: string,
-): boolean {
+): { ok: boolean; diagnostics: string } {
   const ts = parseInt(webhookTimestamp, 10)
-  if (isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false
+  if (isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) {
+    return { ok: false, diagnostics: 'stale-timestamp' }
+  }
 
   const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`
 
-  const candidates: Buffer[] = [
-    // Standard Webhooks / Svix whsec_<base64> format
-    ...(secret.startsWith('whsec_') ? [Buffer.from(secret.slice(7), 'base64')] : []),
-    Buffer.from(secret, 'utf8'),
-    Buffer.from(secret, 'base64'),
-    Buffer.from(secret, 'hex'),
+  const candidateKeys: Array<{ label: string; key: Buffer }> = [
+    ...(secret.startsWith('whsec_')
+      ? [{ label: 'whsec_b64', key: Buffer.from(secret.slice(7), 'base64') }]
+      : []),
+    { label: 'utf8', key: Buffer.from(secret, 'utf8') },
+    { label: 'b64', key: Buffer.from(secret, 'base64') },
+    { label: 'hex', key: Buffer.from(secret, 'hex') },
   ]
 
   const receivedSigs = webhookSig.split(' ')
     .filter(p => p.startsWith('v1,'))
     .map(p => p.slice(3))
 
-  for (const key of candidates) {
+  const computed: string[] = []
+
+  for (const { label, key } of candidateKeys) {
     try {
-      const computed = crypto.createHmac('sha256', key).update(signedContent).digest('base64')
-      if (receivedSigs.some(sig => sig.length === computed.length &&
-          crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(computed)))) {
-        return true
+      const sig = crypto.createHmac('sha256', key).update(signedContent).digest('base64')
+      computed.push(`${label}=${sig.slice(0, 8)}`)
+      if (receivedSigs.some(r => r.length === sig.length &&
+          crypto.timingSafeEqual(Buffer.from(r), Buffer.from(sig)))) {
+        return { ok: true, diagnostics: `matched:${label}` }
       }
-    } catch { /* invalid key bytes for this encoding — skip */ }
+    } catch { computed.push(`${label}=invalid`) }
   }
-  return false
+
+  const receivedPrefix = receivedSigs[0]?.slice(0, 8) ?? '?'
+  return { ok: false, diagnostics: `received=${receivedPrefix} computed=[${computed.join(', ')}]` }
 }
 
 export async function POST(request: NextRequest) {
@@ -57,12 +65,14 @@ export async function POST(request: NextRequest) {
   const webhookTimestamp = request.headers.get('webhook-timestamp')
   const webhookSig = request.headers.get('webhook-signature')
 
-  if (!webhookId || !webhookTimestamp || !webhookSig ||
-      !verifyWebhookSignature(secret, webhookId, webhookTimestamp, rawBody, webhookSig)) {
-    // Log the received sig prefix to help diagnose key-format mismatches without
-    // leaking the secret itself.
-    const receivedPrefix = webhookSig ? webhookSig.slice(0, 12) + '…' : 'absent'
-    console.log('[auth/send-email] Auth failed:', { webhookId, webhookTimestamp, receivedSigPrefix: receivedPrefix })
+  if (!webhookId || !webhookTimestamp || !webhookSig) {
+    console.log('[auth/send-email] Auth failed: missing webhook headers')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { ok, diagnostics } = verifyWebhookSignature(secret, webhookId, webhookTimestamp, rawBody, webhookSig)
+  if (!ok) {
+    console.log('[auth/send-email] Auth failed:', diagnostics)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
