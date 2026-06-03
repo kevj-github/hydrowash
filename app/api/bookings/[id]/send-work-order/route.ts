@@ -147,6 +147,7 @@ export async function POST(
   await supabase.from('invoices').insert({
     customer_id: booking.customer_id,
     booking_id: id,
+    contract_id: linkedCsd?.contract_id ?? null,
     amount_sgd: totalSgd,
     status: 'UNPAID',
     description: `Work Order #${booking.work_order_no ?? ''}`,

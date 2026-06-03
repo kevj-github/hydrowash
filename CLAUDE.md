@@ -102,7 +102,7 @@ app/
   api/contracts/route.ts       # POST: create contract + auto-generate service dates; GET: list
   api/contracts/request/route.ts  # POST: customer self-signup (status=PENDING_REVIEW, no price; sends confirmation email)
   api/contracts/[id]/route.ts  # PATCH: edit; DELETE: cancel or hard delete
-  api/contracts/[id]/set-price/route.ts  # PATCH: set price → AWAITING_PAYMENT (email now sent separately via send-contract-pdf)
+  api/contracts/[id]/set-price/route.ts  # PATCH: set price → AWAITING_PAYMENT + immediately generates PDF, uploads to Storage, emails customer (returns { contract, emailSent: boolean })
   api/contracts/[id]/send-contract-pdf/route.ts  # POST: generate contract PDF + PayNow QR; upload to storage; email to customer
   api/contracts/[id]/pdf/route.ts        # GET: admin preview — returns contract PDF blob on-the-fly
   api/contracts/[id]/mark-paid/route.ts  # PATCH: AWAITING_PAYMENT → ACTIVE + generate service dates + send activation email
@@ -125,17 +125,17 @@ components/
   ui/step-item.tsx             # <StepItem number label description done> — numbered step circle
   booking/BookingWizard.tsx    # 3-step wizard: Service → Schedule & Location → Review
   booking/StepServiceDetails.tsx  # Step 0: service type, category fields, UnitLocationPicker for MAINTENANCE
-  booking/StepScheduleLocation.tsx  # Step 1: SlotCalendar (date+slot) + address presets (Home/My Location/Other) + Places autocomplete
+  booking/StepScheduleLocation.tsx  # Step 1: SlotCalendar (date+slot) + address presets (Home/My Location/Other) + Places autocomplete; accepts `contractAddress` prop — when set, hides presets and shows locked address (auto-geocoded on mount)
   booking/StepReview.tsx       # Step 2: summary of all booking data before submit
   booking/SlotCalendar.tsx     # Month-grid calendar; up to 5 dates, 3 slots each; SGT-aware past-slot blocking
   booking/UnitLocationPicker.tsx  # N per-unit <Select> dropdowns (one per unit), driven by numUnits prop; reads ac_unit_locations from Supabase browser client
   admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync; JobCompletionDialog replaces "Mark Complete"
   admin/BookingsMap.tsx        # Google Map markers; InfoWindow popup on pin click (customer name, service, address, status, dates); next/dynamic ssr:false
-  admin/AdminBottomNav.tsx     # Mobile bottom nav bar for admin (5 tabs + More sheet); shown on <md
+  admin/AdminBottomNav.tsx     # Mobile bottom nav bar for admin (5 primary tabs + More sheet with Agenda/Availability/Settings); Schedule removed from More sheet; shown on <md
   admin/AdminAgendaClient.tsx  # Client: mobile day-list view (selectedDay state) + desktop week-grid for agenda page
   admin/ContractCard.tsx       # Contract list card with status/due/expiry badges; shows address if present
   admin/ServiceDateRow.tsx     # One quarterly service visit row; displays formatDueMonth(due_month)
-  admin/InvoiceRow.tsx         # One invoice row with mark-paid dialog
+  admin/InvoiceRow.tsx         # One invoice row with mark-paid dialog; shows "Contract linked" sub-text when contract_id is set
   admin/RouteMap.tsx           # Google Map with numbered pins + polyline (next/dynamic, ssr:false)
   admin/JobCompletionDialog.tsx  # 3-step dialog: Step 1 (attended_by, AC details, checklist); Step 2 (pricing + additional charges); Step 3 (preview PDF + confirm & send)
   account/RescheduleDialog.tsx   # Customer reschedule dialog wrapping SlotCalendar; uses buttonVariants() on DialogTrigger
@@ -278,16 +278,16 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - The "Book Again" UI link was removed from the customer bookings page. The `?repeat=[id]` URL param is still supported by `BookingWizard` (prefills service/units/address from past booking; date slots cleared) but no longer exposed in the UI.
 
 **Admin contract PDF flow:**
-- Admin opens contract detail → "Set Price" dialog (2-step): step 1 saves price → AWAITING_PAYMENT via `PATCH /api/contracts/[id]/set-price`; step 2 shows Preview PDF link + "Confirm & Send" button
+- Admin opens contract detail → "Set Price" dialog (single step): fills price + start date + notes → "Set Price & Send to Customer" button calls `PATCH /api/contracts/[id]/set-price` which sets status=AWAITING_PAYMENT AND generates PDF + PayNow QR + emails customer in one request. Returns `{ contract, emailSent: boolean }` — if `emailSent: false`, alert shown and admin can use "Resend Contract Email" from the AWAITING_PAYMENT banner.
 - Preview: `GET /api/contracts/[id]/pdf` → PDF blob rendered in new tab
-- Send: `POST /api/contracts/[id]/send-contract-pdf` → generates PDF, uploads to Storage, generates PayNow QR, emails customer with PDF attachment
-- AWAITING_PAYMENT banner on detail page also shows Preview + Resend buttons
+- Resend: `POST /api/contracts/[id]/send-contract-pdf` → regenerates PDF, uploads to Storage, generates PayNow QR, emails customer with PDF attachment (used from AWAITING_PAYMENT banner)
+- AWAITING_PAYMENT banner on detail page shows Preview PDF + Resend Contract Email + Mark Paid & Activate buttons
 
 **Admin job completion + work order:**
 - `JobCompletionDialog` on `BookingCard`: 3-step — Step 1 (attended_by, job times, AC unit details table with brand/model, checklist items, job description); Step 2 (base price, additional charges, live total); Step 3 (preview PDF + confirm & send)
 - Step 3 "Preview" → `GET /api/bookings/[id]/work-order-pdf` → PDF in new tab
 - Step 2 "Save & Preview PDF" → `POST /api/bookings/[id]/complete` with `save_only:true` (upserts job_completions, does NOT change booking status — booking stays APPROVED)
-- Step 3 "Confirm & Send" → `POST /api/bookings/[id]/complete` (marks APPROVED → COMPLETED) then `POST /api/bookings/[id]/send-work-order` (generates PDF, uploads to Storage, emails customer with PDF + PayNow QR, creates UNPAID invoice)
+- Step 3 "Confirm & Send" → `POST /api/bookings/[id]/complete` (marks APPROVED → COMPLETED) then `POST /api/bookings/[id]/send-work-order` (generates PDF, uploads to Storage, emails customer with PDF + PayNow QR, creates UNPAID invoice with `contract_id` set when booking is linked to a contract service date)
 
 **Admin customer 360 (`/admin/customers`):**
 - List: search by name/phone; columns: customer_no, name, phone, booking count, total paid (PAID invoices), active contract badge, View link
@@ -318,14 +318,19 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 
 **Animation utilities:** `.animate-fade-up`, `.animate-fade-up-delay-1/2/3` in `globals.css`. Hero elements only.
 
-## Feature completeness (as of 2026-06-02)
+## Feature completeness (as of 2026-06-03)
 All features shipped. See git log for change history.
 - Booking portal (3-step wizard, multi-date slots, SGT-aware calendar, "Others" locations) ✅
+- Contract-linked bookings lock address to contract location (auto-geocoded, read-only in step 1) ✅
 - Admin dashboard (bookings map, route optimiser, agenda week-grid, customer 360) ✅
 - Contracts + invoices (PDF generation, PayNow QR, quarterly reminders, customer self-signup) ✅
+- Contract pricing email auto-sent on set-price (single-step dialog, no separate send button) ✅
+- Customer /account/contracts shows "How contracts work" description + pricing tier chips ✅
 - Job completion workflow (3-step dialog, save_only preview, work order PDF, auto work_order_no) ✅
+- Work-order invoice linked to contract when booking is part of a contract service date ✅
 - Auth via Supabase hook → Resend; custom domain `noreply@hydrowash.services` ✅
 - Mobile UX (CustomerBottomNav, AdminBottomNav, week-strip calendar, responsive dialogs) ✅
+- Mobile admin invoices: full mark-paid dialog + View PDF + contract ref + paid details on cards ✅
 - Admin settings: CRUD for service types, AC brands, unit types, unit locations ✅
 
 ## Superpowers file conventions
@@ -364,5 +369,7 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Profile address fields:** `profiles` now has `unit_floor text` and `building_name text` (migration 030). These are collected in Account Settings (appear after address confirmed), Register page, and the contract request dialog. The booking wizard Home preset pre-fills `unit_floor` + `building_name` from the profile. All three forms compose the full address as `"unit_floor, building_name, street_address"` before saving/submitting.
 - **SlotCalendar max-slots gate:** Adding a new date is blocked once `totalSlots >= MAX_TOTAL_SLOTS` (3) — not just when `value.length >= MAX_DATES` (5). Both conditions now disable calendar day cells. Warning message updated accordingly.
 - **Select component:** `SelectTrigger` is `w-full` (was `w-fit`); `SelectPopup` uses `min-w-(--anchor-width)` so dropdown options are never clipped.
+- **Contract-linked booking address:** `BookingData` has `contract_address?: string`. When a contract is selected in `StepServiceDetails`, `contract_address` is set alongside `contract_id`. `StepScheduleLocation` accepts `contractAddress?: string` prop — when provided, address picker is hidden and replaced with a locked display; a `useEffect` geocodes the contract address via `POST /api/geocode` on mount (sets lat/lng). `canNext` at step 1 allows proceeding when `contract_address` is set even if geocoding fails.
+- **Admin invoices mobile:** `MobileInvoiceCard` component (file-local, not exported) in `app/admin/invoices/page.tsx` handles mark-paid dialog state per card. Shows: customer, status badge, description, "Contract linked" chip when `contract_id` set, amount + created date, paid date + payment method, View PDF button (when `booking_id` set), Mark Paid button (when UNPAID).
 - **Last updated:** 2026-06-03. All migrations 001–030 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.

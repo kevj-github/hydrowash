@@ -38,7 +38,6 @@ export default function ContractDetailPage() {
   const [setPriceOpen, setSetPriceOpen] = useState(false)
   const [settingPrice, setSettingPrice] = useState(false)
   const [setPriceForm, setSetPriceForm] = useState({ price_sgd: '', start_date: '', notes: '' })
-  const [setPriceSaved, setSetPriceSaved] = useState(false)
   const [sendingPdf, setSendingPdf] = useState(false)
 
   const [markingPaid, setMarkingPaid] = useState(false)
@@ -144,8 +143,12 @@ export default function ContractDetailPage() {
     })
     setSettingPrice(false)
     if (res.ok) {
-      setSetPriceSaved(true)
+      const body = await res.json()
+      setSetPriceOpen(false)
       fetchData()
+      if (body.emailSent === false) {
+        alert('Price saved, but the email could not be sent. Use "Resend Contract Email" on the contract page.')
+      }
     } else {
       const err = await res.json()
       alert(`Error: ${err.error}`)
@@ -157,8 +160,6 @@ export default function ContractDetailPage() {
     const res = await fetch(`/api/contracts/${id}/send-contract-pdf`, { method: 'POST' })
     setSendingPdf(false)
     if (res.ok) {
-      setSetPriceOpen(false)
-      setSetPriceSaved(false)
       fetchData()
     } else {
       const err = await res.json()
@@ -272,72 +273,51 @@ export default function ContractDetailPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={setPriceOpen} onOpenChange={(o) => { setSetPriceOpen(o); if (!o) setSetPriceSaved(false) }}>
+            <Dialog open={setPriceOpen} onOpenChange={setSetPriceOpen}>
               <DialogTrigger className={cn(buttonVariants(), 'bg-green-600 text-white hover:bg-green-700')}>
                 Set Price
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>{setPriceSaved ? 'Preview & Send Contract' : 'Set Contract Price'}</DialogTitle>
+                  <DialogTitle>Set Contract Price</DialogTitle>
                 </DialogHeader>
-                {!setPriceSaved ? (
-                  <form onSubmit={handleSetPrice} className="space-y-4 pt-2">
-                    <div>
-                      <Label>Price (SGD / year)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={setPriceForm.price_sgd}
-                        onChange={e => setSetPriceForm(f => ({ ...f, price_sgd: e.target.value }))}
-                        required
-                        placeholder="e.g. 480.00"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Confirmed start date</Label>
-                      <Input
-                        type="date"
-                        value={setPriceForm.start_date}
-                        onChange={e => setSetPriceForm(f => ({ ...f, start_date: e.target.value }))}
-                        required
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Notes for customer (optional)</Label>
-                      <Textarea
-                        value={setPriceForm.notes}
-                        onChange={e => setSetPriceForm(f => ({ ...f, notes: e.target.value }))}
-                        rows={2}
-                        className="mt-1"
-                      />
-                    </div>
-                    <Button type="submit" disabled={settingPrice} className="w-full bg-green-600 text-white hover:bg-green-700">
-                      {settingPrice ? 'Saving…' : 'Save & Preview PDF'}
-                    </Button>
-                  </form>
-                ) : (
-                  <div className="space-y-4 pt-2">
-                    <p className="text-sm text-muted-foreground">Price saved. Preview the contract PDF before sending to the customer.</p>
-                    <a
-                      href={`/api/contracts/${id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
-                    >
-                      Preview Contract PDF ↗
-                    </a>
-                    <Button
-                      onClick={handleSendContractPdf}
-                      disabled={sendingPdf}
-                      className="w-full bg-green-600 text-white hover:bg-green-700"
-                    >
-                      {sendingPdf ? 'Sending…' : 'Confirm & Send to Customer'}
-                    </Button>
+                <form onSubmit={handleSetPrice} className="space-y-4 pt-2">
+                  <div>
+                    <Label>Price (SGD / year)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={setPriceForm.price_sgd}
+                      onChange={e => setSetPriceForm(f => ({ ...f, price_sgd: e.target.value }))}
+                      required
+                      placeholder="e.g. 480.00"
+                      className="mt-1"
+                    />
                   </div>
-                )}
+                  <div>
+                    <Label>Confirmed start date</Label>
+                    <Input
+                      type="date"
+                      value={setPriceForm.start_date}
+                      onChange={e => setSetPriceForm(f => ({ ...f, start_date: e.target.value }))}
+                      required
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Notes for customer (optional)</Label>
+                    <Textarea
+                      value={setPriceForm.notes}
+                      onChange={e => setSetPriceForm(f => ({ ...f, notes: e.target.value }))}
+                      rows={2}
+                      className="mt-1"
+                    />
+                  </div>
+                  <Button type="submit" disabled={settingPrice} className="w-full bg-green-600 text-white hover:bg-green-700">
+                    {settingPrice ? 'Saving & sending…' : 'Set Price & Send to Customer'}
+                  </Button>
+                </form>
               </DialogContent>
             </Dialog>
 

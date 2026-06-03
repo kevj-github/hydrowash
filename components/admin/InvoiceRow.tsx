@@ -56,7 +56,12 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false, clas
       {showCustomer && (
         <td className="py-2 px-3 font-medium">{invoice.customer?.name ?? '—'}</td>
       )}
-      <td className="py-2 px-3 max-w-xs truncate">{invoice.description}</td>
+      <td className="py-2 px-3 max-w-xs">
+        <p className="truncate">{invoice.description}</p>
+        {invoice.contract_id && (
+          <p className="text-[10px] text-accent mt-0.5">Contract linked</p>
+        )}
+      </td>
       <td className="py-2 px-3 font-medium">S${Number(invoice.amount_sgd).toFixed(2)}</td>
       <td className="py-2 px-3">
         {invoice.status === 'PAID' ? (

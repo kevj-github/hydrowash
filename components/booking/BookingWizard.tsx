@@ -24,6 +24,7 @@ type BookingData = {
   unit_location_ids: string[]
   unit_location_others: string[]
   contract_id?: string
+  contract_address?: string
   address: string
   postal_code: string
   lat: number | null
@@ -120,7 +121,8 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
     }
     if (step === 1) {
       const hasValidEntry = data.preferred_date_slots.some(e => e.slots.length > 0)
-      return hasValidEntry && !!data.address && data.lat !== null
+      const addressOk = !!data.address && (data.lat !== null || !!data.contract_address)
+      return hasValidEntry && addressOk
     }
     return true
   }
@@ -205,7 +207,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
         <h2 className="font-heading font-semibold text-lg text-primary mb-5">{STEPS[step]}</h2>
 
         {step === 0 && <StepServiceDetails serviceTypes={serviceTypes} data={data} onChange={update} />}
-        {step === 1 && <StepScheduleLocation data={data} onChange={update} profileAddress={profileAddress} />}
+        {step === 1 && <StepScheduleLocation data={data} onChange={update} profileAddress={profileAddress} contractAddress={data.contract_address} />}
         {step === 2 && <StepReview data={data} serviceTypes={serviceTypes} />}
       </div>
 

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, CalendarCheck, Users, FileText, Receipt,
-  CalendarRange, CalendarOff, MapPin, Settings, MoreHorizontal, X
+  CalendarRange, CalendarOff, Settings, MoreHorizontal, X
 } from 'lucide-react'
 
 const primary = [
@@ -18,7 +18,6 @@ const primary = [
 const more = [
   { href: '/admin/agenda',        label: 'Agenda',        icon: CalendarRange },
   { href: '/admin/availability',  label: 'Availability',  icon: CalendarOff },
-  { href: '/admin/schedule',      label: 'Schedule',      icon: MapPin },
   { href: '/admin/settings',      label: 'Settings',      icon: Settings },
 ]
 

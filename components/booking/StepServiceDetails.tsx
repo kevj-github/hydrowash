@@ -21,6 +21,7 @@ interface Props {
     unit_location_ids?: string[]
     unit_location_others?: string[]
     contract_id?: string
+    contract_address?: string
     fault_description?: string
     urgency?: string
     ac_brand?: string
@@ -186,7 +187,10 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
               <p className="text-xs text-muted-foreground">Select your maintenance contract if this booking is part of a scheduled service.</p>
               <Select
                 value={data.contract_id ?? ''}
-                onValueChange={v => onChange({ contract_id: v ?? '' })}
+                onValueChange={v => {
+                  const selected = contracts.find(c => c.id === (v ?? ''))
+                  onChange({ contract_id: v ?? '', contract_address: selected?.address ?? '' })
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="No contract selected">

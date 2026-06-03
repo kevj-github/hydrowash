@@ -257,6 +257,45 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
         </div>
       </div>
 
+      {/* How contracts work */}
+      <div className="bg-accent/5 border border-accent/20 rounded-2xl p-5 space-y-3">
+        <h2 className="font-heading font-semibold text-base text-primary">How maintenance contracts work</h2>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li className="flex gap-2">
+            <span className="text-accent font-bold shrink-0">1.</span>
+            <span><strong className="text-primary">Submit a request</strong> — fill in the number of AC units and your service address. We review it and send you a contract with the annual price.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-accent font-bold shrink-0">2.</span>
+            <span><strong className="text-primary">Pay to activate</strong> — once you receive the contract PDF and PayNow QR, complete payment. We activate your contract and schedule 4 quarterly service visits over the year.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-accent font-bold shrink-0">3.</span>
+            <span><strong className="text-primary">Quarterly reminders</strong> — we email you when each service visit is due so you can book at your preferred date and time. Simply link the booking to this contract.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-accent font-bold shrink-0">4.</span>
+            <span><strong className="text-primary">1-year coverage</strong> — your contract covers all 4 scheduled general cleaning visits. Additional repairs or chemical washes are billed separately.</span>
+          </li>
+        </ul>
+        {pricingTiers.length > 0 && (
+          <div className="pt-2 border-t border-accent/20">
+            <p className="text-xs font-medium text-primary mb-1.5">Estimated pricing</p>
+            <div className="flex flex-wrap gap-2">
+              {pricingTiers.map((tier, i) => (
+                <span key={i} className="text-xs bg-white border border-accent/20 rounded-full px-3 py-1 text-accent">
+                  {tier.max_units === null
+                    ? `${tier.min_units}+ units — S$${tier.price_sgd.toFixed(2)}/unit/year`
+                    : tier.min_units === tier.max_units
+                    ? `${tier.min_units} unit${tier.min_units !== 1 ? 's' : ''} — S$${tier.price_sgd.toFixed(2)}/year`
+                    : `${tier.min_units}–${tier.max_units} units — S$${tier.price_sgd.toFixed(2)}/year`}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Contracts section */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

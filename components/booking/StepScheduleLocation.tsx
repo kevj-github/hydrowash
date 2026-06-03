@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
-import { Home, MapPin, Pencil } from 'lucide-react'
+import { Home, MapPin, Pencil, Lock } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,9 +25,10 @@ interface Props {
   data: StepData
   onChange: (updates: Partial<StepData>) => void
   profileAddress?: { address: string; postal_code: string; lat: number; lng: number; unit_floor?: string; building_name?: string } | null
+  contractAddress?: string
 }
 
-export function StepScheduleLocation({ data, onChange, profileAddress }: Props) {
+export function StepScheduleLocation({ data, onChange, profileAddress, contractAddress }: Props) {
   const isLoaded = useMapsLoaded()
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -36,6 +37,32 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
 
   const [preset, setPreset] = useState<LocationPreset>('other')
   const [geoLoading, setGeoLoading] = useState(false)
+  const [contractGeoLoading, setContractGeoLoading] = useState(false)
+
+  // Auto-geocode contract address when it changes
+  useEffect(() => {
+    if (!contractAddress) return
+    if (data.lat !== null) return // already geocoded
+    setContractGeoLoading(true)
+    fetch('/api/geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: contractAddress }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(result => {
+        if (result) {
+          onChangeRef.current({
+            address: contractAddress,
+            lat: result.lat,
+            lng: result.lng,
+            postal_code: '',
+          })
+        }
+      })
+      .finally(() => setContractGeoLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contractAddress])
 
   useEffect(() => {
     if (!isLoaded || !inputRef.current || preset !== 'other') return
@@ -124,79 +151,101 @@ export function StepScheduleLocation({ data, onChange, profileAddress }: Props) 
           Service location <span className="text-red-500">*</span>
         </p>
 
-        <div className="flex gap-2 flex-wrap">
-          {profileAddress && (
-            <button
-              type="button"
-              onClick={applyHome}
-              className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
-                preset === 'home' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
-              }`}
-            >
-              <Home className="w-3 h-3" />
-              Home
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={applyCurrentLocation}
-            disabled={geoLoading}
-            className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
-              preset === 'current' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
-            }`}
-          >
-            <MapPin className="w-3 h-3" />
-            {geoLoading ? 'Locating…' : 'My Location'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setPreset('other')
-              onChange({ address: '', postal_code: '', lat: null, lng: null })
-            }}
-            className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
-              preset === 'other' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
-            }`}
-          >
-            <Pencil className="w-3 h-3" />
-            Other
-          </button>
-        </div>
-
-        {preset === 'other' && (
+        {contractAddress ? (
           <div className="space-y-1.5">
-            <Label>Street Address <span className="text-red-500">*</span></Label>
-            <div className="relative w-full max-w-full overflow-hidden">
-            <Input
-              ref={inputRef}
-              defaultValue={data.address}
-              placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
-              disabled={!isLoaded}
-              onChange={handleInputChange}
-              autoComplete="off"
-              className="w-full"
-            />
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-accent/10 border border-accent/30">
+              <Lock className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span className="text-xs text-accent font-medium">Address fixed to contract location</span>
             </div>
-            {data.lat ? (
-              <p className="text-xs text-green-700">✓ Location confirmed</p>
-            ) : (
-              <p className="text-xs text-slate-400">Select an address from the dropdown suggestions.</p>
+            <div className="space-y-1.5">
+              <Label>Contract Address</Label>
+              <p className="text-sm text-primary font-medium">
+                {contractGeoLoading ? 'Verifying address…' : contractAddress}
+              </p>
+              {data.lat ? (
+                <p className="text-xs text-green-700">✓ Location confirmed</p>
+              ) : contractGeoLoading ? null : (
+                <p className="text-xs text-amber-600">Address could not be geocoded — booking may still proceed.</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2 flex-wrap">
+              {profileAddress && (
+                <button
+                  type="button"
+                  onClick={applyHome}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
+                    preset === 'home' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
+                  }`}
+                >
+                  <Home className="w-3 h-3" />
+                  Home
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={applyCurrentLocation}
+                disabled={geoLoading}
+                className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
+                  preset === 'current' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
+                }`}
+              >
+                <MapPin className="w-3 h-3" />
+                {geoLoading ? 'Locating…' : 'My Location'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPreset('other')
+                  onChange({ address: '', postal_code: '', lat: null, lng: null })
+                }}
+                className={`flex items-center gap-1.5 text-xs px-3 py-2.5 min-h-[44px] rounded-full border font-medium transition-colors ${
+                  preset === 'other' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
+                }`}
+              >
+                <Pencil className="w-3 h-3" />
+                Other
+              </button>
+            </div>
+
+            {preset === 'other' && (
+              <div className="space-y-1.5">
+                <Label>Street Address <span className="text-red-500">*</span></Label>
+                <div className="relative w-full max-w-full overflow-hidden">
+                <Input
+                  ref={inputRef}
+                  defaultValue={data.address}
+                  placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
+                  disabled={!isLoaded}
+                  onChange={handleInputChange}
+                  autoComplete="off"
+                  className="w-full"
+                />
+                </div>
+                {data.lat ? (
+                  <p className="text-xs text-green-700">✓ Location confirmed</p>
+                ) : (
+                  <p className="text-xs text-slate-400">Select an address from the dropdown suggestions.</p>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {preset === 'home' && data.address && (
-          <div className="space-y-1.5">
-            <Label>Address</Label>
-            <p className="text-sm text-primary font-medium">{data.address}</p>
-          </div>
-        )}
+            {preset === 'home' && data.address && (
+              <div className="space-y-1.5">
+                <Label>Address</Label>
+                <p className="text-sm text-primary font-medium">{data.address}</p>
+              </div>
+            )}
 
-        {preset === 'current' && data.address && (
-          <div className="space-y-1.5">
-            <Label>Detected Address</Label>
-            <p className="text-sm text-primary font-medium">{data.address}</p>
-          </div>
+            {preset === 'current' && data.address && (
+              <div className="space-y-1.5">
+                <Label>Detected Address</Label>
+                <p className="text-sm text-primary font-medium">{data.address}</p>
+              </div>
+            )}
+          </>
         )}
 
         {data.lat && (

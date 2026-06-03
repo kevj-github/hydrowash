@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import InvoiceRow from '@/components/admin/InvoiceRow'
-import { InvoiceWithCustomer, CreateInvoicePayload } from '@/lib/types'
+import { InvoiceWithCustomer, CreateInvoicePayload, PaymentMethod } from '@/lib/types'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,6 +25,99 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+
+const PAYMENT_METHODS: PaymentMethod[] = ['Cash', 'PayNow', 'Bank Transfer', 'Other']
+
+function MobileInvoiceCard({ invoice, onPaid }: { invoice: InvoiceWithCustomer; onPaid: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleMarkPaid() {
+    setSubmitting(true)
+    const res = await fetch(`/api/invoices/${invoice.id}/pay`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_method: paymentMethod }),
+    })
+    setSubmitting(false)
+    if (res.ok) {
+      setOpen(false)
+      onPaid()
+    } else {
+      const err = await res.json()
+      alert(`Error: ${err.error}`)
+    }
+  }
+
+  return (
+    <div className="bg-white border border-border rounded-xl p-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-primary">{invoice.customer?.name ?? '—'}</p>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+          invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+        }`}>{invoice.status}</span>
+      </div>
+      <p className="text-xs text-muted-foreground">{invoice.customer?.phone}</p>
+      <p className="text-xs text-muted-foreground">{invoice.description}</p>
+      {invoice.contract_id && (
+        <p className="text-[10px] text-accent">Contract linked</p>
+      )}
+      <div className="flex items-center justify-between pt-1">
+        <p className="text-sm font-bold text-primary">S${Number(invoice.amount_sgd ?? 0).toFixed(2)}</p>
+        <p className="text-xs text-muted-foreground">Created {invoice.created_at.split('T')[0]}</p>
+      </div>
+      {invoice.paid_at && (
+        <p className="text-xs text-muted-foreground">Paid {invoice.paid_at.split('T')[0]} · {invoice.payment_method}</p>
+      )}
+      <div className="flex gap-2 pt-1">
+        {invoice.booking_id && (
+          <a
+            href={`/api/bookings/${invoice.booking_id}/work-order-pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-xs flex-1')}
+          >
+            View PDF
+          </a>
+        )}
+        {invoice.status === 'UNPAID' && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-green-700 border-green-300 hover:bg-green-50 text-xs flex-1')}>
+              Mark Paid
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Mark Invoice as Paid</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  {invoice.description} — S${Number(invoice.amount_sgd).toFixed(2)}
+                </p>
+                <div>
+                  <label className="text-sm font-medium">Payment Method</label>
+                  <Select value={paymentMethod} onValueChange={v => setPaymentMethod((v ?? 'Cash') as PaymentMethod)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue>{paymentMethod}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map(m => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleMarkPaid} disabled={submitting} className="w-full bg-green-600 text-white hover:bg-green-700">
+                  {submitting ? 'Saving…' : 'Confirm Payment'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function AdminInvoicesContent() {
   const supabase = createClient()
@@ -452,18 +545,7 @@ function AdminInvoicesContent() {
           {/* Mobile card list */}
           <div className="md:hidden space-y-3">
             {filteredInvoices.map(inv => (
-              <div key={inv.id} className="bg-white border border-border rounded-xl p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-primary">{inv.customer?.name ?? '—'}</p>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                  }`}>{inv.status}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{inv.customer?.phone}</p>
-                <p className="text-xs text-muted-foreground truncate">{inv.description}</p>
-                <p className="text-sm font-bold text-primary">S${Number(inv.amount_sgd ?? 0).toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">Created {inv.created_at.split('T')[0]}</p>
-              </div>
+              <MobileInvoiceCard key={inv.id} invoice={inv} onPaid={fetchInvoices} />
             ))}
           </div>
         </>
