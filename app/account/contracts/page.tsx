@@ -38,7 +38,7 @@ export default async function AccountContractsPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('profiles')
-      .select('address')
+      .select('address, unit_floor, building_name')
       .eq('id', user.id)
       .single(),
     supabase
@@ -54,6 +54,8 @@ export default async function AccountContractsPage() {
       contracts={contractsRes.data ?? []}
       invoices={invoicesRes.data ?? []}
       profileAddress={profileRes.data?.address ?? null}
+      profileUnitFloor={profileRes.data?.unit_floor ?? null}
+      profileBuildingName={profileRes.data?.building_name ?? null}
       pricingTiers={settingsRes.data?.contract_pricing_tiers ?? []}
       paynowMobile={settingsRes.data?.paynow_mobile ?? null}
       activeContracts={activeContracts}

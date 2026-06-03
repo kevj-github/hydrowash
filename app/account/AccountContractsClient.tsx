@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Script from 'next/script'
 import { QRCodeSVG } from 'qrcode.react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -18,7 +19,8 @@ import {
 import { ContractPricingTier } from '@/lib/types'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
-import { FileText, FileX } from 'lucide-react'
+import { FileText, FileX, Home, MapPin, Pencil } from 'lucide-react'
+import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
 
 interface ServiceDate {
   id: string
@@ -56,6 +58,8 @@ interface Props {
   contracts: Contract[]
   invoices: Invoice[]
   profileAddress: string | null
+  profileUnitFloor: string | null
+  profileBuildingName: string | null
   pricingTiers: ContractPricingTier[]
   paynowMobile: string | null
   activeContracts: number
@@ -89,7 +93,7 @@ function getPricingHint(tiers: ContractPricingTier[], numUnits: number): string 
   return `Estimated S$${tier.price_sgd.toFixed(2)}/year for ${numUnits} unit${numUnits !== 1 ? 's' : ''}`
 }
 
-export function AccountContractsClient({ contracts, invoices, profileAddress, pricingTiers, paynowMobile, activeContracts }: Props) {
+export function AccountContractsClient({ contracts, invoices, profileAddress, profileUnitFloor, profileBuildingName, pricingTiers, paynowMobile, activeContracts }: Props) {
   const [contractStatus, setContractStatus] = useState('ALL')
   const [invoiceStatus, setInvoiceStatus] = useState('ALL')
   const [invDateFrom, setInvDateFrom] = useState('')
@@ -102,12 +106,81 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [form, setForm] = useState({
-    num_units: '',
-    address: profileAddress ?? '',
-    preferred_month: '',
-    notes: '',
-  })
+  const [form, setForm] = useState({ num_units: '', preferred_month: '', notes: '' })
+
+  // Address picker state
+  type Preset = 'home' | 'current' | 'other'
+  const hasHome = !!profileAddress
+  const [preset, setPreset] = useState<Preset>(hasHome ? 'home' : 'other')
+  const [addressText, setAddressText] = useState(profileAddress ?? '')
+  const [addressConfirmed, setAddressConfirmed] = useState(hasHome)
+  const [unitFloor, setUnitFloor] = useState(profileUnitFloor ?? '')
+  const [buildingName, setBuildingName] = useState(profileBuildingName ?? '')
+  const [geoLoading, setGeoLoading] = useState(false)
+  const addressInputRef = useRef<HTMLInputElement>(null)
+  const isLoaded = useMapsLoaded()
+
+  useEffect(() => {
+    if (!isLoaded || !addressInputRef.current || preset !== 'other') return
+    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+      componentRestrictions: { country: 'sg' },
+      fields: ['formatted_address'],
+    })
+    const listener = ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (!place.formatted_address) return
+      setAddressText(place.formatted_address)
+      setAddressConfirmed(true)
+    })
+    return () => { window.google.maps.event.removeListener(listener) }
+  }, [isLoaded, preset, dialogOpen])
+
+  function applyHome() {
+    setPreset('home')
+    setAddressText(profileAddress ?? '')
+    setAddressConfirmed(true)
+    setUnitFloor(profileUnitFloor ?? '')
+    setBuildingName(profileBuildingName ?? '')
+  }
+
+  function applyCurrentLocation() {
+    setPreset('current')
+    setGeoLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        try {
+          const res = await fetch('/api/geocode/reverse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          })
+          if (res.ok) {
+            const { address } = await res.json()
+            setAddressText(address ?? '')
+            setAddressConfirmed(true)
+          }
+        } finally {
+          setGeoLoading(false)
+        }
+      },
+      () => { setGeoLoading(false); setPreset('other') }
+    )
+  }
+
+  function resetDialog() {
+    setForm({ num_units: '', preferred_month: '', notes: '' })
+    setPreset(hasHome ? 'home' : 'other')
+    setAddressText(profileAddress ?? '')
+    setAddressConfirmed(hasHome)
+    setUnitFloor(profileUnitFloor ?? '')
+    setBuildingName(profileBuildingName ?? '')
+  }
+
+  function buildFullAddress(): string | undefined {
+    if (!addressText) return undefined
+    const prefix = [unitFloor.trim(), buildingName.trim()].filter(Boolean).join(', ')
+    return prefix ? `${prefix}, ${addressText}` : addressText
+  }
 
   const today = new Date().toISOString().slice(0, 7)
 
@@ -142,7 +215,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         num_units: parseInt(form.num_units),
-        address: form.address || undefined,
+        address: buildFullAddress(),
         preferred_month: form.preferred_month,
         notes: form.notes || undefined,
       }),
@@ -155,8 +228,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
       setTimeout(() => {
         setDialogOpen(false)
         setSubmitted(false)
-        setForm({ num_units: '', address: profileAddress ?? '', preferred_month: '', notes: '' })
-        // Reload to show the new pending contract
+        resetDialog()
         window.location.reload()
       }, 1500)
     } else {
@@ -167,6 +239,10 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-10">
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        strategy="lazyOnload"
+      />
 
       {/* Summary strip */}
       <div className="flex gap-4 mb-6">
@@ -206,10 +282,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
               open={dialogOpen}
               onOpenChange={(open) => {
                 setDialogOpen(open)
-                if (!open) {
-                  setSubmitted(false)
-                  setForm({ num_units: '', address: profileAddress ?? '', preferred_month: '', notes: '' })
-                }
+                if (!open) { setSubmitted(false); resetDialog() }
               }}
             >
               <DialogTrigger className={cn(buttonVariants({ size: 'sm' }), 'bg-accent text-white hover:bg-accent/90')}>
@@ -226,7 +299,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                     <p className="text-sm text-muted-foreground">We will review your request and activate your contract shortly.</p>
                   </div>
                 ) : (
-                  <form onSubmit={handleRequest} className="space-y-4 pt-2">
+                  <form onSubmit={handleRequest} className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto pr-1">
                     <div>
                       <Label>Number of AC units</Label>
                       <Input
@@ -244,15 +317,87 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                       )}
                     </div>
 
-                    <div>
-                      <Label>Service address</Label>
-                      <Input
-                        type="text"
-                        value={form.address}
-                        onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                        placeholder="e.g. 52 Jurong West Street 52, Singapore"
-                        className="mt-1"
-                      />
+                    {/* Service address picker */}
+                    <div className="space-y-2">
+                      <Label>Service address <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+                      <div className="flex gap-2 flex-wrap">
+                        {hasHome && (
+                          <button
+                            type="button"
+                            onClick={applyHome}
+                            className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border font-medium transition-colors ${
+                              preset === 'home' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
+                            }`}
+                          >
+                            <Home className="w-3 h-3" /> Home
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={applyCurrentLocation}
+                          disabled={geoLoading}
+                          className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border font-medium transition-colors ${
+                            preset === 'current' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
+                          }`}
+                        >
+                          <MapPin className="w-3 h-3" />
+                          {geoLoading ? 'Locating…' : 'My Location'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setPreset('other'); setAddressText(''); setAddressConfirmed(false) }}
+                          className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border font-medium transition-colors ${
+                            preset === 'other' ? 'bg-accent text-white border-accent' : 'border-border text-primary hover:bg-muted/60'
+                          }`}
+                        >
+                          <Pencil className="w-3 h-3" /> Other
+                        </button>
+                      </div>
+
+                      {preset === 'other' && (
+                        <div className="space-y-1">
+                          <input
+                            ref={addressInputRef}
+                            type="text"
+                            placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
+                            disabled={!isLoaded}
+                            onChange={() => setAddressConfirmed(false)}
+                            autoComplete="off"
+                            className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
+                          />
+                          {addressConfirmed
+                            ? <p className="text-xs text-green-700">✓ Address confirmed</p>
+                            : <p className="text-xs text-muted-foreground">Select from the dropdown suggestions.</p>
+                          }
+                        </div>
+                      )}
+
+                      {(preset === 'home' || preset === 'current') && addressText && (
+                        <p className="text-sm text-primary font-medium">{addressText}</p>
+                      )}
+
+                      {addressConfirmed && (
+                        <>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Unit / Floor <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                            <Input
+                              value={unitFloor}
+                              onChange={e => setUnitFloor(e.target.value)}
+                              placeholder="e.g. #04-05"
+                              className="h-9 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Building Name <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                            <Input
+                              value={buildingName}
+                              onChange={e => setBuildingName(e.target.value)}
+                              placeholder="e.g. Watergate Condominium"
+                              className="h-9 text-sm"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div>
@@ -268,7 +413,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                     </div>
 
                     <div>
-                      <Label>Notes (optional)</Label>
+                      <Label>Notes <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
                       <Textarea
                         value={form.notes}
                         onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
