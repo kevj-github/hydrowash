@@ -24,13 +24,15 @@ function verifyWebhookSignature(
 
   const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`
 
+  // Supabase exposes the hook secret as "v1,whsec_<base64>" in the dashboard.
+  // The signing key is base64_decode(part after stripping the prefix).
+  const b64Part = secret.startsWith('v1,whsec_') ? secret.slice(9)
+    : secret.startsWith('whsec_') ? secret.slice(7)
+    : secret
+
   const candidateKeys: Array<{ label: string; key: Buffer }> = [
-    ...(secret.startsWith('whsec_')
-      ? [{ label: 'whsec_b64', key: Buffer.from(secret.slice(7), 'base64') }]
-      : []),
+    { label: 'v1whsec', key: Buffer.from(b64Part, 'base64') },
     { label: 'utf8', key: Buffer.from(secret, 'utf8') },
-    { label: 'b64', key: Buffer.from(secret, 'base64') },
-    { label: 'hex', key: Buffer.from(secret, 'hex') },
   ]
 
   const receivedSigs = webhookSig.split(' ')
