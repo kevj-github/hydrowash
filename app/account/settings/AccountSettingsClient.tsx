@@ -34,7 +34,6 @@ export default function AccountSettingsClient({ profile }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [pwError, setPwError] = useState('')
   const [pwSaving, setPwSaving] = useState(false)
-  const [pwSaved, setPwSaved] = useState(false)
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault()
@@ -42,16 +41,15 @@ export default function AccountSettingsClient({ profile }: Props) {
     if (newPassword.length < 8) { setPwError('Password must be at least 8 characters'); return }
     setPwSaving(true)
     setPwError('')
-    setPwSaved(false)
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) {
       setPwError(error.message)
-    } else {
-      setPwSaved(true)
-      setNewPassword('')
-      setConfirmPassword('')
+      setPwSaving(false)
+      return
     }
-    setPwSaving(false)
+    // Sign out so the new session token takes effect cleanly, then redirect to login
+    await supabase.auth.signOut()
+    router.push('/auth/login?pw=updated')
   }
 
   const [name, setName] = useState(profile.name)
@@ -274,12 +272,6 @@ export default function AccountSettingsClient({ profile }: Props) {
           <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
             {pwError}
           </p>
-        )}
-        {pwSaved && (
-          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            <CheckCircle2 size={15} />
-            Password updated successfully.
-          </div>
         )}
         <Button
           type="submit"

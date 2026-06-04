@@ -17,6 +17,7 @@ function LoginForm() {
   const [resetSent, setResetSent] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const passwordUpdated = searchParams.get('pw') === 'updated'
   const supabase = createClient()
 
   async function handleReset() {
@@ -86,6 +87,11 @@ function LoginForm() {
           className="h-11"
         />
       </div>
+      {passwordUpdated && (
+        <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          Password updated. Please sign in with your new password.
+        </p>
+      )}
       {resetSent && (
         <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
           If an account exists for that email, a reset link has been sent.
