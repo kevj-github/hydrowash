@@ -287,7 +287,7 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - `JobCompletionDialog` on `BookingCard`: 3-step — Step 1 (attended_by, job times, AC unit details table with brand/model, checklist items, job description); Step 2 (base price, additional charges, live total); Step 3 (preview PDF + confirm & send)
 - Step 3 "Preview" → `GET /api/bookings/[id]/work-order-pdf` → PDF in new tab
 - Step 2 "Save & Preview PDF" → `POST /api/bookings/[id]/complete` with `save_only:true` (upserts job_completions, does NOT change booking status — booking stays APPROVED)
-- Step 3 "Confirm & Send" → `POST /api/bookings/[id]/complete` (marks APPROVED → COMPLETED) then `POST /api/bookings/[id]/send-work-order` (generates PDF, uploads to Storage, emails customer with PDF + PayNow QR, creates UNPAID invoice with `contract_id` set when booking is linked to a contract service date)
+- Step 3 "Confirm & Send" → `POST /api/bookings/[id]/complete` (marks APPROVED → COMPLETED) then `POST /api/bookings/[id]/send-work-order` (generates PDF, uploads to Storage, emails customer with PDF + PayNow QR, creates UNPAID invoice with `contract_id` resolved as: `linkedCsd?.contract_id ?? booking.contract_id ?? null` — admin's service-date link takes precedence, customer's contract selection is the authoritative fallback)
 
 **Admin customer 360 (`/admin/customers`):**
 - List: search by name/phone; columns: customer_no, name, phone, booking count, total paid (PAID invoices), active contract badge, View link
@@ -327,7 +327,7 @@ All features shipped. See git log for change history.
 - Contract pricing email auto-sent on set-price (single-step dialog, no separate send button) ✅
 - Customer /account/contracts shows "How contracts work" description + pricing tier chips ✅
 - Job completion workflow (3-step dialog, save_only preview, work order PDF, auto work_order_no) ✅
-- Work-order invoice linked to contract when booking is part of a contract service date ✅
+- Work-order invoice linked to contract: authoritative via `booking.contract_id` (customer selection), or admin's explicit service-date link if present ✅
 - Auth via Supabase hook → Resend; custom domain `noreply@hydrowash.services` ✅
 - Mobile UX (CustomerBottomNav, AdminBottomNav, week-strip calendar, responsive dialogs) ✅
 - Mobile admin invoices: full mark-paid dialog + View PDF + contract ref + paid details on cards ✅
@@ -371,5 +371,5 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Select component:** `SelectTrigger` is `w-full` (was `w-fit`); `SelectPopup` uses `min-w-(--anchor-width)` so dropdown options are never clipped.
 - **Contract-linked booking address:** `BookingData` has `contract_address?: string`. When a contract is selected in `StepServiceDetails`, `contract_address` is set alongside `contract_id`. `StepScheduleLocation` accepts `contractAddress?: string` prop — when provided, address picker is hidden and replaced with a locked display; a `useEffect` geocodes the contract address via `POST /api/geocode` on mount (sets lat/lng). `canNext` at step 1 allows proceeding when `contract_address` is set even if geocoding fails.
 - **Admin invoices mobile:** `MobileInvoiceCard` component (file-local, not exported) in `app/admin/invoices/page.tsx` handles mark-paid dialog state per card. Shows: customer, status badge, description, "Contract linked" chip when `contract_id` set, amount + created date, paid date + payment method, View PDF button (when `booking_id` set), Mark Paid button (when UNPAID).
-- **Last updated:** 2026-06-03. All migrations 001–030 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Last updated:** 2026-06-04. All migrations 001–030 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
