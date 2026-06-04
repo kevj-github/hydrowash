@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, CalendarCheck, Users, FileText, Receipt,
-  CalendarRange, CalendarOff, Settings, MoreHorizontal, X
+  CalendarRange, CalendarOff, Settings, MoreHorizontal, X, Globe
 } from 'lucide-react'
 
 const primary = [
@@ -19,16 +19,19 @@ const more = [
   { href: '/admin/agenda',        label: 'Agenda',        icon: CalendarRange },
   { href: '/admin/availability',  label: 'Availability',  icon: CalendarOff },
   { href: '/admin/settings',      label: 'Settings',      icon: Settings },
+  { href: '/',                    label: 'Public Site',   icon: Globe },
 ]
 
 export function AdminBottomNav() {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
 
-  const isActive = (href: string) =>
-    href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
+  const isActive = (href: string) => {
+    if (href === '/' || href === '/admin') return pathname === href
+    return pathname.startsWith(href)
+  }
 
-  const anyMoreActive = more.some(m => isActive(m.href))
+  const anyMoreActive = more.some(m => m.href !== '/' && isActive(m.href))
 
   return (
     <>
