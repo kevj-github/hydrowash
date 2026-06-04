@@ -102,15 +102,17 @@ export default function ContractDetailPage() {
     if (contractData?.customer_id) {
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('id, address, confirmed_date, status')
+        .select('id, address, confirmed_date, service_type:service_types(name)')
         .eq('customer_id', contractData.customer_id)
-        .in('status', ['APPROVED', 'COMPLETED'])
+        .eq('status', 'APPROVED')
+        .eq('category', 'MAINTENANCE')
         .order('confirmed_date', { ascending: false })
 
       setAvailableBookings(
-        (bookings ?? []).map((b) => ({
-          id: b.id,
-          label: `${b.confirmed_date ?? 'TBD'} — ${b.address}`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (bookings ?? []).map((b: any) => ({
+          id: b.id as string,
+          label: `${b.confirmed_date ?? 'No date'} · ${Array.isArray(b.service_type) ? b.service_type[0]?.name : b.service_type?.name ?? 'Maintenance'} · ${b.address}`,
         }))
       )
     }

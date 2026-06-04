@@ -13,13 +13,21 @@ interface Props {
 }
 
 export function WorkOrderEmail({
-  customerName, workOrderNo, date, serviceType, address,
+  customerName, date, serviceType, address,
   totalSgd, paynowQrDataUrl, paynowMobile, referenceId,
 }: Props) {
+  const formattedDate = (() => {
+    try {
+      return new Date(date + 'T00:00:00Z').toLocaleDateString('en-SG', {
+        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+      })
+    } catch { return date }
+  })()
+
   return (
     <Html>
       <Head />
-      <Preview>{`Work Order #${workOrderNo} — Payment Due S$${totalSgd.toFixed(2)}`}</Preview>
+      <Preview>{`Your aircon service is complete — S$${totalSgd.toFixed(2)} due`}</Preview>
       <Body style={{ fontFamily: 'sans-serif', background: '#f8fafc' }}>
         <Container style={{ maxWidth: 520, margin: '40px auto', background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
           <Section style={{ background: '#0f172a', padding: '16px 24px' }}>
@@ -27,11 +35,11 @@ export function WorkOrderEmail({
             <Text style={{ color: '#93c5fd', margin: '2px 0 0', fontSize: 11 }}>Aircon Service</Text>
           </Section>
           <Section style={{ padding: '24px' }}>
-            <Heading style={{ color: '#0f172a', fontSize: 18 }}>Work Order #{workOrderNo}</Heading>
+            <Heading style={{ color: '#0f172a', fontSize: 18 }}>Aircon Service Report</Heading>
             <Text>Dear {customerName},</Text>
-            <Text>Thank you for using HydroWash. Your service has been completed. Please find the work order report attached.</Text>
+            <Text>Thank you for using HydroWash. Your service has been completed. Please find the service report attached.</Text>
             <Hr style={{ borderColor: '#e2e8f0', margin: '16px 0' }} />
-            <Text style={{ margin: '4px 0' }}><strong>Date:</strong> {date}</Text>
+            <Text style={{ margin: '4px 0' }}><strong>Date:</strong> {formattedDate}</Text>
             <Text style={{ margin: '4px 0' }}><strong>Service:</strong> {serviceType}</Text>
             <Text style={{ margin: '4px 0' }}><strong>Address:</strong> {address}</Text>
             <Text style={{ margin: '4px 0', fontSize: 16, color: '#0f172a', fontWeight: 'bold' }}>Total: S${totalSgd.toFixed(2)}</Text>

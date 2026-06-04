@@ -83,7 +83,7 @@ export function WorkOrderTemplate({
     ? `${serviceType}`
     : serviceType
   const visitLabel = visitNo && totalVisits
-    ? `${String(visitNo).padStart(2, '0')} / ${String(totalVisits).padStart(2, '0')}`
+    ? `Visit ${visitNo} of ${totalVisits}`
     : '—'
 
   return (

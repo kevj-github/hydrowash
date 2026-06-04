@@ -131,7 +131,7 @@ export async function POST(
     {
       customerName: booking.customer?.name ?? 'Customer',
       workOrderNo: booking.work_order_no ?? 0,
-      date: dateStr,
+      date: booking.confirmed_date ?? booking.booking_date ?? dateStr,
       serviceType: (linkedCsd || booking.contract_id) ? 'Contract' : 'AdHoc',
       address: booking.address ?? '',
       totalSgd,

@@ -170,6 +170,24 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Auto-link to the next unlinked contract service date
+  if (contract_id && booking?.id) {
+    const { data: nextCsd } = await supabase
+      .from('contract_service_dates')
+      .select('id')
+      .eq('contract_id', contract_id)
+      .is('booking_id', null)
+      .order('due_month', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (nextCsd) {
+      await supabase
+        .from('contract_service_dates')
+        .update({ booking_id: booking.id })
+        .eq('id', nextCsd.id)
+    }
+  }
+
   await sendBookingReceived(booking, user.email!).catch(err =>
     console.error(`[bookings POST] Failed to send confirmation email to ${user.email}:`, err)
   )
