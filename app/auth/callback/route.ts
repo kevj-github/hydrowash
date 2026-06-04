@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
   } else if (token_hash && type) {
     // Token hash flow (email confirmation, password reset)
     await supabase.auth.verifyOtp({ token_hash, type: type as EmailOtpType })
+    if (type === 'recovery') {
+      return NextResponse.redirect(`${origin}/auth/reset-password`)
+    }
   }
 
   return NextResponse.redirect(`${origin}${next}`)

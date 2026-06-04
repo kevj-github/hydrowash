@@ -318,7 +318,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 
 **Animation utilities:** `.animate-fade-up`, `.animate-fade-up-delay-1/2/3` in `globals.css`. Hero elements only.
 
-## Feature completeness (as of 2026-06-03)
+## Feature completeness (as of 2026-06-04)
 All features shipped. See git log for change history.
 - Booking portal (3-step wizard, multi-date slots, SGT-aware calendar, "Others" locations) ✅
 - Contract-linked bookings lock address to contract location (auto-geocoded, read-only in step 1) ✅
@@ -332,6 +332,8 @@ All features shipped. See git log for change history.
 - Mobile UX (CustomerBottomNav, AdminBottomNav, week-strip calendar, responsive dialogs) ✅
 - Mobile admin invoices: full mark-paid dialog + View PDF + contract ref + paid details on cards ✅
 - Admin settings: CRUD for service types, AC brands, unit types, unit locations ✅
+- Password reset flow lands on `/auth/reset-password` (not auto-sign-in) ✅
+- Email subjects include service name + date ("5 Jun 2026") to prevent Gmail threading ✅
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -371,5 +373,7 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Select component:** `SelectTrigger` is `w-full` (was `w-fit`); `SelectPopup` uses `min-w-(--anchor-width)` so dropdown options are never clipped.
 - **Contract-linked booking address:** `BookingData` has `contract_address?: string`. When a contract is selected in `StepServiceDetails`, `contract_address` is set alongside `contract_id`. `StepScheduleLocation` accepts `contractAddress?: string` prop — when provided, address picker is hidden and replaced with a locked display; a `useEffect` geocodes the contract address via `POST /api/geocode` on mount (sets lat/lng). `canNext` at step 1 allows proceeding when `contract_address` is set even if geocoding fails.
 - **Admin invoices mobile:** `MobileInvoiceCard` component (file-local, not exported) in `app/admin/invoices/page.tsx` handles mark-paid dialog state per card. Shows: customer, status badge, description, "Contract linked" chip when `contract_id` set, amount + created date, paid date + payment method, View PDF button (when `booking_id` set), Mark Paid button (when UNPAID).
+- **Password reset callback:** `app/auth/callback/route.ts` redirects to `/auth/reset-password` when `type === 'recovery'` (after `verifyOtp`). The page uses `supabase.auth.updateUser({ password })` client-side.
+- **Email subjects:** `lib/email/send.ts` has a `fmtDate` helper (`"5 Jun 2026"` format, UTC) used in all booking and contract email subjects. Subjects include service type name + date to prevent Gmail threading. Work order emails use service type name + date + amount (no work order number).
 - **Last updated:** 2026-06-04. All migrations 001–030 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
