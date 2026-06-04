@@ -15,11 +15,15 @@ export async function GET(request: NextRequest) {
     // PKCE flow (OAuth, magic link)
     await supabase.auth.exchangeCodeForSession(code)
   } else if (token_hash && type) {
-    // Token hash flow (email confirmation, password reset)
-    await supabase.auth.verifyOtp({ token_hash, type: type as EmailOtpType })
     if (type === 'recovery') {
-      return NextResponse.redirect(`${origin}/auth/reset-password`)
+      // Don't verify server-side — the browser must call verifyOtp so the
+      // session is established in the browser's cookie store, not the server's.
+      return NextResponse.redirect(
+        `${origin}/auth/reset-password?token_hash=${token_hash}&type=recovery`,
+      )
     }
+    // Token hash flow for other types (email confirmation etc.)
+    await supabase.auth.verifyOtp({ token_hash, type: type as EmailOtpType })
   }
 
   return NextResponse.redirect(`${origin}${next}`)
