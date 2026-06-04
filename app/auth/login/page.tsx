@@ -15,7 +15,6 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
-  const [resetError, setResetError] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -24,18 +23,6 @@ function LoginForm() {
     if (!email) { setError('Enter your email first'); return }
     setLoading(true)
     setError('')
-    setResetError('')
-    const res = await fetch('/api/auth/check-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-    const { exists } = await res.json()
-    if (!exists) {
-      setResetError('No account found with that email address.')
-      setLoading(false)
-      return
-    }
     await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback`,
     })
@@ -101,12 +88,7 @@ function LoginForm() {
       </div>
       {resetSent && (
         <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          Password reset email sent — check your inbox.
-        </p>
-      )}
-      {resetError && (
-        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
-          {resetError}
+          If an account exists for that email, a reset link has been sent.
         </p>
       )}
       {error && (
