@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Script from 'next/script'
 import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,6 +28,31 @@ export default function AccountSettingsClient({ profile }: Props) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const reasonAddress = searchParams.get('reason') === 'address'
+  const supabase = createClient()
+
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwError, setPwError] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwSaved, setPwSaved] = useState(false)
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) { setPwError('Passwords do not match'); return }
+    if (newPassword.length < 8) { setPwError('Password must be at least 8 characters'); return }
+    setPwSaving(true)
+    setPwError('')
+    setPwSaved(false)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      setPwError(error.message)
+    } else {
+      setPwSaved(true)
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+    setPwSaving(false)
+  }
 
   const [name, setName] = useState(profile.name)
   const [phone, setPhone] = useState(profile.phone)
@@ -214,6 +240,53 @@ export default function AccountSettingsClient({ profile }: Props) {
           className="w-full h-11 bg-accent hover:bg-accent/90 text-white font-semibold rounded-lg"
         >
           {saving ? 'Saving…' : 'Save Changes'}
+        </Button>
+      </form>
+      <h2 className="font-heading font-semibold text-lg text-primary mt-10 mb-1">Change Password</h2>
+      <p className="text-muted-foreground text-sm mb-4">Update your account password</p>
+
+      <form onSubmit={handleChangePassword} className="space-y-5 bg-white rounded-2xl border border-border p-6 shadow-sm">
+        <div className="space-y-1.5">
+          <Label htmlFor="new_password" className="text-sm font-medium text-primary">New Password</Label>
+          <Input
+            id="new_password"
+            type="password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            required
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="confirm_password" className="text-sm font-medium text-primary">Confirm Password</Label>
+          <Input
+            id="confirm_password"
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            placeholder="Repeat your password"
+            required
+            className="h-11"
+          />
+        </div>
+        {pwError && (
+          <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+            {pwError}
+          </p>
+        )}
+        {pwSaved && (
+          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            <CheckCircle2 size={15} />
+            Password updated successfully.
+          </div>
+        )}
+        <Button
+          type="submit"
+          disabled={pwSaving}
+          className="w-full h-11 bg-accent hover:bg-accent/90 text-white font-semibold rounded-lg"
+        >
+          {pwSaving ? 'Updating…' : 'Update Password'}
         </Button>
       </form>
     </div>

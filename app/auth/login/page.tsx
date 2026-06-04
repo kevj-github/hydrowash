@@ -14,7 +14,6 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [resetSent, setResetSent] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -39,16 +38,6 @@ function LoginForm() {
     router.refresh()
   }
 
-  async function handleReset() {
-    if (!email) { setError('Enter your email first'); return }
-    setLoading(true)
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
-    })
-    setResetSent(true)
-    setLoading(false)
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-1.5">
@@ -66,14 +55,6 @@ function LoginForm() {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between mb-1">
           <Label htmlFor="password" className="text-sm font-medium text-primary">Password</Label>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={loading}
-            className="text-xs text-accent hover:underline cursor-pointer disabled:opacity-50"
-          >
-            Forgot password?
-          </button>
         </div>
         <Input
           id="password"
@@ -85,11 +66,6 @@ function LoginForm() {
           className="h-11"
         />
       </div>
-      {resetSent && (
-        <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          Password reset email sent — check your inbox.
-        </p>
-      )}
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           {error}
