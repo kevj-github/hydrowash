@@ -14,9 +14,34 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const [resetError, setResetError] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+
+  async function handleReset() {
+    if (!email) { setError('Enter your email first'); return }
+    setLoading(true)
+    setError('')
+    setResetError('')
+    const res = await fetch('/api/auth/check-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    const { exists } = await res.json()
+    if (!exists) {
+      setResetError('No account found with that email address.')
+      setLoading(false)
+      return
+    }
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    })
+    setResetSent(true)
+    setLoading(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,6 +80,14 @@ function LoginForm() {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between mb-1">
           <Label htmlFor="password" className="text-sm font-medium text-primary">Password</Label>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={loading}
+            className="text-xs text-accent hover:underline cursor-pointer disabled:opacity-50"
+          >
+            Forgot password?
+          </button>
         </div>
         <Input
           id="password"
@@ -66,6 +99,16 @@ function LoginForm() {
           className="h-11"
         />
       </div>
+      {resetSent && (
+        <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          Password reset email sent — check your inbox.
+        </p>
+      )}
+      {resetError && (
+        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+          {resetError}
+        </p>
+      )}
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           {error}
