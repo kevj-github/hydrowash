@@ -240,6 +240,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
               <div className="space-y-2 shrink-0">
                 <Input placeholder="Search customer…" value={maintSearch} onChange={e => setMaintSearch(e.target.value)} className="h-8 text-xs" />
                 <div className="flex gap-1.5 items-center">
+                  <span className="text-xs text-muted-foreground shrink-0">From</span>
                   <Input type="date" value={maintDateFrom} onChange={e => setMaintDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
                   {maintDateFrom && <button onClick={() => setMaintDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
                 </div>
@@ -266,6 +267,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
               <div className="space-y-2 shrink-0">
                 <Input placeholder="Search customer…" value={frSearch} onChange={e => setFrSearch(e.target.value)} className="h-8 text-xs" />
                 <div className="flex gap-1.5 items-center">
+                  <span className="text-xs text-muted-foreground shrink-0">From</span>
                   <Input type="date" value={frDateFrom} onChange={e => setFrDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
                   {frDateFrom && <button onClick={() => setFrDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
                 </div>
@@ -292,6 +294,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
               <div className="space-y-2 shrink-0">
                 <Input placeholder="Search customer…" value={instSearch} onChange={e => setInstSearch(e.target.value)} className="h-8 text-xs" />
                 <div className="flex gap-1.5 items-center">
+                  <span className="text-xs text-muted-foreground shrink-0">From</span>
                   <Input type="date" value={instDateFrom} onChange={e => setInstDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
                   {instDateFrom && <button onClick={() => setInstDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
                 </div>
@@ -380,6 +383,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   className="h-8 text-xs"
                 />
                 <div className="flex gap-1.5 items-center">
+                  <span className="text-xs text-muted-foreground shrink-0">From</span>
                   <Input
                     type="date"
                     value={maintDateFrom}
@@ -430,6 +434,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   className="h-8 text-xs"
                 />
                 <div className="flex gap-1.5 items-center">
+                  <span className="text-xs text-muted-foreground shrink-0">From</span>
                   <Input
                     type="date"
                     value={frDateFrom}
@@ -480,6 +485,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   className="h-8 text-xs"
                 />
                 <div className="flex gap-1.5 items-center">
+                  <span className="text-xs text-muted-foreground shrink-0">From</span>
                   <Input
                     type="date"
                     value={instDateFrom}
