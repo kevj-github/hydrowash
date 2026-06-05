@@ -26,7 +26,9 @@ interface Props {
 }
 
 export function AdminAgendaClient({ days, grid, todayStr, weekStartStr, status, prevWeek, nextWeek }: Props) {
-  const [selectedDay, setSelectedDay] = useState<string>(days[0] ?? todayStr)
+  const [selectedDay, setSelectedDay] = useState<string>(
+    days.includes(todayStr) ? todayStr : (days[0] ?? todayStr)
+  )
 
   function prevDay() {
     setSelectedDay(d => {
