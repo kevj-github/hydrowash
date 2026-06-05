@@ -318,7 +318,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 
 **Animation utilities:** `.animate-fade-up`, `.animate-fade-up-delay-1/2/3` in `globals.css`. Hero elements only.
 
-## Feature completeness (as of 2026-06-04)
+## Feature completeness (as of 2026-06-05)
 All features shipped. See git log for change history.
 - Booking portal (3-step wizard, multi-date slots, SGT-aware calendar, "Others" locations) ✅
 - Contract-linked bookings lock address to contract location (auto-geocoded, read-only in step 1) ✅
@@ -375,5 +375,6 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Admin invoices mobile:** `MobileInvoiceCard` component (file-local, not exported) in `app/admin/invoices/page.tsx` handles mark-paid dialog state per card. Shows: customer, status badge, description, "Contract linked" chip when `contract_id` set, amount + created date, paid date + payment method, View PDF button (when `booking_id` set), Mark Paid button (when UNPAID).
 - **Password reset callback:** `app/auth/callback/route.ts` redirects to `/auth/reset-password` when `type === 'recovery'` (after `verifyOtp`). The page uses `supabase.auth.updateUser({ password })` client-side.
 - **Email subjects:** `lib/email/send.ts` has a `fmtDate` helper (`"5 Jun 2026"` format, UTC) used in all booking and contract email subjects. Subjects include service type name + date to prevent Gmail threading. Work order emails use service type name + date + amount (no work order number).
-- **Last updated:** 2026-06-04. All migrations 001–030 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Last updated:** 2026-06-05. All migrations 001–030 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Mobile QA (2026-06-05):** Full mobile pass at 390px. Fixed: (1) missing `</div>` in `admin/customers/[id]/page.tsx` (syntax error); (2) `min-w-max` added to scrollable tables in `admin/contracts/[id]/page.tsx` and `admin/customers/[id]/page.tsx` so `overflow-x-auto` actually enables horizontal scroll; (3) `whitespace-nowrap` on booking tab buttons so "Fault Repair" doesn't wrap. Admin password reset to `12345678` during QA (was `#3rvpwfeI1616` in old `.env.local`).
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.

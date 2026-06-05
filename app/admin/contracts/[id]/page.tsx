@@ -503,7 +503,8 @@ export default function ContractDetailPage() {
       {serviceDates.length > 0 && (
         <section className="bg-white border rounded-xl p-5">
           <h2 className="font-semibold text-primary mb-3">Service Schedule</h2>
-          <table className="w-full text-left">
+          <div className="overflow-x-auto">
+          <table className="min-w-max w-full text-left">
             <thead>
               <tr className="text-xs text-gray-400 border-b border-gray-200">
                 <th className="py-1 px-3">Visit</th>
@@ -527,6 +528,7 @@ export default function ContractDetailPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </section>
       )}
 
@@ -540,7 +542,8 @@ export default function ContractDetailPage() {
         {invoices.length === 0 ? (
           <p className="text-sm text-gray-400">No invoices yet.</p>
         ) : (
-          <table className="w-full text-left">
+          <div className="overflow-x-auto">
+          <table className="min-w-max w-full text-left">
             <thead>
               <tr className="text-xs text-gray-400 border-b border-gray-200">
                 <th className="py-1 px-3">Description</th>
@@ -559,6 +562,7 @@ export default function ContractDetailPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
     </div>

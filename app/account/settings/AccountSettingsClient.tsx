@@ -161,11 +161,10 @@ export default function AccountSettingsClient({ profile }: Props) {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="address" className="text-sm font-medium text-primary">
-            Home Address
-            <span className="ml-1 text-muted-foreground font-normal text-xs">(used for quick booking)</span>
-            {opt}
-          </Label>
+          <div className="space-y-0.5">
+            <Label htmlFor="address" className="text-sm font-medium text-primary">Home Address</Label>
+            <p className="text-xs text-muted-foreground">Used for quick booking (optional)</p>
+          </div>
           <div className="relative">
             <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
