@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { geocodeAddress } from '@/lib/maps/geocode'
 import { sendBookingReceived } from '@/lib/email/send'
 import { NextRequest, NextResponse } from 'next/server'
@@ -169,26 +168,6 @@ export async function POST(request: NextRequest) {
         unit_location_id: loc_id,
       }))
     )
-  }
-
-  // Auto-link to the next unlinked contract service date.
-  // Uses admin client because customers only have SELECT on contract_service_dates.
-  if (contract_id && booking?.id) {
-    const adminClient = createAdminClient()
-    const { data: nextCsd } = await adminClient
-      .from('contract_service_dates')
-      .select('id')
-      .eq('contract_id', contract_id)
-      .is('booking_id', null)
-      .order('due_month', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    if (nextCsd) {
-      await adminClient
-        .from('contract_service_dates')
-        .update({ booking_id: booking.id })
-        .eq('id', nextCsd.id)
-    }
   }
 
   await sendBookingReceived(booking, user.email!).catch(err =>

@@ -71,6 +71,32 @@ export async function PATCH(
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const adminClient = createAdminClient()
+
+  if (action === 'approve' && booking.contract_id) {
+    // Link booking to the next unlinked service date slot now that admin has approved.
+    const { data: nextCsd } = await adminClient
+      .from('contract_service_dates')
+      .select('id')
+      .eq('contract_id', booking.contract_id)
+      .is('booking_id', null)
+      .order('due_month', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (nextCsd) {
+      await adminClient
+        .from('contract_service_dates')
+        .update({ booking_id: booking.id })
+        .eq('id', nextCsd.id)
+    }
+  } else if (action === 'reject' && booking.contract_id) {
+    // Clear any existing slot link on rejection (safety — shouldn't be set under normal flow).
+    await adminClient
+      .from('contract_service_dates')
+      .update({ booking_id: null })
+      .eq('booking_id', booking.id)
+      .eq('contract_id', booking.contract_id)
+  }
+
   const { data: authUser } = await adminClient.auth.admin.getUserById(booking.customer_id)
   const email = authUser?.user?.email
 

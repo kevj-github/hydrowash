@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookingRescheduled } from '@/lib/email/send'
 
 const VALID_SLOTS = ['S10_12', 'S13_15', 'S15_17', 'S17_19', 'S19_21']
@@ -106,6 +107,17 @@ export async function PATCH(
 
   if (error || !updated) {
     return NextResponse.json({ error: error?.message ?? 'Update failed' }, { status: 500 })
+  }
+
+  // If the booking was APPROVED it may have held a contract service date slot — free it
+  // so another booking can occupy it until admin approves this one again.
+  if (booking.contract_id && booking.status === 'APPROVED') {
+    const adminClient = createAdminClient()
+    await adminClient
+      .from('contract_service_dates')
+      .update({ booking_id: null })
+      .eq('booking_id', id)
+      .eq('contract_id', booking.contract_id)
   }
 
   const adminEmail = await getAdminEmail(supabase)

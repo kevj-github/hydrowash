@@ -73,10 +73,13 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
       if (!user) return
       const { data: rows } = await supabase
         .from('contracts')
-        .select('id, address, num_units, start_date, end_date')
+        .select('id, address, num_units, start_date, end_date, contract_service_dates!inner(id)')
         .eq('customer_id', user.id)
         .eq('status', 'ACTIVE')
-      setContracts(rows ?? [])
+        .filter('contract_service_dates.booking_id', 'is', null)
+      setContracts(
+        (rows ?? []).map(({ contract_service_dates: _, ...c }) => c as ContractOption)
+      )
     }
     loadContracts()
   // eslint-disable-next-line react-hooks/exhaustive-deps
