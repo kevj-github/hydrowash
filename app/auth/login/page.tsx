@@ -42,7 +42,8 @@ function LoginForm() {
       return
     }
     const explicit = searchParams.get('redirect')
-    if (explicit) {
+    const safePath = explicit && explicit.startsWith('/') && !explicit.startsWith('//')
+    if (safePath) {
       router.push(explicit)
       router.refresh()
       return
