@@ -95,12 +95,12 @@ export default async function AdminAgendaPage({
               All active
             </Link>
           </div>
-          {/* Week nav */}
-          <div className="flex items-center gap-1">
+          {/* Week nav — desktop only; mobile nav lives inside AdminAgendaClient */}
+          <div className="hidden md:flex items-center gap-1">
             <Link href={`/admin/agenda?week=${prevWeek}&status=${status}`} className="p-1.5 rounded hover:bg-muted transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </Link>
-            <span className="text-sm font-medium px-2 hidden sm:inline">
+            <span className="text-sm font-medium px-2">
               {weekStart.toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })} –{' '}
               {weekEnd.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
@@ -108,7 +108,7 @@ export default async function AdminAgendaPage({
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-          <Link href={`/admin/agenda?week=${getMondayOf(todayStr).toISOString().split('T')[0]}&status=${status}`} className="text-xs text-accent hover:underline">
+          <Link href={`/admin/agenda?week=${getMondayOf(todayStr).toISOString().split('T')[0]}&status=${status}`} className="hidden md:inline text-xs text-accent hover:underline">
             Today
           </Link>
         </div>
