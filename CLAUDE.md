@@ -70,7 +70,9 @@ app/
   (public)/book/page.tsx       # 3-step booking wizard (uses public layout + navbar)
   auth/login/page.tsx
   auth/register/page.tsx
-  auth/callback/route.ts       # Supabase auth callback
+  auth/callback/route.ts       # Supabase auth callback; ?next= param validated (relative paths only)
+  auth/reset-password/page.tsx # Client: verifies recovery OTP via token_hash, calls updateUser({password}), redirects to login
+  api/auth/signout/route.ts    # GET: server-side signOut() + redirect to /
   account/layout.tsx           # Customer auth guard + nav (also has Contracts & Invoices link)
   account/bookings/page.tsx    # Customer booking history
   account/contracts/page.tsx   # Server wrapper: fetches contracts + invoices, delegates to AccountContractsClient
@@ -374,7 +376,8 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Contract-linked booking address:** `BookingData` has `contract_address?: string`. When a contract is selected in `StepServiceDetails`, `contract_address` is set alongside `contract_id`. `StepScheduleLocation` accepts `contractAddress?: string` prop — when provided, address picker is hidden and replaced with a locked display; a `useEffect` geocodes the contract address via `POST /api/geocode` on mount (sets lat/lng). `canNext` at step 1 allows proceeding when `contract_address` is set even if geocoding fails.
 - **Admin invoices mobile:** `MobileInvoiceCard` component (file-local, not exported) in `app/admin/invoices/page.tsx` handles mark-paid dialog state per card. Shows: customer, status badge, description, "Contract linked" chip when `contract_id` set, amount + created date, paid date + payment method, View PDF button (when `booking_id` set), Mark Paid button (when UNPAID).
 - **Password reset callback:** `app/auth/callback/route.ts` redirects to `/auth/reset-password` when `type === 'recovery'` (after `verifyOtp`). The page uses `supabase.auth.updateUser({ password })` client-side.
+- **Open redirect protection:** `?redirect=` in `app/auth/login/page.tsx` and `?next=` in `app/auth/callback/route.ts` both validate the value starts with `/` and not `//` before following. Values that fail validation fall through to the default (`/`).
 - **Email subjects:** `lib/email/send.ts` has a `fmtDate` helper (`"5 Jun 2026"` format, UTC) used in all booking and contract email subjects. Subjects include service type name + date to prevent Gmail threading. Work order emails use service type name + date + amount (no work order number).
-- **Last updated:** 2026-06-05. All migrations 001–031 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Last updated:** 2026-06-05. All migrations 001–031 applied. Security: RLS role-escalation + booking self-approval (031), open-redirect on auth params, user-enumeration via check-email endpoint — all fixed. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
 - **Mobile QA (2026-06-05):** Full mobile pass at 390px. Fixed: (1) missing `</div>` in `admin/customers/[id]/page.tsx` (syntax error); (2) `min-w-max` added to scrollable tables in `admin/contracts/[id]/page.tsx` and `admin/customers/[id]/page.tsx` so `overflow-x-auto` actually enables horizontal scroll; (3) `whitespace-nowrap` on booking tab buttons so "Fault Repair" doesn't wrap. Admin password reset to `12345678` during QA (was `#3rvpwfeI1616` in old `.env.local`).
 - **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
