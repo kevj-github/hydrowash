@@ -41,11 +41,19 @@ function LoginForm() {
       return
     }
     const explicit = searchParams.get('redirect')
-    const safePath = explicit && explicit.startsWith('/') && !explicit.startsWith('//')
+    // Resolve against current origin so /\evil.com and protocol-relative
+    // bypasses are rejected — window.location.href follows any URL unlike router.push.
+    let destination = '/'
+    if (explicit) {
+      try {
+        const parsed = new URL(explicit, window.location.origin)
+        if (parsed.origin === window.location.origin) destination = explicit
+      } catch {}
+    }
     // Hard redirect so the browser sends the newly-set auth cookies in the
     // next request — router.push fires before @supabase/ssr's onAuthStateChange
     // can write the session cookie, causing middleware to see no session.
-    window.location.href = safePath ? explicit : '/'
+    window.location.href = destination
   }
 
   return (
