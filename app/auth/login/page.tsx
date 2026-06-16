@@ -1,6 +1,6 @@
 'use client'
 import { Suspense, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,6 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
   const passwordUpdated = searchParams.get('pw') === 'updated'
   const supabase = createClient()
@@ -43,13 +42,10 @@ function LoginForm() {
     }
     const explicit = searchParams.get('redirect')
     const safePath = explicit && explicit.startsWith('/') && !explicit.startsWith('//')
-    if (safePath) {
-      router.push(explicit)
-      router.refresh()
-      return
-    }
-    router.push('/')
-    router.refresh()
+    // Hard redirect so the browser sends the newly-set auth cookies in the
+    // next request — router.push fires before @supabase/ssr's onAuthStateChange
+    // can write the session cookie, causing middleware to see no session.
+    window.location.href = safePath ? explicit : '/'
   }
 
   return (

@@ -19,7 +19,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <PublicHeader isLoggedIn={!!user} isAdmin={isAdmin} />
       <main className="flex-1 pb-14 md:pb-0">{children}</main>
       <CustomerBottomNav isLoggedIn={!!user} />
-      <footer className="bg-primary border-t border-white/10 text-slate-400 py-12 mt-auto mb-14 md:mb-0">
+      <footer className="bg-primary border-t border-white/10 text-slate-300 py-12 mt-auto mb-14 md:mb-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between gap-8">
             <div className="max-w-xs">
@@ -35,7 +35,7 @@ export default async function PublicLayout({ children }: { children: React.React
             </div>
             <div className="flex flex-col sm:flex-row gap-8">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Services</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-300 mb-3">Services</p>
                 <ul className="space-y-2 text-sm">
                   <li><Link href="/book" className="hover:text-white transition-colors cursor-pointer">General Maintenance</Link></li>
                   <li><Link href="/book" className="hover:text-white transition-colors cursor-pointer">Fault Repair</Link></li>
@@ -43,7 +43,7 @@ export default async function PublicLayout({ children }: { children: React.React
                 </ul>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Account</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-300 mb-3">Account</p>
                 <ul className="space-y-2 text-sm">
                   <li><Link href="/auth/login" className="hover:text-white transition-colors cursor-pointer">Sign In</Link></li>
                   <li><Link href="/auth/register" className="hover:text-white transition-colors cursor-pointer">Register</Link></li>
@@ -52,7 +52,7 @@ export default async function PublicLayout({ children }: { children: React.React
               </div>
             </div>
           </div>
-          <div className="border-t border-white/10 mt-10 pt-6 text-xs text-slate-600 text-center">
+          <div className="border-t border-white/10 mt-10 pt-6 text-xs text-slate-400 text-center">
             © {new Date().getFullYear()} HydroWash. All rights reserved.
           </div>
         </div>
