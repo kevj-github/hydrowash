@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// NOTE: intentionally unauthenticated — the public booking wizard's "My Location"
+// button (components/booking/StepScheduleLocation.tsx) calls this for logged-out
+// visitors. Do NOT add an auth gate here; it silently breaks guest bookings.
+// Unlike /api/geocode (forward), which is only reached by signed-in users.
 export async function POST(request: NextRequest) {
   const { lat, lng } = await request.json()
   if (typeof lat !== 'number' || typeof lng !== 'number') {
