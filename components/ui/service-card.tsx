@@ -19,7 +19,7 @@ export function ServiceCard({ icon: Icon, title, description, className, photoSr
       className
     )}>
       {photoSrc && (
-        <div className="relative h-44 w-full overflow-hidden">
+        <div className="relative h-44 w-full overflow-hidden bg-muted">
           <Image
             src={photoSrc}
             alt={photoAlt ?? title}

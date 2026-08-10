@@ -40,12 +40,12 @@ const services = [
 
 const steps = [
   { label: 'Choose your service', description: 'Select the type of job' },
-  { label: 'Pick a date & slot', description: 'Choose a time that suits you' },
-  { label: 'We confirm & arrive', description: 'Your booking is locked in' },
+  { label: 'Offer up to 5 dates & times', description: 'Pick as many options as suit you' },
+  { label: 'We lock in one slot', description: 'Confirmed, no back-and-forth' },
 ]
 
 const whyFeatures = [
-  { icon: Zap,         label: 'Same-day availability',      desc: 'Book in the morning, we arrive the same day.' },
+  { icon: Zap,         label: 'Fast response for urgent faults', desc: 'Flexible date & time options, confirmed quickly by our team.' },
   { icon: Cpu,         label: 'All makes & models',          desc: 'Mitsubishi, Daikin, Panasonic, Samsung, and more.' },
   { icon: ShieldCheck, label: 'Transparent pricing',         desc: 'Fixed rates, no hidden fees, ever.' },
   { icon: FileText,    label: '1-year maintenance contracts', desc: 'Quarterly servicing, fully managed for you.' },
@@ -102,7 +102,7 @@ export default async function HomePage() {
               href={bookHref}
               className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30 cursor-pointer"
             >
-              Book a Service
+              Book Now
               <ArrowRight size={16} />
             </Link>
             {!user && (
@@ -168,7 +168,7 @@ export default async function HomePage() {
         <SectionInner>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Photo */}
-            <div className="relative h-80 lg:h-[440px] rounded-2xl overflow-hidden">
+            <div className="relative h-80 lg:h-[440px] rounded-2xl overflow-hidden bg-muted">
               <Image
                 src={PHOTO_WHY_US}
                 alt="Professional HydroWash technician"
@@ -183,7 +183,7 @@ export default async function HomePage() {
               <SectionHeading
                 label="Why choose us"
                 title="Your AC in expert hands"
-                subtitle="We've been keeping Singapore cool since 2019."
+                subtitle="We've been keeping Singapore cool for 5 years."
                 align="left"
               />
               <ul className="space-y-5 mt-6">
@@ -219,8 +219,8 @@ export default async function HomePage() {
                   <div className="w-14 h-14 rounded-full bg-accent text-white font-heading font-bold text-xl flex items-center justify-center mb-3 shadow-md shadow-accent/20">
                     {i + 1}
                   </div>
-                  <p className="font-heading font-semibold text-primary text-base">{step.label}</p>
-                  <p className="text-sm text-muted-foreground mt-1 max-w-[140px]">{step.description}</p>
+                  <p className="font-heading font-semibold text-primary text-base max-w-[150px]">{step.label}</p>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-[150px]">{step.description}</p>
                 </div>
                 {i < steps.length - 1 && (
                   <div className="hidden sm:block w-16 h-0.5 bg-accent/30 flex-shrink-0 mb-10" />
@@ -248,7 +248,7 @@ export default async function HomePage() {
             href={bookHref}
             className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30 cursor-pointer"
           >
-            Get Started
+            Book Now
             <ArrowRight size={16} />
           </Link>
         </SectionInner>
