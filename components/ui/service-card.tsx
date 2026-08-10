@@ -9,9 +9,45 @@ interface ServiceCardProps {
   className?: string
   photoSrc?: string
   photoAlt?: string
+  /** Urgency-weighted treatment: dark, wider, photo-and-content side by side. */
+  featured?: boolean
+  /** Small tag shown above the title on a featured card, e.g. "We come to you today". */
+  tag?: string
 }
 
-export function ServiceCard({ icon: Icon, title, description, className, photoSrc, photoAlt }: ServiceCardProps) {
+export function ServiceCard({ icon: Icon, title, description, className, photoSrc, photoAlt, featured = false, tag }: ServiceCardProps) {
+  if (featured) {
+    return (
+      <div className={cn(
+        'group bg-primary rounded-2xl overflow-hidden grid sm:grid-cols-2',
+        'transition-all duration-200 hover:shadow-xl hover:shadow-primary/20',
+        className
+      )}>
+        {photoSrc && (
+          <div className="relative h-52 sm:h-full w-full overflow-hidden bg-primary">
+            <Image
+              src={photoSrc}
+              alt={photoAlt ?? title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, 50vw"
+            />
+          </div>
+        )}
+        <div className="p-6 sm:p-8 flex flex-col justify-center">
+          {tag && (
+            <p className="text-sky-400 text-xs font-semibold uppercase tracking-widest mb-3">{tag}</p>
+          )}
+          <div className="w-11 h-11 rounded-xl bg-white/10 text-sky-300 flex items-center justify-center mb-4">
+            <Icon size={22} strokeWidth={1.75} />
+          </div>
+          <h3 className="font-heading font-semibold text-white text-xl mb-2">{title}</h3>
+          <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={cn(
       'group bg-white rounded-2xl border border-border overflow-hidden',
@@ -19,7 +55,7 @@ export function ServiceCard({ icon: Icon, title, description, className, photoSr
       className
     )}>
       {photoSrc && (
-        <div className="relative h-44 w-full overflow-hidden">
+        <div className="relative h-44 w-full overflow-hidden bg-muted">
           <Image
             src={photoSrc}
             alt={photoAlt ?? title}
