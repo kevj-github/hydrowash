@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Wind } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -108,7 +109,7 @@ function LoginForm() {
       )}
       <Button
         type="submit"
-        className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-bold cursor-pointer"
+        className="w-full h-11 bg-accent hover:bg-accent/90 text-white font-semibold rounded-lg cursor-pointer"
         disabled={loading}
       >
         {loading ? 'Signing in…' : 'Sign In'}
@@ -125,46 +126,56 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="hw-world min-h-screen flex">
-      {/* Left panel — advisory board */}
-      <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden hw-board-ground">
+    <div className="min-h-screen flex">
+      {/* Left panel — photo */}
+      <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
         <Image
           src="https://images.pexels.com/photos/6471913/pexels-photo-6471913.jpeg?auto=compress&cs=tinysrgb&w=1200"
           alt="HydroWash aircon technician"
           fill
-          className="object-cover opacity-25"
+          className="object-cover"
           priority
         />
         <div className="absolute inset-0 bg-primary/70" />
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #93C5FD 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+          }}
+          aria-hidden
+        />
         <div className="relative text-center">
-          <div className="flex items-center justify-center gap-2.5 mb-6">
-            <span className="h-3 w-3 rounded-full bg-accent" aria-hidden />
-            <h1 className="font-heading font-extrabold text-3xl text-primary-foreground uppercase tracking-tight">HydroWash</h1>
+          <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mx-auto mb-6">
+            <Wind size={28} className="text-sky-300" strokeWidth={1.75} />
           </div>
-          <p className="text-primary-foreground/70 text-base leading-relaxed max-w-xs font-body">
+          <h1 className="font-heading font-bold text-3xl text-white mb-3">HydroWash</h1>
+          <p className="text-slate-300 text-base leading-relaxed max-w-xs">
             Book aircon services online — just pick a date and we&apos;ll handle the rest.
           </p>
         </div>
       </div>
 
-      {/* Right panel — form */}
+      {/* Right panel — white form */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
         {/* Mobile logo */}
-        <div className="flex items-center gap-2.5 mb-8 md:hidden">
-          <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
-          <span className="font-heading font-extrabold text-lg text-primary uppercase tracking-tight">HydroWash</span>
+        <div className="flex items-center gap-2 mb-8 md:hidden">
+          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+            <Wind size={16} className="text-accent" strokeWidth={2} />
+          </div>
+          <span className="font-heading font-bold text-lg text-primary">HydroWash</span>
         </div>
 
         <div className="w-full max-w-sm">
           <div className="mb-8">
-            <h2 className="font-heading font-bold text-3xl uppercase tracking-tight text-primary mb-1">Welcome back</h2>
-            <p className="text-muted-foreground text-sm font-body">Sign in to manage your bookings</p>
+            <h2 className="font-heading font-bold text-2xl text-primary mb-1">Welcome back</h2>
+            <p className="text-muted-foreground text-sm">Sign in to manage your bookings</p>
           </div>
           <Suspense fallback={<div className="h-48" />}>
             <LoginForm />
           </Suspense>
-          <p className="text-xs text-center text-muted-foreground mt-6 font-body">
-            <Link href="/" className="hover:text-accent transition-colors cursor-pointer">← Back to home</Link>
+          <p className="text-xs text-center text-muted-foreground mt-6">
+            <Link href="/" className="hover:underline cursor-pointer">← Back to home</Link>
           </p>
         </div>
       </div>

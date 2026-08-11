@@ -4,7 +4,6 @@ import type { LucideIcon } from 'lucide-react'
 
 interface ServiceCardProps {
   icon: LucideIcon
-  code: string
   title: string
   description: string
   className?: string
@@ -16,44 +15,63 @@ interface ServiceCardProps {
   tag?: string
 }
 
-/** An advisory-board row: index code, reading, photo revealed on hover — not a card grid. */
-export function ServiceCard({ icon: Icon, code, title, description, className, photoSrc, photoAlt }: ServiceCardProps) {
-  return (
-    <div
-      className={cn(
-        'group relative grid grid-cols-[auto_1fr_auto] sm:grid-cols-[5rem_1fr_9rem] items-center gap-4 sm:gap-6',
-        'border-t border-border py-6 sm:py-7 px-1 overflow-hidden transition-colors duration-300',
+export function ServiceCard({ icon: Icon, title, description, className, photoSrc, photoAlt, featured = false, tag }: ServiceCardProps) {
+  if (featured) {
+    return (
+      <div className={cn(
+        'group bg-primary rounded-2xl overflow-hidden grid sm:grid-cols-2',
+        'transition-all duration-200 hover:shadow-xl hover:shadow-primary/20',
         className
-      )}
-    >
-      {/* Amber signal fill sweeps in on hover — the "flagged" state */}
-      <div className="absolute inset-0 bg-accent/[0.06] scale-x-0 origin-left transition-transform duration-500 ease-out group-hover:scale-x-100" aria-hidden />
-
-      <span className="relative font-data text-xs sm:text-sm text-accent tabular-nums">{code}</span>
-
-      <div className="relative flex items-start gap-3 min-w-0">
-        <Icon size={20} strokeWidth={1.75} className="text-primary shrink-0 mt-1" />
-        <div className="min-w-0">
-          <h3 className="font-heading font-bold text-2xl sm:text-3xl uppercase tracking-tight text-primary leading-none">
-            {title}
-          </h3>
-          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mt-2 max-w-lg font-body">
-            {description}
-          </p>
+      )}>
+        {photoSrc && (
+          <div className="relative h-52 sm:h-full w-full overflow-hidden bg-primary">
+            <Image
+              src={photoSrc}
+              alt={photoAlt ?? title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, 50vw"
+            />
+          </div>
+        )}
+        <div className="p-6 sm:p-8 flex flex-col justify-center">
+          {tag && (
+            <p className="text-sky-400 text-xs font-semibold uppercase tracking-widest mb-3">{tag}</p>
+          )}
+          <div className="w-11 h-11 rounded-xl bg-white/10 text-sky-300 flex items-center justify-center mb-4">
+            <Icon size={22} strokeWidth={1.75} />
+          </div>
+          <h3 className="font-heading font-semibold text-white text-xl mb-2">{title}</h3>
+          <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
         </div>
       </div>
+    )
+  }
 
+  return (
+    <div className={cn(
+      'group bg-white rounded-2xl border border-border overflow-hidden',
+      'transition-all duration-200 hover:shadow-lg hover:-translate-y-1',
+      className
+    )}>
       {photoSrc && (
-        <div className="relative hidden sm:block h-20 w-32 rounded-[var(--radius)] overflow-hidden shrink-0 grayscale group-hover:grayscale-0 transition-all duration-500">
+        <div className="relative h-44 w-full overflow-hidden bg-muted">
           <Image
             src={photoSrc}
             alt={photoAlt ?? title}
             fill
-            className="object-cover scale-110 group-hover:scale-100 transition-transform duration-500"
-            sizes="128px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 33vw"
           />
         </div>
       )}
+      <div className="p-6">
+        <div className="w-11 h-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-4 transition-colors duration-200 group-hover:bg-accent group-hover:text-white">
+          <Icon size={22} strokeWidth={1.75} />
+        </div>
+        <h3 className="font-heading font-semibold text-primary text-lg mb-2">{title}</h3>
+        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+      </div>
     </div>
   )
 }

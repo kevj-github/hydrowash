@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface SectionHeadingProps {
-  /** @deprecated eyebrow labels are a banned pattern in the hw-world — no longer rendered */
   label?: string
   title: ReactNode
   subtitle?: string
@@ -12,6 +11,7 @@ interface SectionHeadingProps {
 }
 
 export function SectionHeading({
+  label,
   title,
   subtitle,
   align = 'center',
@@ -20,17 +20,25 @@ export function SectionHeading({
 }: SectionHeadingProps) {
   return (
     <div className={cn('mb-12', align === 'center' && 'text-center', className)}>
+      {label && (
+        <p className={cn(
+          'text-xs font-semibold uppercase tracking-widest mb-3',
+          light ? 'text-sky-300' : 'text-accent'
+        )}>
+          {label}
+        </p>
+      )}
       <h2 className={cn(
-        'font-heading font-bold text-4xl sm:text-5xl leading-[0.95] tracking-tight uppercase',
-        light ? 'text-primary-foreground' : 'text-primary'
+        'font-heading font-bold text-3xl sm:text-4xl leading-tight',
+        light ? 'text-white' : 'text-primary'
       )}>
         {title}
       </h2>
       {subtitle && (
         <p className={cn(
-          'mt-4 text-lg max-w-2xl font-body',
+          'mt-4 text-lg max-w-2xl',
           align === 'center' && 'mx-auto',
-          light ? 'text-primary-foreground/70' : 'text-muted-foreground'
+          light ? 'text-slate-300' : 'text-muted-foreground'
         )}>
           {subtitle}
         </p>

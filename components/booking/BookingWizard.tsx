@@ -182,16 +182,16 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
         {STEPS.map((label, i) => (
           <div key={label} className="flex items-center">
             <div className="flex flex-col items-center">
-              <div className={`w-9 h-9 flex items-center justify-center text-sm font-data font-bold transition-all duration-200 ${
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
                 i < step
-                  ? 'bg-accent/15 text-accent'
+                  ? 'bg-accent/20 text-accent'
                   : i === step
-                  ? 'bg-accent text-accent-foreground'
+                  ? 'bg-accent text-white shadow-md shadow-accent/30'
                   : 'bg-muted text-muted-foreground'
               }`}>
                 {i < step ? <Check size={16} strokeWidth={2.5} /> : i + 1}
               </div>
-              <span className={`text-[11px] font-data uppercase tracking-[0.08em] mt-1.5 hidden sm:block ${i === step ? 'text-accent' : 'text-muted-foreground'}`}>
+              <span className={`text-xs mt-1.5 font-medium hidden sm:block ${i === step ? 'text-accent' : 'text-muted-foreground'}`}>
                 {label}
               </span>
             </div>
@@ -203,8 +203,8 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
       </div>
 
       {/* Step content */}
-      <div className="bg-card border border-border shadow-sm p-6 sm:p-8 mb-6">
-        <h2 className="font-heading font-bold text-xl uppercase tracking-tight text-primary mb-5">{STEPS[step]}</h2>
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-6 sm:p-8 mb-6">
+        <h2 className="font-heading font-semibold text-lg text-primary mb-5">{STEPS[step]}</h2>
 
         {step === 0 && <StepServiceDetails serviceTypes={serviceTypes} data={data} onChange={update} />}
         {step === 1 && <StepScheduleLocation data={data} onChange={update} profileAddress={profileAddress} contractAddress={data.contract_address} />}
@@ -228,7 +228,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
           <Button
             onClick={() => setStep(s => s + 1)}
             disabled={!canNext()}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold"
+            className="bg-accent hover:bg-accent/90 text-white"
           >
             Next
           </Button>
@@ -236,7 +236,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
           <Button
             type="button"
             disabled={submitting}
-            className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8 py-3 cursor-pointer disabled:opacity-70"
+            className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-3 rounded-xl cursor-pointer disabled:opacity-70"
             onClick={handleSubmit}
           >
             {submitting ? (
