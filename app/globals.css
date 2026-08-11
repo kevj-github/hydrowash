@@ -139,6 +139,52 @@
   }
 }
 
+/* ============================================================
+   "Feels-Like Board" — public-surface world (landing, nav, booking)
+   Scope: wrap the public route group in a `.hw-world` container.
+   Advisory-board register: near-black ground, amber-orange signal,
+   Barlow Condensed display, IBM Plex Mono for readouts/data,
+   Work Sans for body copy. Admin/account chrome is untouched.
+   ============================================================ */
+.hw-world {
+  --font-heading: var(--font-display-hw, 'Barlow Condensed', sans-serif);
+  --font-body: var(--font-body-hw, 'Work Sans', sans-serif);
+
+  --background: #f3ede1;       /* warm paper */
+  --foreground: #1a1410;       /* near-black ink */
+  --card: #ffffff;
+  --card-foreground: #1a1410;
+  --popover: #ffffff;
+  --popover-foreground: #1a1410;
+  --primary: #17120d;          /* near-black — nav, footer, dark chrome */
+  --primary-foreground: #f3ede1;
+  --secondary: #ffb703;        /* warning-yellow — sparingly, tier 2 signal */
+  --secondary-foreground: #1a1410;
+  --muted: #e9dfc9;            /* warm paper, one step down */
+  --muted-foreground: #6b5a3f; /* tinted brown, never gray */
+  --accent: #ff6a2b;           /* amber-orange — the signal color */
+  --accent-foreground: #17120d;
+  --destructive: #c0362c;
+  --border: #ddd0b3;
+  --input: #ddd0b3;
+  --ring: #ff6a2b;
+  --radius: 0.3rem;            /* instrument-panel, low rounding */
+}
+
+.hw-world .font-data {
+  font-family: var(--font-data-hw, 'IBM Plex Mono', ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Advisory ground: near-black with a faint amber grid, the board's "screen" */
+.hw-board-ground {
+  background-color: #17120d;
+  background-image:
+    linear-gradient(to right, rgba(255, 106, 43, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 106, 43, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   @keyframes fadeUp {
     from {
@@ -167,5 +213,70 @@
       animation: fadeUp 0.5s ease 0.35s forwards;
       opacity: 0;
     }
+  }
+}
+
+/* ------------------------------------------------------------
+   Feels-Like Board motion system (one authored moment: the
+   advisory reading resolving into relief) — all exponential
+   ease-out from an already-visible default, all reduced-motion safe.
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hwPowerOn {
+    0% { opacity: 0; filter: blur(6px); letter-spacing: 0.08em; }
+    60% { opacity: 1; filter: blur(0.5px); }
+    100% { opacity: 1; filter: blur(0); letter-spacing: normal; }
+  }
+  @keyframes hwSignalPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+  @keyframes hwCoolResolve {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+  @keyframes hwRise {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes hwTicker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes hwFlapIn {
+    0% { opacity: 0; transform: rotateX(60deg) translateY(-6px); }
+    100% { opacity: 1; transform: rotateX(0deg) translateY(0); }
+  }
+
+  @layer utilities {
+    .hw-power-on {
+      animation: hwPowerOn 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .hw-signal-dot {
+      animation: hwSignalPulse 2.2s ease-in-out infinite;
+    }
+    .hw-ticker-track {
+      animation: hwTicker 28s linear infinite;
+    }
+    .hw-reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hw-reveal[data-visible='true'] {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .hw-flap-in {
+      animation: hwFlapIn 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      transform-origin: top center;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-reveal {
+    opacity: 1;
+    transform: none;
   }
 }

@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
+import { Video, X } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
@@ -299,9 +300,9 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
               const isVideo = url.match(/\.(mp4|mov|avi|webm)(\?|$)/i)
               const filename = decodeURIComponent(url.split('/').pop()?.split('?')[0] ?? 'file')
               return (
-                <div key={url} className="relative group rounded-lg border border-[#E2E8F0] overflow-hidden bg-slate-50 w-20 h-20 flex items-center justify-center">
+                <div key={url} className="relative group rounded-lg border border-border overflow-hidden bg-muted w-20 h-20 flex items-center justify-center">
                   {isVideo ? (
-                    <span className="text-2xl">🎥</span>
+                    <Video size={22} strokeWidth={1.75} className="text-muted-foreground" />
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={url} alt={filename} className="w-full h-full object-cover" />
@@ -309,10 +310,10 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
                   <button
                     type="button"
                     onClick={() => removeFile(url)}
-                    className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-0.5 right-0.5 bg-destructive text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     aria-label="Remove file"
                   >
-                    ✕
+                    <X size={10} strokeWidth={2.5} />
                   </button>
                 </div>
               )
@@ -324,7 +325,7 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
           <>
             <label
               className={`flex items-center justify-center gap-2 border-2 border-dashed rounded-lg px-4 py-3 text-sm cursor-pointer transition-colors
-                ${uploading ? 'border-slate-200 text-slate-300' : 'border-[#E2E8F0] text-slate-500 hover:border-[#0369A1] hover:text-[#0369A1]'}`}
+                ${uploading ? 'border-border text-muted-foreground/50' : 'border-border text-muted-foreground hover:border-accent hover:text-accent'}`}
             >
               <input
                 ref={fileInputRef}
