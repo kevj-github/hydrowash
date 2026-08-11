@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MapPin, Wind } from 'lucide-react'
+import { MapPin, CircleCheck } from 'lucide-react'
 import Link from 'next/link'
 
 const fields = [
@@ -111,29 +111,21 @@ export default function RegisterPage() {
   }
 
   const leftPanel = (
-    <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
+    <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden hw-board-ground">
       <Image
         src="https://images.pexels.com/photos/6471913/pexels-photo-6471913.jpeg?auto=compress&cs=tinysrgb&w=1200"
         alt="HydroWash aircon technician"
         fill
-        className="object-cover"
+        className="object-cover opacity-25"
         priority
       />
       <div className="absolute inset-0 bg-primary/70" />
-      <div
-        className="absolute inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage: 'radial-gradient(circle, #93C5FD 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-        }}
-        aria-hidden
-      />
       <div className="relative text-center">
-        <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mx-auto mb-6">
-          <Wind size={28} className="text-sky-300" strokeWidth={1.75} />
+        <div className="flex items-center justify-center gap-2.5 mb-6">
+          <span className="h-3 w-3 rounded-full bg-accent" aria-hidden />
+          <h1 className="font-heading font-extrabold text-3xl text-primary-foreground uppercase tracking-tight">HydroWash</h1>
         </div>
-        <h1 className="font-heading font-bold text-3xl text-white mb-3">HydroWash</h1>
-        <p className="text-slate-300 text-base leading-relaxed max-w-xs">
+        <p className="text-primary-foreground/70 text-base leading-relaxed max-w-xs font-body">
           Book aircon services online — just pick a date and we&apos;ll handle the rest.
         </p>
       </div>
@@ -142,20 +134,20 @@ export default function RegisterPage() {
 
   if (verifyEmail) {
     return (
-      <div className="min-h-screen flex">
+      <div className="hw-world min-h-screen flex">
         {leftPanel}
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
           <div className="w-full max-w-sm text-center">
-            <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
-              <Wind size={22} className="text-accent" />
+            <div className="w-12 h-12 bg-accent/10 flex items-center justify-center mx-auto mb-6">
+              <CircleCheck size={22} className="text-accent" />
             </div>
-            <h2 className="font-heading font-bold text-2xl text-primary mb-3">Check your email</h2>
-            <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+            <h2 className="font-heading font-bold text-3xl uppercase tracking-tight text-primary mb-3">Check your email</h2>
+            <p className="text-muted-foreground text-sm mb-6 leading-relaxed font-body">
               We sent a verification link to{' '}
               <span className="font-semibold text-primary">{verifyEmail}</span>.
               Click the link to activate your account.
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground font-body">
               Did not receive it? Check your spam folder or{' '}
               <button
                 className="text-accent hover:underline cursor-pointer"
@@ -172,7 +164,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="hw-world min-h-screen flex">
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="lazyOnload"
@@ -181,17 +173,15 @@ export default function RegisterPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
         {/* Mobile logo */}
-        <div className="flex items-center gap-2 mb-8 md:hidden">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-            <Wind size={16} className="text-accent" strokeWidth={2} />
-          </div>
-          <span className="font-heading font-bold text-lg text-primary">HydroWash</span>
+        <div className="flex items-center gap-2.5 mb-8 md:hidden">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
+          <span className="font-heading font-extrabold text-lg text-primary uppercase tracking-tight">HydroWash</span>
         </div>
 
         <div className="w-full max-w-sm">
           <div className="mb-8">
-            <h2 className="font-heading font-bold text-2xl text-primary mb-1">Create your account</h2>
-            <p className="text-muted-foreground text-sm">Start booking aircon services in minutes</p>
+            <h2 className="font-heading font-bold text-3xl uppercase tracking-tight text-primary mb-1">Create your account</h2>
+            <p className="text-muted-foreground text-sm font-body">Start booking aircon services in minutes</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -274,7 +264,7 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
-              className="w-full h-11 bg-accent hover:bg-accent/90 text-white font-semibold rounded-lg cursor-pointer mt-2"
+              className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-bold cursor-pointer mt-2"
               disabled={loading}
             >
               {loading ? 'Creating account…' : 'Create Account'}

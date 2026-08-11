@@ -6,50 +6,55 @@
 
 web
 
+## Stack
+
+Next.js 16 (App Router) + TypeScript, Tailwind CSS + shadcn/ui, Supabase (Postgres/Auth/RLS). Existing codebase — not a choice made during this session.
+
 ## Users
 
-- **Customers** — homeowners in Singapore who need aircon servicing: routine maintenance/cleaning (`MAINTENANCE`), a fault fixed (`FAULT_REPAIR`, e.g. water leaks, no cooling), or a new unit installed (`INSTALLATION`). They book online, choosing up to 5 preferred dates with up to 3 time slots each, track bookings/contracts/invoices, and can reschedule or cancel (24h SGT cutoff).
-- **Admin (owner/operator)** — runs the business day to day: approves/rejects bookings, resolves date/slot conflicts, runs the route optimiser for job scheduling, manages 1-year maintenance contracts and quarterly service reminders, tracks invoices manually, and completes jobs (checklist + AC details + pricing → work order PDF + PayNow QR to customer).
-- **Field technicians** — carry out the jobs in the field. They do not currently have system logins; they work off admin-issued work orders. Multiple staff/technician logins are a planned future capability, not yet built — do not assume technician-facing UI exists.
+- **Customers:** Singapore homeowners who need aircon servicing (maintenance, fault repair, or new installation). They book online, choosing among up to 5 preferred dates × 3 time slots, and manage bookings/contracts/invoices from an account area.
+- **Admin (owner/operator):** manages bookings, approves/rejects requests, runs a route optimiser for technician scheduling, manages 1-year maintenance contracts and invoices. Out of scope for this redesign (public pages only).
 
 ## Product Purpose
 
-HydroWash is the online booking and operations platform for a real, currently operating aircon servicing company in Singapore. It lets customers self-serve booking across three service categories and lets the owner run the operational side — approvals, route planning, contracts, invoicing — without manual back-and-forth. Success is a booking flow customers complete unassisted, and an admin workflow efficient enough for one owner-operator to run field operations (approvals, routing, contracts, invoicing) without added staff overhead.
+Lets Singapore homeowners book residential aircon service (cleaning/chemical wash, fault repair, or new unit installation) entirely online, and keeps them serviced over time via 1-year maintenance contracts with quarterly reminders — so the customer never has to remember to re-book.
 
 ## Positioning
 
-A neighboring generic "book a service" template could not truthfully copy: the multi-date/multi-slot preference model (customer offers up to 5 dates × 3 slots, admin resolves conflicts and confirms one), the geographic clustering + nearest-neighbour route optimiser for the admin's field day, and the built-in 1-year maintenance contract lifecycle (quarterly auto-generated service dates, reminders, PayNow-based invoicing/PDF generation) — these are operational mechanisms specific to running a real home-services business, not just a booking form.
+Reliability through proactive contracts, not just one-off booking convenience. The 1-year maintenance contract + quarterly service reminders mean Hydrowash keeps a customer's aircon serviced on schedule without the customer having to think about it again — a mechanism a purely transactional "book a slot" competitor doesn't offer.
 
 ## Operating Context
 
-- Singapore market: addresses use Google Places Autocomplete + reverse geocoding biased to `region=sg`; all scheduling and cutoff logic is SGT-aware.
-- PayNow (Singapore QR payment standard) is the payment collection method for contracts and invoices — no card/online payment processor is integrated.
-- Field operations are real and physical: the admin's route optimiser output plans an actual technician's driving day; job completion capture (AC brand/model, checklist, additional charges) documents real site visits.
-- The business currently claims **5 years of operating history** — this is a factual, evidence-backed claim from a real operating business, not placeholder marketing copy.
+- Customers arrive from the public marketing/landing page, browse services, and go through a 3-step booking wizard (`(public)/book`).
+- Three booking categories: MAINTENANCE (cleaning/chemical wash), FAULT_REPAIR (inspection first), INSTALLATION (new AC unit) — each with different approval flow but the same multi-date/multi-slot preference model.
+- Logged-in customers see an account area (My Bookings, Contracts & Invoices, Settings) via the same public-shell navbar.
+- Real logistics back this: route-optimised technician scheduling, work orders, PayNow QR invoicing — service is operationally real, not just marketing claims.
 
 ## Capabilities and Constraints
 
-- Two enforced roles today: `customer` and `admin`, via `profiles.role` + Supabase RLS. A third role (field technician login) is a planned-but-unbuilt capability — do not design as if it exists until product truth confirms scope.
-- Three booking categories (`MAINTENANCE`, `FAULT_REPAIR`, `INSTALLATION`) each with category-specific admin review (map-based for maintenance, urgency-sorted for fault repair, spec review for installation).
-- Manual invoice tracking — no automated payment reconciliation; admin marks invoices paid by hand.
-- No live customer support channel (chat/phone-in-app) is part of the product today.
+- Public surfaces in scope for this redesign: `(public)/page.tsx` (landing page), `(public)/PublicHeader.tsx` + `MobileNav.tsx` (nav shell), `(public)/book/page.tsx` (booking wizard), auth pages (login/register/reset) share the public shell.
+- Admin dashboard and account-area *functionality* are out of scope — do not alter booking logic, RLS, API routes, or admin tooling.
+- Time slots are a fixed enum (`S10_12` … `S19_21`) — cosmetic only, values are canonical and must not change.
+- Existing shared primitives (`Section`, `SectionHeading`, `ServiceCard`, `StepItem` in `components/ui/`) may be restyled or replaced as part of the visual-world replacement, but must keep serving the same content/booking flow.
 
 ## Brand Commitments
 
-- Name: **HydroWash**. Category: Home Services / Aircon Booking, Singapore.
-- Visual identity and voice are governed separately by `design-system/hydrowash/MASTER.md` (navy `#0F172A` / accent blue `#0369A1`, Poppins headings + Open Sans body) — that file remains the design authority; this document does not restate or override it.
-- "5 years of expert aircon servicing" is a standing, factual brand claim tied to the real business's operating history.
+- Name: Hydrowash. No pinned aesthetic, color, or typography commitment beyond what already exists in code — this session replaces the current navy/blue corporate look with a new visual world (user-confirmed: full visual world replacement, not refinement).
+- Existing photography assets in repo root (`c1–c6.jpeg`, `d1–d3.jpeg`, `e1–e3.jpeg`, `f1–f3.jpeg`, `hero-check.jpeg`, `cta-photo.jpeg`, `why-us-photo.jpeg`, `candidate-hero*.jpeg`) are real product/service photos available for reuse.
 
 ## Evidence on Hand
 
-- No real customer testimonials, reviews, or ratings exist yet. The landing page's testimonials/reviews section was deliberately removed for this reason. **Future work must not fabricate testimonials, star ratings, or customer quotes** — this absence is confirmed, not an oversight to "fill in."
-- Landing page photography is stock imagery (Unsplash, verified IDs pinned in `CLAUDE.md`) standing in for real jobsite photos — not documented as customer-specific evidence.
-- No press, case studies, or third-party proof assets are on hand.
+- Real photography assets listed above (aircon units, technicians, service photos) — usable in the redesign.
+- No testimonials, press, or case studies on hand; landing page previously removed a testimonials/reviews section (per CLAUDE.md file map) — do not reintroduce fabricated reviews.
+- Existing design tokens and a documented design system (`design-system/hydrowash/MASTER.md`) describe the current (to-be-replaced) navy/blue system — treated as anti-reference evidence, not a constraint.
 
 ## Product Principles
 
-1. **The booking flow must stay self-serve.** Customers should never need to call or email to get a slot; conflict resolution is the admin's job, not the customer's.
-2. **One owner-operator runs the whole operation.** Every admin-facing workflow (approvals, routing, contracts, invoicing, job completion) is scoped to be manageable by a single person, not a back-office team — until technician logins are actually built.
-3. **Don't fabricate social proof.** No testimonials, reviews, or claims beyond the confirmed 5-year operating history until real evidence is supplied.
-4. **Singapore-specific by default.** Address handling, payment method (PayNow), and time-slot/cutoff logic should assume SGT and local conventions, not be genericized for other markets.
-5. **Real field operations, not a toy scheduler.** The route optimiser and job completion flow reflect an actual technician's day — treat correctness and usability here as operationally load-bearing, not decorative.
+1. Booking friction is the enemy — every public surface should visibly shorten the path from "I have a hot room" to a confirmed slot.
+2. Reliability is the brand promise — the visual world should read as dependable and precise (real logistics, real technicians), not just decorative "clean tech."
+3. Singapore heat/humidity context is real and usable creative material — the redesign can lean into that lived discomfort-to-relief narrative rather than generic SaaS abstraction.
+4. Same functional truth, new expression — booking flow, categories, time slots, and account features must work identically after the redesign.
+
+## Accessibility & Inclusion
+
+No project-specific requirement beyond the existing checklist in `design-system/hydrowash/MASTER.md` (4.5:1 contrast minimum, visible focus states, `prefers-reduced-motion` respected). Carry these forward into the new visual world.

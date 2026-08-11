@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Wind } from 'lucide-react'
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('')
@@ -50,17 +49,15 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6">
+    <div className="hw-world min-h-screen flex items-center justify-center bg-background px-6">
       <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 mb-8 justify-center">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-            <Wind size={16} className="text-accent" strokeWidth={2} />
-          </div>
-          <span className="font-heading font-bold text-lg text-primary">HydroWash</span>
+        <div className="flex items-center gap-2.5 mb-8 justify-center">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
+          <span className="font-heading font-extrabold text-lg text-primary uppercase tracking-tight">HydroWash</span>
         </div>
         <div className="mb-8 text-center">
-          <h2 className="font-heading font-bold text-2xl text-primary mb-1">Set new password</h2>
-          <p className="text-muted-foreground text-sm">Choose a new password for your account</p>
+          <h2 className="font-heading font-bold text-3xl uppercase tracking-tight text-primary mb-1">Set new password</h2>
+          <p className="text-muted-foreground text-sm font-body">Choose a new password for your account</p>
         </div>
         {verifying ? (
           <p className="text-sm text-muted-foreground text-center">Verifying reset link…</p>
@@ -105,7 +102,7 @@ function ResetPasswordForm() {
             )}
             <Button
               type="submit"
-              className="w-full h-11 bg-accent hover:bg-accent/90 text-white font-semibold rounded-lg cursor-pointer"
+              className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-bold cursor-pointer"
               disabled={loading}
             >
               {loading ? 'Updating…' : 'Update Password'}

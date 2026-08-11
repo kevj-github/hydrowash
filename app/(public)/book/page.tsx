@@ -35,7 +35,6 @@ export default async function BookPage({
     <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <SectionHeading
-          label="Book a Service"
           title="Schedule Your Visit"
           subtitle="Complete the steps below to submit your booking request."
           align="center"
