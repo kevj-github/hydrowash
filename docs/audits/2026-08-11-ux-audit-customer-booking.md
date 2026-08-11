@@ -368,3 +368,111 @@ Pre-existing config issue, unrelated to these changes; the real unit suites all 
 **Test data:** both audit customers and their bookings deleted. `booking_unit_locations` back to `[]`,
 `profiles?name=like.ZZ*` returns `[]`. Two real "booking received" emails reached the admin address
 (05:58 and 06:38 UTC).
+
+---
+
+# Phase 8 — Admin surface audit + Places migration attempt (2026-08-11)
+
+## H-2 / H-4b — migration written, BLOCKED on a Google Cloud setting
+
+Branch `chore/places-api-new-migration` (commit `c0f6c9e`), deliberately kept OFF
+`fix/ux-audit-2026-08-11` because **deploying it as-is would break address entry
+everywhere**.
+
+All 5 legacy `places.Autocomplete` call sites (register, account settings, booking
+step 2, customer contract request, admin contract create) were consolidated into one
+`<AddressAutocomplete>` component using `PlaceAutocompleteElement`.
+
+Verified locally:
+- The Google Maps deprecation warning and the `loading=async` warning are both **gone**
+  (console on /auth/register: 0 errors, 1 warning — an unrelated Next.js `sizes` hint).
+- The element renders correctly configured: `included-region-codes="sg"`, `requested-region="sg"`,
+  48px tall.
+
+**Blocker:** every keystroke returns
+
+```
+403  Places API (New) has not been used in project 866927000260 before or it is disabled.
+     https://places.googleapis.com/$rpc/google.maps.places.v1.Places/AutocompletePlaces
+```
+
+`PlaceAutocompleteElement` calls `places.googleapis.com` (Places API **New**); the legacy
+widget used the old Places API, which is the one enabled on the project. Enable it at
+https://console.developers.google.com/apis/api/places.googleapis.com/overview?project=866927000260
+(note: Places API New has its own pricing), then the branch needs a re-verify before merge.
+
+**Also discovered:** the widget uses a **closed shadow root**. Playwright cannot see or
+drive its inner input, and the field does not appear in Playwright's ARIA snapshot. Any
+e2e coverage of address entry needs a different approach. Whether real screen readers
+expose it (they normally do for closed shadow content) was NOT independently verified —
+that check should happen before merge.
+
+## M-11 / L-2 / L-3 — fixed and verified (commit `b94871e`)
+
+- `SelectTrigger` was `h-8` (32px) app-wide → now `h-11` under `md`, `h-8` from `md` up,
+  so admin desktop density is unchanged. Measured: 293x44 at 375px, 446x32 at 1440px.
+- Wizard Back/Next 54x32 → `min-h-[44px] px-6`.
+- Calendar day cells → `min-h-[44px]`; measured 62x44.
+- Day buttons gained `aria-label` ("Saturday, 15 August 2026") and `aria-pressed`.
+- Slot toggles gained `aria-pressed`; verified exactly one `true` after selecting 13:00–15:00.
+
+Still under 44px on mobile (lower priority, not fixed): the HydroWash logo link (32px),
+one 40px icon button, and inline footer text links (19px).
+
+## NEW — Admin surface audit (first pass ever; 8 of 11 routes)
+
+Audited as the real admin account, read-only (no approve/reject/delete against live data).
+
+| Route | axe Critical | axe Serious | Overflow |
+|---|---|---|---|
+| `/admin` | — | color-contrast:2, heading-order:1 (moderate) | none |
+| `/admin/bookings` | — | color-contrast:2, label-title-only:1 | none |
+| `/admin/agenda` | — | color-contrast:1, **link-name:2** | none |
+| `/admin/customers` | — | color-contrast:1 | none |
+| `/admin/invoices` | **label:4** | color-contrast:1 | none |
+| `/admin/contracts` | **label:4** | color-contrast:1 | none |
+| `/admin/settings` | **label:6** | color-contrast:1 | none |
+| `/admin/availability` | **button-name:2** | color-contrast:1 | none |
+
+Not reached: `/admin/contracts/[id]`, `/admin/customers/[id]`, `/admin/schedule/[date]`.
+
+### A-1 — Unlabelled form inputs across admin (Critical, hard gate)
+14 inputs with no accessible label at all: 4 on `/admin/invoices`, 4 on `/admin/contracts`,
+6 on `/admin/settings`. On invoices/contracts these are the `<input type="date">` range
+filters (created-from/to, paid-from/to, start/expiry/next-due) — a screen reader announces
+four identical "date" fields with no way to tell which is which.
+Fix: `<Label htmlFor>` or `aria-label` on each. These are base-ui generated ids
+(`#base-ui-_R_6d9bn5rl5rlb_`), so the label must be wired explicitly.
+
+### A-2 — Icon-only buttons and links with no accessible name (Critical/Serious)
+`button-name:2` on `/admin/availability` (calendar prev/next chevrons) and `link-name:2`
+on `/admin/agenda`. Keyboard/screen-reader users get "button" / "link" with no purpose.
+Fix: `aria-label="Previous month"` etc.
+
+### A-3 — "← Site" link fails contrast on EVERY admin page (Serious, hard gate)
+`.text-slate-500` on the dark navy admin bar: **4.15:1**, needs 4.5:1
+(`#62748e` on `#020b16`). Present on all 8 audited routes — one shared component.
+This is the same class of bug as the footer `text-slate-400` fixed in `85f573d`, and
+CLAUDE.md already documents the rule ("use text-slate-300 on bg-primary"). The admin bar
+never got the memo. One-line fix, clears a hard gate on 8 routes at once.
+
+### A-4 — `/admin` dashboard card subtitle fails contrast (Serious)
+`.text-white/70` on `bg-accent`: **4.03:1** (`#b3d0e2` on `#00629d`), e.g. "Approve, reject,
+and cluster maintenance". Fix: `text-white/85` or solid white.
+
+### A-5 — Admin lands on the marketing page after sign-in (Medium)
+Signing in as `role: admin` redirects to `/`, the public landing page, not `/admin`.
+The owner's first action every session is a manual nav. `app/auth/login/page.tsx`
+resolves `destination` from `?redirect` else `/`; it never branches on role.
+
+## Coverage still outstanding after this pass
+
+- `/account/contracts`, `/auth/reset-password` — still unaudited.
+- `/admin/contracts/[id]`, `/admin/customers/[id]`, `/admin/schedule/[date]` — not reached.
+- The admin pass was **static-quality only** (axe, contrast, overflow). No interaction
+  testing: approve/reject, bulk approve, the route optimiser, JobCompletionDialog's 3-step
+  work-order flow, PDF generation, or mark-paid were all left untouched because they mutate
+  live business records and send real customer emails. That is the largest remaining gap
+  and needs either a staging database or explicit permission to write to production.
+- File-upload battery on booking step 1 (5 x 20MB) — still never exercised.
+- Scenarios 4, 6, 7, 8, 9, 11 — still not run.
