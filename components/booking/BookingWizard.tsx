@@ -221,14 +221,19 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
 
       {/* Navigation */}
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
+        <Button
+          variant="outline"
+          onClick={() => setStep(s => s - 1)}
+          disabled={step === 0}
+          className="min-h-[44px] px-6"
+        >
           Back
         </Button>
         {step < STEPS.length - 1 ? (
           <Button
             onClick={() => setStep(s => s + 1)}
             disabled={!canNext()}
-            className="bg-accent hover:bg-accent/90 text-white"
+            className="bg-accent hover:bg-accent/90 text-white min-h-[44px] px-6"
           >
             Next
           </Button>

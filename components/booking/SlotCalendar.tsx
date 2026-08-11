@@ -20,6 +20,12 @@ function addDays(dateStr: string, n: number): string {
 }
 
 const SGT_OFFSET_MS = 8 * 60 * 60 * 1000
+function fullDateLabel(date: string): string {
+  return new Date(date + 'T00:00:00').toLocaleDateString('en-SG', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
+}
+
 const MAX_TOTAL_SLOTS = 3
 const MAX_DATES = 5
 
@@ -191,6 +197,8 @@ export function SlotCalendar({ value, onChange }: Props) {
               <button
                 key={date}
                 disabled={disabled}
+                aria-pressed={isSelected}
+                aria-label={fullDateLabel(date)}
                 onClick={() => handleDateClick(date)}
                 className={`
                   flex flex-col items-center gap-0.5 py-2.5 rounded-xl text-xs font-medium transition-colors min-h-[56px]
@@ -251,9 +259,11 @@ export function SlotCalendar({ value, onChange }: Props) {
             <button
               key={d.date}
               disabled={disabled}
+              aria-pressed={isSelected}
+              aria-label={fullDateLabel(d.date)}
               onClick={() => handleDateClick(d.date)}
               className={`
-                rounded-lg text-xs py-2.5 font-medium transition-colors
+                rounded-lg text-xs py-2.5 min-h-[44px] font-medium transition-colors
                 ${disabled ? 'text-muted-foreground opacity-40 cursor-not-allowed' : ''}
                 ${isActive && !disabled ? 'bg-accent text-white ring-2 ring-accent ring-offset-1' : ''}
                 ${isSelected && !isActive && !disabled ? 'bg-accent text-white font-semibold shadow-sm' : ''}
@@ -373,6 +383,7 @@ export function SlotCalendar({ value, onChange }: Props) {
               <button
                 key={slot}
                 disabled={isDisabled}
+                aria-pressed={isActive}
                 onClick={() => toggleSlot(slot)}
                 className={`
                   w-full text-xs px-3 py-3 rounded-lg border font-medium transition-colors text-left min-h-[44px]
