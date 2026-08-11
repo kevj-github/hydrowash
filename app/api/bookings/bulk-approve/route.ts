@@ -31,20 +31,39 @@ export async function POST(request: NextRequest) {
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
 
-  // All fetched PENDING bookings are eligible — slot already captures the date
+  // Only one APPROVED booking can hold a given (confirmed_date, confirmed_slot) —
+  // bookings_confirmed_slot_unique. Applying one slot to several bookings therefore
+  // always violates it, and the failure used to be swallowed: the route reported
+  // success and emailed customers about approvals that never happened.
+  if (confirmed_slot && bookings.length > 1) {
+    return NextResponse.json({
+      error: 'Only one booking can hold a given date and time slot. Omit confirmed_slot to bulk-approve on the date alone, or approve these bookings individually.',
+      eligible: bookings.length,
+    }, { status: 409 })
+  }
+
+  let approvedIds: string[] = []
   if (bookings.length > 0) {
     const updatePayload: Record<string, string | null> = { status: 'APPROVED', confirmed_date }
     if (confirmed_slot) updatePayload.confirmed_slot = confirmed_slot
 
-    await supabase
+    const { data: updated, error: updateError } = await supabase
       .from('bookings')
       .update(updatePayload)
       .in('id', bookings.map(b => b.id))
+      .select('id')
+
+    if (updateError) {
+      console.error('[bulk-approve] update failed:', updateError)
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+    approvedIds = (updated ?? []).map(b => b.id)
   }
 
+  // Email only the customers whose booking actually changed status.
   const adminClient = createAdminClient()
   await Promise.all(
-    bookings.map(async (booking) => {
+    bookings.filter(b => approvedIds.includes(b.id)).map(async (booking) => {
       const { data } = await adminClient.auth.admin.getUserById(booking.customer_id)
       const email = data?.user?.email
       if (email) await sendBookingApproved(booking, email).catch(err =>
@@ -53,5 +72,5 @@ export async function POST(request: NextRequest) {
     })
   )
 
-  return NextResponse.json({ approved: bookings.length, excluded: [] })
+  return NextResponse.json({ approved: approvedIds.length, excluded: [] })
 }

@@ -47,6 +47,7 @@ function Row({ label, value }: { label: string; value?: string | number | null }
 
 export function StepReview({ data, serviceTypes }: Props) {
   const service = serviceTypes.find(s => s.id === data.service_type_id)
+  const categoryLabel = CATEGORY_LABELS[data.category] ?? data.category
 
   // Room labels aren't carried in booking data — resolve the ids so the customer
   // can verify the rooms they were required to pick before submitting.
@@ -80,7 +81,22 @@ export function StepReview({ data, serviceTypes }: Props) {
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
         <h3 className="font-heading font-semibold text-sm text-primary mb-3">Service</h3>
         <Row label="Service" value={service?.name} />
-        <Row label="Category" value={CATEGORY_LABELS[data.category] ?? data.category} />
+        {/* Category is dropped when it just restates the service name
+            ("General Maintenance" / "General maintenance"); it still earns its
+            row for fault repairs, where the service name is the fault itself. */}
+        {categoryLabel.toLowerCase() !== (service?.name ?? '').toLowerCase() && (
+          <Row label="Category" value={categoryLabel} />
+        )}
+        {/* Maintenance has no fixed price; say so rather than showing nothing —
+            the customer was otherwise committing to a home visit blind. */}
+        {service && (
+          <Row
+            label="Price"
+            value={service.price_sgd != null
+              ? `S$${Number(service.price_sgd).toFixed(2)}`
+              : 'Quoted after on-site inspection'}
+          />
+        )}
         {data.num_units && <Row label="Units" value={data.num_units} />}
         {allRooms.length > 0 && <Row label="Rooms" value={allRooms.join(', ')} />}
         {data.fault_description && <Row label="Fault" value={data.fault_description} />}

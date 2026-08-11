@@ -717,3 +717,163 @@ Only remaining axe finding anywhere: `/admin` `heading-order` (moderate, h3 befo
   null feeds the VRP), `/admin` heading-order, sub-44px logo and footer links.
 - Closed-shadow-DOM address widget remains undrivable by Playwright — address entry
   cannot be covered by e2e tests.
+
+---
+
+# Phase 13 — Last untested write flows + the file-upload battery
+
+Run on `localhost:3000` against the production Supabase project, as the real admin and a
+seeded test customer (`otherofacc+uxaudit13@gmail.com`, 3 PENDING bookings). All deleted
+afterwards.
+
+## D-1 — Bulk approve reported success while approving nothing, and emailed customers anyway (CRITICAL)
+
+| | |
+|---|---|
+| **Layer** | Architecture / Feedback |
+| **Severity** | Critical |
+| **Surface** | `POST /api/bookings/bulk-approve` |
+
+**Reproduce**
+1. Seed two PENDING maintenance bookings.
+2. `POST /api/bookings/bulk-approve` with both ids, `confirmed_date: '2026-08-27'`,
+   `confirmed_slot: 'S10_12'` — i.e. the normal "approve this batch onto one slot" call.
+3. Query the bookings.
+
+**Observed** — `200 {"approved":2,"excluded":[]}`. Both bookings still `PENDING`,
+`confirmed_date` still `null`. Approval emails were dispatched to the customer regardless.
+
+**Root cause** — Identical in shape to C-1, the Critical that opened this audit: an
+unchecked write. `bookings_confirmed_slot_unique` allows only one APPROVED booking per
+`(confirmed_date, confirmed_slot)`, so applying one slot to several bookings always
+violates it. Reproduced directly against PostgREST:
+
+```
+PATCH bookings?id=in.(...)  →  409
+23505  duplicate key value violates unique constraint "bookings_confirmed_slot_unique"
+       Key (confirmed_date, confirmed_slot)=(2026-08-27, S10_12) already exists.
+```
+
+The route never destructured `{ error }` from the update, then reported
+`approved: bookings.length` — the number it *intended* to approve — and emailed every
+customer in the batch. The customer is told a date is confirmed that the admin's own
+dashboard still shows as pending.
+
+**Fixed** — `app/api/bookings/bulk-approve/route.ts`: the slot+multi-booking combination
+now fails fast with a 409 and an actionable message; the update destructures and checks
+`error`; `approved` counts rows actually returned by `.select('id')`; emails are sent only
+to customers whose booking id came back from the update.
+
+**Verified** — collision call → `409 "Only one booking can hold a given date and time slot…"`,
+nothing mutated, no emails. Valid call (date only, no slot) → `200 {"approved":2}` and both
+rows genuinely `APPROVED` with `confirmed_date 2026-08-27`.
+
+Worth noting this endpoint has **no UI caller** — CLAUDE.md documents "No bulk-approve" on
+the Maintenance tab. It is live and reachable, so it was worth fixing, but nobody would
+have found this through the app.
+
+## D-2 — Photo uploads failed for ordinary filenames (High)
+
+**Reproduce** — `/book` step 1 → attach a photo named `façade's photo #1 [50%].jpg`.
+
+**Observed** — `Upload failed: Invalid key: 7f7ea188…/1786453826674/façade's photo` — the raw
+Supabase Storage error, surfaced to the customer, with no guidance and nothing uploaded.
+The storage key was built as `${prefix}/${file.name}`, and Storage rejects apostrophes,
+accents and most punctuation. Any photo off a phone with a name like `Mum's aircon.jpg` or
+`café.jpg` fails.
+
+**Fixed** — the key is now derived (`${i}-${random}.${sanitised-ext}`) instead of trusting
+the filename; collisions are impossible too. **Verified** — the same file uploads cleanly.
+
+## D-3 — Files past the 5-file cap were dropped in total silence (Medium)
+
+Selecting 6 photos uploaded 5. No message, no counter change, nothing — the 6th simply
+never existed. `files.slice(0, remaining)` with no notice.
+
+**Fixed** — "Only the first N files were added — maximum 5."
+
+**Second-order bug found while verifying the fix:** the message still didn't appear. The
+upload error `<p>` was rendered *inside* the `{existingUrls.length < MAX_FILES && (…)}`
+block, so the picker — and the error region with it — unmounts at exactly the cap where
+the message fires. The pre-existing `Maximum 5 files allowed.` error at the top of the
+handler was therefore **unreachable code**: it could only fire in a state where its own
+renderer was unmounted. Moved the message outside the block and gave it `role="alert"`.
+**Verified**: 6 files → 5 thumbs + visible "Only the first 5 files were added — maximum 5."
+
+## D-4 — One oversized file discarded the whole selection (Medium)
+
+Attaching a valid photo alongside a 21 MB one rejected **both**, with
+"Files must be under 20 MB each." and no indication which file was the problem.
+
+**Fixed** — oversized files are filtered out by name, the valid ones still upload.
+**Verified** — 3 files in (bad name, 21 MB, valid) → 2 uploaded, message reads
+`big21.jpg — over 20 MB, not added.`
+
+## Findings from the previous phases now closed
+
+| ID | Fix | Verification |
+|---|---|---|
+| **M-8** | Maintenance had no price anywhere. Service dropdown now reads "General Maintenance — quoted on site"; the review step gained a **Price** row. | Dropdown and review both verified; review shows `Price / Quoted after on-site inspection`. |
+| **L-4** | `Fault Repair.duration_minutes` was `null` and fed the VRP (which silently defaulted to 60). Set to 60 explicitly in production. | `duration_minutes: 60`. |
+| **B-6** | The pin↔card scroll used `document.querySelector`, which returned whichever of the two copies (mobile sheet / desktop sidebar) came first — often the hidden one. Now picks the copy that is actually laid out. | Confirmed 2 copies exist, `visible: [false, true]`; the fix selects index 1. The duplication itself remains — deduping means restructuring both layouts. |
+| **`/admin` heading-order** | The two quick-action cards were `h3` directly under the page `h1`. Now `h2`. | `/admin` axe: **0 violations of any impact** — the last axe finding anywhere in the app. |
+| **Sub-44px targets** | Header logo link `min-h-11`; footer links `inline-flex min-h-11` below `md`, spacing collapsed to keep the footer compact. | @375: logo 145x44, all 6 footer links 44px tall, no horizontal overflow. @1440: links back to 20px rows, footer height unchanged at 282px. |
+| **Cosmetic (from M-7)** | Review read "Service: General Maintenance / Category: General maintenance". Category is now dropped when it merely restates the service name, and kept where it earns its place (fault repairs). | Review shows Service, Price, Units, Rooms — no duplicate. |
+
+## Flows verified working (not previously exercised)
+
+- **Reject booking** — the Reject button reveals a reason field and a separate "Confirm
+  Rejection" button, so it is a genuine two-step destructive confirm (Scenario 7 passes
+  here). DB after: `status REJECTED`, reason stored verbatim. The card left the PENDING-filtered
+  list without a reload.
+- **Bulk approve** — see D-1. Now correct on both the collision and the valid path.
+- **Admin post-login destination** — still lands on `/admin` (A-5 holding).
+- **Admin maps** — `/admin/bookings` map canvas renders (B-1/B-2 fixes holding).
+
+## NEW — still open
+
+### D-5 — `google.maps.Marker` deprecation warning on every admin map page (High, hard gate)
+
+```
+[WARNING] As of February 21st, 2024, google.maps.Marker is deprecated.
+          Please use google.maps.marker.AdvancedMarkerElement instead.
+```
+
+Console warnings must be 0, so this fails the gate. **Not fixed, deliberately.** The
+migration needs a Map ID provisioned in Google Cloud (`AdvancedMarkerElement` will not
+render without one) and means dropping `@react-google-maps/api`'s `<Marker>` wrapper in
+`BookingsMap` plus the two `new google.maps.Marker` call sites and `SymbolPath.CIRCLE`
+icons in `RouteMap`. That is the same shape as the H-4b blocker — an owner-side console
+setting first, then a branch of its own. Three separate bugs in this area (B-1, B-2, and
+the Phase 11 second-order one) all passed a console-only check and still failed in the
+browser, so this one should not be rushed at the end of a session.
+
+Mitigating: Google states Marker is *not* scheduled for discontinuation and will keep
+receiving bug fixes for major regressions — unlike `places.Autocomplete`, which was closed
+to new customers and was the reason H-4b was urgent.
+
+## Gates after fixes
+
+```
+npx tsc --noEmit         clean
+npx eslint <7 changed>   2 errors + 1 warning — all confirmed pre-existing by linting
+                         the stashed HEAD version of the same files (no new issues)
+npm run build            succeeds
+npx jest lib/            3 suites, 21 tests passed
+```
+
+**Test data removed and verified empty:** `bookings?notes=like.*UXAUDIT*` → `[]`,
+`profiles?name=like.ZZ*` → `[]`, no auth user matching `uxaudit`, and the `booking-media`
+storage bucket root lists `[]` (no orphaned uploads from the battery). Emails that really
+went out: one rejection and two approvals, all to the test address.
+
+## Open after Phase 13
+
+- **D-5** `google.maps.Marker` migration (needs a Google Cloud Map ID first).
+- **B-6** the underlying duplicate render of every booking card (the sync bug it caused is
+  fixed; the duplication is not).
+- Scenarios 4 (returning user), 6 (heavy data), 7 (destructive confidence — partially
+  covered now via Reject), 8 (second user / role), 9 (lifecycle position), 11 (data seasoning).
+- Closed-shadow-DOM address widget still undrivable by Playwright.
+- `/admin/bookings` reject/approve still send real customer email — there is no staging
+  database, so every write test costs a real send.

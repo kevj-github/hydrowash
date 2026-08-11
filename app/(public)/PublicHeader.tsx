@@ -30,7 +30,9 @@ export function PublicHeader({ isLoggedIn, isAdmin }: PublicHeaderProps) {
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group cursor-pointer">
+        {/* min-h-11 keeps the home link at a 44px tap target on mobile; the
+            32px logo tile alone left it under the threshold. */}
+        <Link href="/" className="flex items-center gap-2 group cursor-pointer min-h-11">
           <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center transition-colors duration-200 group-hover:bg-accent/30">
             <Wind size={16} className="text-sky-300" strokeWidth={2} />
           </div>

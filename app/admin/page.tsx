@@ -118,7 +118,7 @@ export default async function AdminOverviewPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <ClipboardList size={18} strokeWidth={1.75} />
-              <h3 className="font-heading font-semibold text-lg">Manage Bookings</h3>
+              <h2 className="font-heading font-semibold text-lg">Manage Bookings</h2>
             </div>
             <ArrowRight size={16} strokeWidth={2} className="transition-transform duration-150 group-hover:translate-x-1" />
           </div>
@@ -131,7 +131,7 @@ export default async function AdminOverviewPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <CalendarCheck size={18} strokeWidth={1.75} />
-              <h3 className="font-heading font-semibold text-lg">Route Optimiser</h3>
+              <h2 className="font-heading font-semibold text-lg">Route Optimiser</h2>
             </div>
             <ArrowRight size={16} strokeWidth={2} className="transition-transform duration-150 group-hover:translate-x-1" />
           </div>

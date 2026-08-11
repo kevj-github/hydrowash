@@ -145,10 +145,14 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
     return list
   })()
 
-  // Scroll to card when pin clicked
+  // Scroll to card when pin clicked.
+  // Every booking renders twice — once in the mobile bottom sheet, once in the
+  // desktop sidebar — so querySelector can (and did) return the hidden copy and
+  // scroll nothing. Pick the copy that is actually laid out.
   useEffect(() => {
     if (!selectedJobId) return
-    const el = document.querySelector(`[data-job-id="${selectedJobId}"]`)
+    const matches = Array.from(document.querySelectorAll(`[data-job-id="${selectedJobId}"]`))
+    const el = matches.find(n => (n as HTMLElement).offsetParent !== null) ?? matches[0]
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [selectedJobId])
 
