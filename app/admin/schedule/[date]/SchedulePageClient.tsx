@@ -103,6 +103,7 @@ export function SchedulePageClient({ date, bookings, depotLatLng }: Props) {
         </div>
         <input
           type="date"
+          aria-label="Schedule date"
           value={date}
           onChange={e => router.push(`/admin/schedule/${e.target.value}`)}
           className="border border-border rounded-lg px-3 py-1.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent"

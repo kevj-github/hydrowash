@@ -142,6 +142,18 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
     setCharges(prev => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c))
   }
 
+  const step1Missing = (() => {
+    const missing: string[] = []
+    if (!attendedBy.trim()) missing.push('attended by')
+    if (!timeArrived.trim()) missing.push('time arrived')
+    if (!timeCompleted.trim()) missing.push('time completed')
+    const incomplete = acDetails.filter(u => !u.brand?.trim() || !u.model?.trim())
+    if (incomplete.length > 0) {
+      missing.push(`brand and model for ${incomplete.length} unit${incomplete.length > 1 ? 's' : ''}`)
+    }
+    return missing
+  })()
+
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setStep(1); setError('') } }}>
       <DialogTrigger className={cn(buttonVariants({ size: 'sm' }), 'bg-accent hover:bg-accent/90 text-white')}>
@@ -164,16 +176,16 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label>Attended By</Label>
-                <Input value={attendedBy} onChange={e => setAttendedBy(e.target.value)} placeholder="e.g. Gilbert" />
+                <Label htmlFor="jc-attended-by">Attended By</Label>
+                <Input id="jc-attended-by" value={attendedBy} onChange={e => setAttendedBy(e.target.value)} placeholder="e.g. Gilbert" />
               </div>
               <div className="space-y-1">
-                <Label>Time Arrived</Label>
-                <Input value={timeArrived} onChange={e => setTimeArrived(e.target.value)} placeholder="14:00" />
+                <Label htmlFor="jc-time-arrived">Time Arrived</Label>
+                <Input id="jc-time-arrived" value={timeArrived} onChange={e => setTimeArrived(e.target.value)} placeholder="14:00" />
               </div>
               <div className="space-y-1">
-                <Label>Time Completed</Label>
-                <Input value={timeCompleted} onChange={e => setTimeCompleted(e.target.value)} placeholder="16:00" />
+                <Label htmlFor="jc-time-completed">Time Completed</Label>
+                <Input id="jc-time-completed" value={timeCompleted} onChange={e => setTimeCompleted(e.target.value)} placeholder="16:00" />
               </div>
             </div>
 
@@ -197,7 +209,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
                     <div key={i} className="grid grid-cols-5 gap-1 px-2 py-2 border-t border-border items-start">
                       <span className="flex items-center pt-1">{i + 1}</span>
                       <div className="space-y-1">
-                        <select className="w-full border border-border rounded px-1 py-0.5 text-xs" value={brandIsOther ? '__other__' : unit.brand} onChange={e => updateAc(i, 'brand', e.target.value === '__other__' ? '' : e.target.value)}>
+                        <select aria-label={`Unit ${i + 1} brand`} className="w-full border border-border rounded px-1 py-0.5 text-xs" value={brandIsOther ? '__other__' : unit.brand} onChange={e => updateAc(i, 'brand', e.target.value === '__other__' ? '' : e.target.value)}>
                           <option value="">—</option>
                           {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                           <option value="__other__">Others</option>
@@ -205,7 +217,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
                         {brandIsOther && <Input className="h-6 text-xs px-1" value={unit.brand} onChange={e => updateAc(i, 'brand', e.target.value)} placeholder="Specify brand…" autoFocus />}
                       </div>
                       <div className="space-y-1">
-                        <select className="w-full border border-border rounded px-1 py-0.5 text-xs" value={modelIsOther ? '__other__' : unit.model} onChange={e => updateAc(i, 'model', e.target.value === '__other__' ? '' : e.target.value)}>
+                        <select aria-label={`Unit ${i + 1} model`} className="w-full border border-border rounded px-1 py-0.5 text-xs" value={modelIsOther ? '__other__' : unit.model} onChange={e => updateAc(i, 'model', e.target.value === '__other__' ? '' : e.target.value)}>
                           <option value="">—</option>
                           {unitTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                           <option value="__other__">Others</option>
@@ -214,7 +226,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
                       </div>
                       <Input className="h-6 text-xs px-1" value={unit.serial_no} onChange={e => updateAc(i, 'serial_no', e.target.value)} placeholder="S/N" />
                       <div className="space-y-1">
-                        <select className="w-full border border-border rounded px-1 py-0.5 text-xs" value={locationIsOther ? '__other__' : unit.location} onChange={e => updateAc(i, 'location', e.target.value === '__other__' ? '' : e.target.value)}>
+                        <select aria-label={`Unit ${i + 1} location`} className="w-full border border-border rounded px-1 py-0.5 text-xs" value={locationIsOther ? '__other__' : unit.location} onChange={e => updateAc(i, 'location', e.target.value === '__other__' ? '' : e.target.value)}>
                           <option value="">—</option>
                           {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
                           <option value="__other__">Others</option>
@@ -240,7 +252,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
                       <p className="font-semibold text-muted-foreground">Unit {i + 1}</p>
                       <div className="space-y-1">
                         <span className="text-muted-foreground">Brand</span>
-                        <select className="w-full border border-border rounded px-2 py-1 text-xs" value={brandIsOther ? '__other__' : unit.brand} onChange={e => updateAc(i, 'brand', e.target.value === '__other__' ? '' : e.target.value)}>
+                        <select aria-label={`Unit ${i + 1} brand`} className="w-full border border-border rounded px-2 py-1 text-xs" value={brandIsOther ? '__other__' : unit.brand} onChange={e => updateAc(i, 'brand', e.target.value === '__other__' ? '' : e.target.value)}>
                           <option value="">—</option>
                           {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                           <option value="__other__">Others</option>
@@ -249,7 +261,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground">Model</span>
-                        <select className="w-full border border-border rounded px-2 py-1 text-xs" value={modelIsOther ? '__other__' : unit.model} onChange={e => updateAc(i, 'model', e.target.value === '__other__' ? '' : e.target.value)}>
+                        <select aria-label={`Unit ${i + 1} model`} className="w-full border border-border rounded px-2 py-1 text-xs" value={modelIsOther ? '__other__' : unit.model} onChange={e => updateAc(i, 'model', e.target.value === '__other__' ? '' : e.target.value)}>
                           <option value="">—</option>
                           {unitTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                           <option value="__other__">Others</option>
@@ -262,7 +274,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground">Location</span>
-                        <select className="w-full border border-border rounded px-2 py-1 text-xs" value={locationIsOther ? '__other__' : unit.location} onChange={e => updateAc(i, 'location', e.target.value === '__other__' ? '' : e.target.value)}>
+                        <select aria-label={`Unit ${i + 1} location`} className="w-full border border-border rounded px-2 py-1 text-xs" value={locationIsOther ? '__other__' : unit.location} onChange={e => updateAc(i, 'location', e.target.value === '__other__' ? '' : e.target.value)}>
                           <option value="">—</option>
                           {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
                           <option value="__other__">Others</option>
@@ -288,21 +300,30 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
               </div>
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <Label>Job Description</Label>
-                  <Textarea rows={2} value={jobDescription} onChange={e => setJobDescription(e.target.value)} />
+                  <Label htmlFor="jc-job-description">Job Description</Label>
+                  <Textarea id="jc-job-description" rows={2} value={jobDescription} onChange={e => setJobDescription(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <Label>Job Rendered</Label>
-                  <Textarea rows={2} value={jobRendered} onChange={e => setJobRendered(e.target.value)} />
+                  <Label htmlFor="jc-job-rendered">Job Rendered</Label>
+                  <Textarea id="jc-job-rendered" rows={2} value={jobRendered} onChange={e => setJobRendered(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <Label>Remarks</Label>
-                  <Textarea rows={2} value={remarks} onChange={e => setRemarks(e.target.value)} />
+                  <Label htmlFor="jc-remarks">Remarks</Label>
+                  <Textarea id="jc-remarks" rows={2} value={remarks} onChange={e => setRemarks(e.target.value)} />
                 </div>
               </div>
             </div>
 
-            <Button onClick={() => setStep(2)} className="w-full bg-accent hover:bg-accent/90 text-white">
+            {step1Missing.length > 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Still needed before you can price this job: {step1Missing.join(', ')}.
+              </p>
+            )}
+            <Button
+              onClick={() => setStep(2)}
+              disabled={step1Missing.length > 0}
+              className="w-full bg-accent hover:bg-accent/90 text-white"
+            >
               Next: Pricing →
             </Button>
           </div>

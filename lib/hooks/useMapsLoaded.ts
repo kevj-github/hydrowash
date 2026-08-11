@@ -1,34 +1,42 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-// Polls window.google.maps instead of relying on the loader callback, which
-// breaks under Turbopack HMR when the module is re-evaluated after the Maps
-// script has already fired its callback. Polling is also required now that the
-// script is loaded with `loading=async`: the script's own onload fires before
-// the API surface is populated.
+// Readiness for the Google Maps JS API under `loading=async`.
+//
+// Presence checks are not sufficient: the async bootstrap defines
+// `window.google.maps` well before the library is populated, so callers that
+// touch `google.maps.SymbolPath`, `google.maps.Map` etc. crash if they only
+// wait for the namespace. importLibrary() is the documented readiness signal.
 //
 // `requirePlaces` must be true only for consumers of the Places library. Pages
 // that load the script WITHOUT `&libraries=places` would otherwise wait forever
-// — which is exactly what kept the /admin/bookings map stuck on "Loading map…".
+// — which is what kept the /admin/bookings map stuck on "Loading map…".
 export function useMapsLoaded(requirePlaces = true): boolean {
-  const ready = () =>
-    typeof window !== 'undefined' &&
-    !!window.google?.maps &&
-    (!requirePlaces || !!window.google.maps.places)
-
-  const [isLoaded, setIsLoaded] = useState(ready)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    if (isLoaded) return
-    const id = setInterval(() => {
-      if (ready()) {
-        setIsLoaded(true)
-        clearInterval(id)
+    let cancelled = false
+
+    async function wait() {
+      // The <Script> tag that injects the API may not have run yet.
+      for (let i = 0; i < 300 && !cancelled; i++) {
+        if (typeof window.google?.maps?.importLibrary === 'function') break
+        await new Promise(r => setTimeout(r, 100))
       }
-    }, 100)
-    return () => clearInterval(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, requirePlaces])
+      if (cancelled || typeof window.google?.maps?.importLibrary !== 'function') return
+      try {
+        await window.google.maps.importLibrary('maps')
+        if (requirePlaces) await window.google.maps.importLibrary('places')
+        if (!cancelled) setIsLoaded(true)
+      } catch {
+        // Library unavailable (e.g. places not enabled) — stay unloaded so the
+        // caller keeps showing its fallback rather than crashing.
+      }
+    }
+
+    wait()
+    return () => { cancelled = true }
+  }, [requirePlaces])
 
   return isLoaded
 }
