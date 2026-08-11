@@ -466,17 +466,17 @@ function AdminInvoicesContent() {
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1">Created date</p>
             <div className="flex gap-1 items-center">
-              <Input type="date" value={createdFrom} onChange={e => setCreatedFrom(e.target.value)} className="h-8 text-xs flex-1" />
+              <Input type="date" aria-label="Created from" value={createdFrom} onChange={e => setCreatedFrom(e.target.value)} className="h-8 text-xs flex-1" />
               <span className="text-xs text-slate-400">–</span>
-              <Input type="date" value={createdTo} onChange={e => setCreatedTo(e.target.value)} className="h-8 text-xs flex-1" />
+              <Input type="date" aria-label="Created to" value={createdTo} onChange={e => setCreatedTo(e.target.value)} className="h-8 text-xs flex-1" />
             </div>
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1">Paid date</p>
             <div className="flex gap-1 items-center">
-              <Input type="date" value={paidFrom} onChange={e => setPaidFrom(e.target.value)} className="h-8 text-xs flex-1" />
+              <Input type="date" aria-label="Paid from" value={paidFrom} onChange={e => setPaidFrom(e.target.value)} className="h-8 text-xs flex-1" />
               <span className="text-xs text-slate-400">–</span>
-              <Input type="date" value={paidTo} onChange={e => setPaidTo(e.target.value)} className="h-8 text-xs flex-1" />
+              <Input type="date" aria-label="Paid to" value={paidTo} onChange={e => setPaidTo(e.target.value)} className="h-8 text-xs flex-1" />
             </div>
           </div>
         </div>

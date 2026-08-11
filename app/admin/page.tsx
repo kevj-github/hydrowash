@@ -122,7 +122,7 @@ export default async function AdminOverviewPage() {
             </div>
             <ArrowRight size={16} strokeWidth={2} className="transition-transform duration-150 group-hover:translate-x-1" />
           </div>
-          <p className="text-white/70 text-sm">Approve, reject, and cluster maintenance bookings</p>
+          <p className="text-white/90 text-sm">Approve, reject, and cluster maintenance bookings</p>
         </Link>
         <Link
           href={`/admin/schedule/${todayStr}`}
@@ -135,7 +135,7 @@ export default async function AdminOverviewPage() {
             </div>
             <ArrowRight size={16} strokeWidth={2} className="transition-transform duration-150 group-hover:translate-x-1" />
           </div>
-          <p className="text-slate-400 text-sm">Plan today&apos;s route and preview stop order</p>
+          <p className="text-slate-300 text-sm">Plan today&apos;s route and preview stop order</p>
         </Link>
       </div>
 

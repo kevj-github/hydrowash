@@ -8,7 +8,7 @@ import type { BookingWithRelations } from '@/lib/types'
 
 const BookingsMap = dynamic(
   () => import('@/components/admin/BookingsMap').then(m => ({ default: m.BookingsMap })),
-  { ssr: false, loading: () => <div className="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-sm">Loading map…</div> }
+  { ssr: false, loading: () => <div className="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 text-sm">Loading map…</div> }
 )
 
 type Tab = 'MAINTENANCE' | 'FAULT_REPAIR' | 'INSTALLATION' | 'ALL'
@@ -241,8 +241,8 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                 <Input placeholder="Search customer…" value={maintSearch} onChange={e => setMaintSearch(e.target.value)} className="h-8 text-xs" />
                 <div className="flex gap-1.5 items-center">
                   <span className="text-xs text-muted-foreground shrink-0">From</span>
-                  <Input type="date" value={maintDateFrom} onChange={e => setMaintDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
-                  {maintDateFrom && <button onClick={() => setMaintDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
+                  <Input type="date" value={maintDateFrom} onChange={e => setMaintDateFrom(e.target.value)} className="h-8 text-xs flex-1" aria-label="Show bookings with window ending on or after this date" />
+                  {maintDateFrom && <button onClick={() => setMaintDateFrom('')} aria-label="Clear date filter" className="text-xs text-slate-600 hover:text-slate-900 shrink-0">✕</button>}
                 </div>
                 <div className="flex gap-1">
                   {(['ALL', 'PENDING', 'APPROVED'] as const).map(s => (
@@ -268,8 +268,8 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                 <Input placeholder="Search customer…" value={frSearch} onChange={e => setFrSearch(e.target.value)} className="h-8 text-xs" />
                 <div className="flex gap-1.5 items-center">
                   <span className="text-xs text-muted-foreground shrink-0">From</span>
-                  <Input type="date" value={frDateFrom} onChange={e => setFrDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
-                  {frDateFrom && <button onClick={() => setFrDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
+                  <Input type="date" value={frDateFrom} onChange={e => setFrDateFrom(e.target.value)} className="h-8 text-xs flex-1" aria-label="Show bookings with window ending on or after this date" />
+                  {frDateFrom && <button onClick={() => setFrDateFrom('')} aria-label="Clear date filter" className="text-xs text-slate-600 hover:text-slate-900 shrink-0">✕</button>}
                 </div>
                 <div className="flex gap-1">
                   {(['ALL', 'PENDING', 'APPROVED'] as const).map(s => (
@@ -295,8 +295,8 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                 <Input placeholder="Search customer…" value={instSearch} onChange={e => setInstSearch(e.target.value)} className="h-8 text-xs" />
                 <div className="flex gap-1.5 items-center">
                   <span className="text-xs text-muted-foreground shrink-0">From</span>
-                  <Input type="date" value={instDateFrom} onChange={e => setInstDateFrom(e.target.value)} className="h-8 text-xs flex-1" title="Show bookings with window ending on or after this date" />
-                  {instDateFrom && <button onClick={() => setInstDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>}
+                  <Input type="date" value={instDateFrom} onChange={e => setInstDateFrom(e.target.value)} className="h-8 text-xs flex-1" aria-label="Show bookings with window ending on or after this date" />
+                  {instDateFrom && <button onClick={() => setInstDateFrom('')} aria-label="Clear date filter" className="text-xs text-slate-600 hover:text-slate-900 shrink-0">✕</button>}
                 </div>
                 <div className="flex gap-1">
                   {(['ALL', 'PENDING', 'APPROVED'] as const).map(s => (
@@ -389,10 +389,10 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                     value={maintDateFrom}
                     onChange={e => setMaintDateFrom(e.target.value)}
                     className="h-8 text-xs flex-1"
-                    title="Show bookings with window ending on or after this date"
+                    aria-label="Show bookings with window ending on or after this date"
                   />
                   {maintDateFrom && (
-                    <button onClick={() => setMaintDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>
+                    <button onClick={() => setMaintDateFrom('')} aria-label="Clear date filter" className="text-xs text-slate-600 hover:text-slate-900 shrink-0">✕</button>
                   )}
                 </div>
                 <div className="flex gap-1">
@@ -440,10 +440,10 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                     value={frDateFrom}
                     onChange={e => setFrDateFrom(e.target.value)}
                     className="h-8 text-xs flex-1"
-                    title="Show bookings with window ending on or after this date"
+                    aria-label="Show bookings with window ending on or after this date"
                   />
                   {frDateFrom && (
-                    <button onClick={() => setFrDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>
+                    <button onClick={() => setFrDateFrom('')} aria-label="Clear date filter" className="text-xs text-slate-600 hover:text-slate-900 shrink-0">✕</button>
                   )}
                 </div>
                 <div className="flex gap-1">
@@ -491,10 +491,10 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                     value={instDateFrom}
                     onChange={e => setInstDateFrom(e.target.value)}
                     className="h-8 text-xs flex-1"
-                    title="Show bookings with window ending on or after this date"
+                    aria-label="Show bookings with window ending on or after this date"
                   />
                   {instDateFrom && (
-                    <button onClick={() => setInstDateFrom('')} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">✕</button>
+                    <button onClick={() => setInstDateFrom('')} aria-label="Clear date filter" className="text-xs text-slate-600 hover:text-slate-900 shrink-0">✕</button>
                   )}
                 </div>
                 <div className="flex gap-1">

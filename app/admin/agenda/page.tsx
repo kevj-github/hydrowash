@@ -97,14 +97,14 @@ export default async function AdminAgendaPage({
           </div>
           {/* Week nav — desktop only; mobile nav lives inside AdminAgendaClient */}
           <div className="hidden md:flex items-center gap-1">
-            <Link href={`/admin/agenda?week=${prevWeek}&status=${status}`} className="p-1.5 rounded hover:bg-muted transition-colors">
+            <Link href={`/admin/agenda?week=${prevWeek}&status=${status}`} aria-label="Previous week" className="p-1.5 rounded hover:bg-muted transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </Link>
             <span className="text-sm font-medium px-2">
               {weekStart.toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })} –{' '}
               {weekEnd.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
-            <Link href={`/admin/agenda?week=${nextWeek}&status=${status}`} className="p-1.5 rounded hover:bg-muted transition-colors">
+            <Link href={`/admin/agenda?week=${nextWeek}&status=${status}`} aria-label="Next week" className="p-1.5 rounded hover:bg-muted transition-colors">
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>

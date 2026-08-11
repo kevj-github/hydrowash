@@ -42,7 +42,7 @@ export function BookingsMap({ bookings, selected, onPinClick }: Props) {
 
   if (!isLoaded) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400 text-sm rounded-xl">
+      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-600 text-sm rounded-xl">
         Loading map…
       </div>
     )

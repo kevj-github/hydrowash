@@ -113,7 +113,7 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
 
   if (!ready) {
     return (
-      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+      <div className="h-full flex items-center justify-center text-slate-600 text-sm">
         Loading map…
       </div>
     )

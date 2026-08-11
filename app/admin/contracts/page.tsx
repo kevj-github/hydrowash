@@ -499,25 +499,25 @@ export default function AdminContractsPage() {
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Start date</p>
               <div className="flex gap-1 items-center">
-                <Input type="date" value={startFrom} onChange={e => setStartFrom(e.target.value)} className="h-8 text-xs flex-1" placeholder="From" />
+                <Input type="date" aria-label="Start date from" value={startFrom} onChange={e => setStartFrom(e.target.value)} className="h-8 text-xs flex-1" placeholder="From" />
                 <span className="text-xs text-slate-400">–</span>
-                <Input type="date" value={startTo} onChange={e => setStartTo(e.target.value)} className="h-8 text-xs flex-1" placeholder="To" />
+                <Input type="date" aria-label="Start date to" value={startTo} onChange={e => setStartTo(e.target.value)} className="h-8 text-xs flex-1" placeholder="To" />
               </div>
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Expiry date</p>
               <div className="flex gap-1 items-center">
-                <Input type="date" value={endFrom} onChange={e => setEndFrom(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Expiry date from" value={endFrom} onChange={e => setEndFrom(e.target.value)} className="h-8 text-xs flex-1" />
                 <span className="text-xs text-slate-400">–</span>
-                <Input type="date" value={endTo} onChange={e => setEndTo(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Expiry date to" value={endTo} onChange={e => setEndTo(e.target.value)} className="h-8 text-xs flex-1" />
               </div>
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Next service due</p>
               <div className="flex gap-1 items-center">
-                <Input type="date" value={serviceDueFrom} onChange={e => setServiceDueFrom(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Next service due from" value={serviceDueFrom} onChange={e => setServiceDueFrom(e.target.value)} className="h-8 text-xs flex-1" />
                 <span className="text-xs text-slate-400">–</span>
-                <Input type="date" value={serviceDueTo} onChange={e => setServiceDueTo(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Next service due to" value={serviceDueTo} onChange={e => setServiceDueTo(e.target.value)} className="h-8 text-xs flex-1" />
               </div>
             </div>
           </div>

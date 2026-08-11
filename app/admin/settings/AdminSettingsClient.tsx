@@ -336,32 +336,32 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes, init
         <h2 className="font-heading font-semibold text-primary mb-4">Company & Depot</h2>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Company Name</Label>
-            <Input value={settings.company_name} onChange={e => setSettings(s => ({ ...s, company_name: e.target.value }))} />
+            <Label htmlFor="company_name">Company Name</Label>
+            <Input id="company_name" value={settings.company_name} onChange={e => setSettings(s => ({ ...s, company_name: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Contact Email</Label>
-            <Input type="email" value={settings.contact_email} onChange={e => setSettings(s => ({ ...s, contact_email: e.target.value }))} />
+            <Label htmlFor="contact_email">Contact Email</Label>
+            <Input id="contact_email" type="email" value={settings.contact_email} onChange={e => setSettings(s => ({ ...s, contact_email: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Company Address (shown on PDF documents)</Label>
-            <Input value={settings.company_address ?? ''} onChange={e => setSettings(s => ({ ...s, company_address: e.target.value }))} />
+            <Label htmlFor="company_address">Company Address (shown on PDF documents)</Label>
+            <Input id="company_address" value={settings.company_address ?? ''} onChange={e => setSettings(s => ({ ...s, company_address: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Company Phone (shown on PDF documents)</Label>
-            <Input value={settings.company_phone ?? ''} onChange={e => setSettings(s => ({ ...s, company_phone: e.target.value }))} />
+            <Label htmlFor="company_phone">Company Phone (shown on PDF documents)</Label>
+            <Input id="company_phone" value={settings.company_phone ?? ''} onChange={e => setSettings(s => ({ ...s, company_phone: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Company Email (shown on PDF documents)</Label>
-            <Input value={settings.company_email ?? ''} onChange={e => setSettings(s => ({ ...s, company_email: e.target.value }))} />
+            <Label htmlFor="company_email">Company Email (shown on PDF documents)</Label>
+            <Input id="company_email" value={settings.company_email ?? ''} onChange={e => setSettings(s => ({ ...s, company_email: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Instagram Handle (shown on PDF documents)</Label>
-            <Input value={settings.company_instagram ?? ''} onChange={e => setSettings(s => ({ ...s, company_instagram: e.target.value }))} placeholder="@Hydrowash.sg" />
+            <Label htmlFor="company_instagram">Instagram Handle (shown on PDF documents)</Label>
+            <Input id="company_instagram" value={settings.company_instagram ?? ''} onChange={e => setSettings(s => ({ ...s, company_instagram: e.target.value }))} placeholder="@Hydrowash.sg" />
           </div>
           <div className="space-y-1.5">
-            <Label>Authorised Officer Name (PDF signature)</Label>
-            <Input value={settings.authorised_officer_name ?? ''} onChange={e => setSettings(s => ({ ...s, authorised_officer_name: e.target.value }))} />
+            <Label htmlFor="authorised_officer_name">Authorised Officer Name (PDF signature)</Label>
+            <Input id="authorised_officer_name" value={settings.authorised_officer_name ?? ''} onChange={e => setSettings(s => ({ ...s, authorised_officer_name: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
             <Label>PayNow Mobile Number (for QR code on invoices &amp; contracts)</Label>

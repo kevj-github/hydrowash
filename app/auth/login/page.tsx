@@ -49,7 +49,13 @@ function LoginForm() {
     const explicit = searchParams.get('redirect')
     // Resolve against current origin so /\evil.com and protocol-relative
     // bypasses are rejected — window.location.href follows any URL unlike router.push.
+    // Admins land on their dashboard rather than the marketing homepage.
     let destination = '/'
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles').select('role').eq('id', data.user.id).single()
+      if (profile?.role === 'admin') destination = '/admin'
+    }
     if (explicit) {
       try {
         const parsed = new URL(explicit, window.location.origin)
