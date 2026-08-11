@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface SectionHeadingProps {
   /** @deprecated eyebrow labels are a banned pattern in the hw-world — no longer rendered */
   label?: string
-  title: string
+  title: ReactNode
   subtitle?: string
   align?: 'center' | 'left'
   className?: string

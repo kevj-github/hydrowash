@@ -14,6 +14,15 @@ const PHOTO_SERVICE_INSTALL = 'https://images.pexels.com/photos/7347538/pexels-p
 const PHOTO_WHY_US = 'https://images.pexels.com/photos/5463576/pexels-photo-5463576.jpeg?auto=compress&cs=tinysrgb&w=1200'
 const PHOTO_CTA = 'https://images.pexels.com/photos/7587368/pexels-photo-7587368.jpeg?auto=compress&cs=tinysrgb&w=1920'
 
+const featuredService = {
+  icon: Zap,
+  title: 'Fault Repair',
+  tag: 'Urgent? We come to you',
+  description: 'Fast diagnosis and repair for all aircon faults — from water leaks to no cooling.',
+  photoSrc: PHOTO_SERVICE_FAULT,
+  photoAlt: 'Aircon fault repair technician',
+}
+
 const services = [
   {
     code: 'M–01',

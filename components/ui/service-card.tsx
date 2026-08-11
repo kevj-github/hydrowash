@@ -10,6 +10,10 @@ interface ServiceCardProps {
   className?: string
   photoSrc?: string
   photoAlt?: string
+  /** Urgency-weighted treatment: dark, wider, photo-and-content side by side. */
+  featured?: boolean
+  /** Small tag shown above the title on a featured card, e.g. "We come to you today". */
+  tag?: string
 }
 
 /** An advisory-board row: index code, reading, photo revealed on hover — not a card grid. */
