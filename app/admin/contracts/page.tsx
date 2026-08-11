@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Home, MapPin, Pencil, SlidersHorizontal } from 'lucide-react'
-import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 
 type LocationPreset = 'home' | 'current' | 'other'
 
@@ -36,7 +36,6 @@ type CustomerOption = {
 
 export default function AdminContractsPage() {
   const supabase = createClient()
-  const isLoaded = useMapsLoaded()
 
   const [contracts, setContracts] = useState<ContractRow[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -65,7 +64,6 @@ export default function AdminContractsPage() {
   const [preset, setPreset] = useState<LocationPreset>('other')
   const [geoLoading, setGeoLoading] = useState(false)
   const [addressConfirmed, setAddressConfirmed] = useState(false)
-  const addressInputRef = useRef<HTMLInputElement>(null)
   const onChangeAddressRef = useRef<(addr: string) => void>(() => {})
 
   const [form, setForm] = useState<{
@@ -127,21 +125,6 @@ export default function AdminContractsPage() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
-
-  // Wire up Places Autocomplete when dialog opens in 'other' mode
-  useEffect(() => {
-    if (!isLoaded || !dialogOpen || preset !== 'other' || !addressInputRef.current) return
-    const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      componentRestrictions: { country: 'sg' },
-      fields: ['formatted_address', 'address_components'],
-    })
-    const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace()
-      if (!place.formatted_address) return
-      onChangeAddressRef.current(place.formatted_address)
-    })
-    return () => { window.google.maps.event.removeListener(listener) }
-  }, [isLoaded, dialogOpen, preset])
 
   function applyHome() {
     if (!selectedCustomer?.address) return
@@ -449,16 +432,13 @@ export default function AdminContractsPage() {
 
                   {preset === 'other' && (
                     <div className="space-y-1">
-                      <Input
-                        ref={addressInputRef}
-                        value={form.address}
-                        placeholder={isLoaded ? 'Start typing an address…' : 'Loading Maps…'}
-                        disabled={!isLoaded}
-                        onChange={e => {
-                          setForm(f => ({ ...f, address: e.target.value }))
-                          setAddressConfirmed(false)
+                      <AddressAutocomplete
+                        placeholder="Start typing an address…"
+                        defaultValue={form.address}
+                        onResolved={resolved => {
+                          onChangeAddressRef.current(resolved?.address ?? '')
+                          setAddressConfirmed(!!resolved)
                         }}
-                        autoComplete="off"
                       />
                       {addressConfirmed ? (
                         <p className="text-xs text-green-700">✓ Address confirmed</p>
