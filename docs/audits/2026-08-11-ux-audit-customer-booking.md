@@ -652,3 +652,68 @@ test invoices all return `[]`.
 - Scenarios 4, 6, 7, 8, 9, 11.
 - M-8 (no price shown for maintenance), L-4 (`Fault Repair.duration_minutes` null),
   `/admin` moderate `heading-order`, sub-44px logo/footer links.
+
+---
+
+# Phase 12 — Contract lifecycle + final unaudited routes (commit `6b5e9e2`)
+
+## Contract lifecycle — verified working end to end
+
+Exercised against production with a seeded test customer (deleted afterwards).
+
+| Step | Result |
+|---|---|
+| PENDING_REVIEW contract | Renders with "Price TBD", Set Price / Reject / Edit / Deactivate actions |
+| **Set Price** (S$480) | → `AWAITING_PAYMENT`, `price_sgd 480`, `start_date` saved. Contract PDF + PayNow QR generated and emailed in the same request; no server errors. |
+| **Mark Paid & Activate** | Confirms via native dialog → `ACTIVE`, and **4 quarterly `contract_service_dates` generated at correct 3-month intervals** (2026-11, 2027-02, 2027-05, 2027-08) with `second_reminder_sent false`. |
+
+The `?` guard on `price_sgd` renders "TBD" correctly for PENDING_REVIEW, as documented.
+
+## Findings fixed
+
+### C-7 — "Set Price" button failed contrast (Serious)
+White on `bg-green-600` = **3.24:1**. This is the primary action on the money path.
+Raised to `green-700/800`, and applied to every `bg-green-600` action button in the
+app (`/admin/invoices`, `InvoiceRow`) so the money actions stay consistent.
+
+### C-8 — Set Price dialog: label:2 (Critical)
+Price and confirmed-start-date inputs unlabelled. Added `htmlFor`/`id` (plus notes).
+
+### C-9 — /auth/reset-password had no landmarks, no h1, and unreadable errors
+No `<main>`, the visible heading was an `h2` so the page had no `h1`, `region:3`,
+and the error text failed contrast. Wrapped in `<main>`, promoted to `h1`, darkened
+to `red-800`, and added `role="alert"` to both error states — a user whose reset link
+has expired now gets that announced rather than silently rendered.
+
+### C-10 — /account/contracts: label:2 + 4x contrast (Critical/Serious)
+Invoice date-range filters unlabelled; "Upcoming" badge slate-500 on slate-100.
+
+### Also
+`text-gray-400` table headers and the "No invoices yet." empty state on the contract
+detail page were 2.6:1 → `text-gray-600`.
+
+## Route coverage — final state
+
+Every route in the app now reports **0 Critical / 0 Serious** under axe:
+
+Public/customer: `/`, `/auth/login`, `/auth/register`, `/auth/reset-password`,
+`/book`, `/account/bookings`, `/account/contracts`, `/account/settings`
+Admin: `/admin`, `/admin/bookings`, `/admin/agenda`, `/admin/availability`,
+`/admin/customers`, `/admin/customers/[id]`, `/admin/contracts`,
+`/admin/contracts/[id]`, `/admin/invoices`, `/admin/settings`,
+`/admin/schedule/[date]`
+Dialogs: JobCompletionDialog, Set Price dialog, Mark Paid dialog
+
+Only remaining axe finding anywhere: `/admin` `heading-order` (moderate, h3 before h2).
+
+## Still open
+
+- **Reject booking** and **bulk approve** — the last two untested admin writes.
+- **B-6** booking cards render twice with independent state (Low).
+- File-upload battery (5 x 20MB) on booking step 1 — never exercised.
+- Scenarios 4 (returning user), 6 (heavy data), 7 (destructive confidence),
+  8 (second user / role), 9 (lifecycle position), 11 (data seasoning).
+- M-8 (no price shown for maintenance bookings), L-4 (`Fault Repair.duration_minutes`
+  null feeds the VRP), `/admin` heading-order, sub-44px logo and footer links.
+- Closed-shadow-DOM address widget remains undrivable by Playwright — address entry
+  cannot be covered by e2e tests.
