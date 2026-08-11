@@ -2,7 +2,6 @@ import { Body, Container, Head, Heading, Html, Img, Preview, Text, Section, Hr }
 
 interface Props {
   customerName: string
-  workOrderNo: number
   date: string
   serviceType: string
   address: string
@@ -10,6 +9,7 @@ interface Props {
   paynowQrDataUrl: string
   paynowMobile: string
   referenceId: string
+  pdfFilename: string
 }
 
 export function WorkOrderEmail({

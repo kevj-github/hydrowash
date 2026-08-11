@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { generateWorkOrderPdf } from '@/lib/pdf/generate'
 import { sendWorkOrderReport } from '@/lib/email/send'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
+import { buildServiceReportPdfFilename } from '@/lib/utils/pdf-filename'
 import QRCode from 'qrcode'
 import type { WorkOrderProps } from '@/lib/pdf/WorkOrderTemplate'
 
@@ -73,7 +74,6 @@ export async function POST(
   const totalSgd = parseFloat(jc.total_sgd) || 0
 
   const props: WorkOrderProps = {
-    workOrderNo: booking.work_order_no ?? 0,
     customerName: booking.customer?.name ?? customerUser.email,
     customerNo: booking.customer?.customer_no ?? 0,
     contactNo: booking.customer?.phone ?? '',
@@ -101,6 +101,11 @@ export async function POST(
   }
 
   const pdfBuf = await generateWorkOrderPdf(props)
+  const pdfFilename = buildServiceReportPdfFilename({
+    customerName: booking.customer?.name,
+    bookingType: booking.service_type?.name ?? booking.category ?? 'service',
+    bookingDate: booking.confirmed_date ?? booking.booking_date ?? jc.completed_at,
+  })
 
   // Upload to Storage
   const storagePath = `work-orders/${id}/work-order.pdf`
@@ -130,7 +135,6 @@ export async function POST(
   await sendWorkOrderReport(
     {
       customerName: booking.customer?.name ?? 'Customer',
-      workOrderNo: booking.work_order_no ?? 0,
       date: booking.confirmed_date ?? booking.booking_date ?? dateStr,
       serviceType: (linkedCsd || booking.contract_id) ? 'Contract' : 'AdHoc',
       address: booking.address ?? '',
@@ -138,6 +142,7 @@ export async function POST(
       paynowQrDataUrl: qrImageUrl,
       paynowMobile: settings?.paynow_mobile ?? '',
       referenceId,
+      pdfFilename,
     },
     customerUser.email,
     pdfBuf

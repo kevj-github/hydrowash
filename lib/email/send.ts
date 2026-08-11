@@ -180,7 +180,6 @@ export async function sendContractPricing(
 export async function sendWorkOrderReport(
   data: {
     customerName: string
-    workOrderNo: number
     date: string
     serviceType: string
     address: string
@@ -188,6 +187,7 @@ export async function sendWorkOrderReport(
     paynowQrDataUrl: string
     paynowMobile: string
     referenceId: string
+    pdfFilename: string
   },
   customerEmail: string,
   pdfBuffer: Buffer
@@ -198,6 +198,6 @@ export async function sendWorkOrderReport(
     to: customerEmail,
     subject: `${data.serviceType} on ${fmtDate(data.date)} — S$${data.totalSgd.toFixed(2)} due — HydroWash`,
     react: WorkOrderEmail(data),
-    attachments: [{ filename: `work-order-${data.workOrderNo}.pdf`, content: pdfBuffer }],
+    attachments: [{ filename: data.pdfFilename, content: pdfBuffer }],
   })
 }

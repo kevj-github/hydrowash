@@ -2,7 +2,6 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import type { AcUnitDetail, ChecklistItem, AdditionalCharge } from '@/lib/types'
 
 export interface WorkOrderProps {
-  workOrderNo: number
   customerName: string
   customerNo: number
   contactNo: string
@@ -34,7 +33,6 @@ const s = StyleSheet.create({
   companyBlock: { flex: 1, paddingLeft: 12, lineHeight: 1.6 },
   companyText: { color: '#475569', fontSize: 7 },
   title: { fontFamily: 'Helvetica-Bold', fontSize: 12, textAlign: 'right' },
-  workOrderNo: { fontSize: 9, textAlign: 'right', color: '#0369a1', fontFamily: 'Helvetica-Bold' },
   divider: { borderBottomWidth: 1, borderBottomColor: '#e2e8f0', marginVertical: 6 },
   // Info grid
   infoTable: { borderWidth: 1, borderColor: '#1e293b', marginBottom: 6 },
@@ -73,7 +71,7 @@ const s = StyleSheet.create({
 })
 
 export function WorkOrderTemplate({
-  workOrderNo, customerName, customerNo, contactNo, address,
+  customerName, customerNo, contactNo, address,
   date, serviceType, visitNo, totalVisits,
   acDetails, checklist, jobDescription, jobRendered, remarks,
   attendedBy, timeArrived, timeCompleted,
@@ -102,7 +100,6 @@ export function WorkOrderTemplate({
           </View>
           <View>
             <Text style={s.title}>Work Order Report</Text>
-            <Text style={s.workOrderNo}>Work Order No : {workOrderNo}</Text>
           </View>
         </View>
 
