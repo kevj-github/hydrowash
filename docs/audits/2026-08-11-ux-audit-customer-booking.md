@@ -538,3 +538,77 @@ The 4 remaining eslint errors in touched admin files (`set-state-in-effect` x3,
 - File-upload battery on booking step 1 (5 x 20MB).
 - Scenarios 4 (returning user), 6 (heavy data), 7 (destructive confidence),
   8 (second user / role), 9 (lifecycle position), 11 (data seasoning).
+
+---
+
+# Phase 10 — Admin write flows (production, authorised)
+
+Run against the live database with permission. To avoid emailing real customers,
+a dedicated test customer (`otherofacc+uxaudit@gmail.com`, `customer_no` assigned
+at seed) and 4 test bookings were created; every write below targeted only those
+records. All deleted afterwards — `profiles?name=like.ZZ*`, `bookings?notes=like.*UXAUDIT*`
+and the test invoice all return `[]`.
+
+## Flows verified WORKING
+
+| Flow | Evidence |
+|---|---|
+| **Approve booking** | Set confirmed date + slot → Approve. DB: `status APPROVED`, `confirmed_date 2026-08-19`, `confirmed_slot S15_17`. |
+| **Job completion, 3-step** | Step 1 → 2 → 3 traversed; `save_only` at step 2 wrote `job_completions` without changing booking status (as designed). |
+| **Work order send** | "Confirm & Send" → `status COMPLETED`, `work_order_no 11` auto-assigned by the DB trigger, PDF generated, customer emailed with no errors. |
+| **Auto-invoice on completion** | Invoice created: S$150, `UNPAID`, description "Work Order #11", `contract_id null`. |
+| **Mark invoice paid** | Dialog → Confirm Payment. DB: `status PAID`, `payment_method Cash`, `paid_at` stamped. |
+| **Route optimiser** | 2 approved jobs, distinct coordinates → `POST /api/optimize` 200 → optimised stop order rendered with per-leg drive times ("19 min drive from prev"). |
+
+## NEW findings
+
+### B-1 — /admin/bookings map never rendered at all (High, pre-existing)
+After 5s on the page: `hasMaps: true`, `hasPlaces: false`, no `.gm-style` canvas,
+"Loading map…" still on screen. `useMapsLoaded()` waits for `google.maps.places`,
+but `AdminBookingsClient` loads the script without `&libraries=places`. The entire
+maintenance map — pin↔card sync, InfoWindow popups, geographic clustering, all
+documented as working in CLAUDE.md — was unreachable. **Fixed** (`813fc3a`):
+`useMapsLoaded(requirePlaces = true)`, BookingsMap passes `false`. Verified: canvas
+renders with 73 map elements.
+
+### B-2 — Route optimiser crashed (High, REGRESSION I introduced, now fixed)
+`window.google.maps.Map is not a constructor`. Adding `&loading=async` in `85f573d`
+made the script's `onload` fire before the API surface exists, and RouteMap set
+`ready` on `onload`. **Fixed** (`813fc3a`): awaits `google.maps.importLibrary('maps')`.
+Verified working. Worth noting the audit itself caused this and the audit caught it —
+any `loading=async` change needs a map render check, not just a console check.
+
+### B-3 — Work order Step 1 has NO validation (High)
+"Next: Pricing" is enabled with every Step-1 field blank. A complete work order can be
+generated, marked COMPLETED, invoiced and **emailed to the customer** with:
+`attended_by: ""`, `time_arrived: ""`, `time_completed: ""`, both AC units
+`{brand:"", model:"", location:"", serial_no:""}`, and every checklist item `false`.
+Only the base price gates progress (Step 2's button is correctly disabled without it).
+Verified end to end — that exact blank work order was sent and invoiced for S$150.
+Fix: require `attended_by`, times, and per-unit brand/model before allowing Step 1 → 2.
+
+### B-4 — axe Critical inside JobCompletionDialog (Critical)
+`label:3` and `select-name:6`. The per-unit Brand / Model / Location dropdowns (2 units
+x 3 selects) have no accessible names, plus 3 unlabelled inputs. This is the densest
+data-entry surface in the product and was not covered by the Phase 9 sweep because it
+only exists inside an open dialog. NOT FIXED.
+
+### B-5 — axe Critical on /admin/schedule/[date] (Critical)
+`label:1` — the date picker input. NOT FIXED.
+
+### B-6 — Booking cards render twice with independent state (Low)
+Each booking renders in both the desktop sidebar and the mobile bottom sheet, so
+`[data-job-id]` matches two nodes and `document.querySelector` hits the hidden one.
+Setting the confirmed date on one copy does not reflect in the other. Harmless for
+users (only one is visible) but it breaks `scrollIntoView` pin↔card sync targeting and
+makes the surface hard to test.
+
+## Still not done
+
+- **Reject booking** and **bulk approve** — not exercised.
+- **Contract lifecycle** — create → set price → PDF + email → mark paid → activate:
+  not exercised.
+- `/admin/contracts/[id]`, `/admin/customers/[id]` — still unaudited.
+- `/account/contracts`, `/auth/reset-password` — still unaudited.
+- File-upload battery (5 x 20MB) on booking step 1 — still never exercised.
+- Scenarios 4, 6, 7, 8, 9, 11.
