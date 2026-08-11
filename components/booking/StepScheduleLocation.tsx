@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { Home, MapPin, Pencil, Lock } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -29,9 +29,6 @@ interface Props {
 }
 
 export function StepScheduleLocation({ data, onChange, profileAddress, contractAddress }: Props) {
-  const isLoaded = useMapsLoaded()
-
-  const inputRef = useRef<HTMLInputElement>(null)
   const onChangeRef = useRef(onChange)
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
 
@@ -63,26 +60,6 @@ export function StepScheduleLocation({ data, onChange, profileAddress, contractA
       .finally(() => setContractGeoLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contractAddress])
-
-  useEffect(() => {
-    if (!isLoaded || !inputRef.current || preset !== 'other') return
-    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: 'sg' },
-      fields: ['formatted_address', 'geometry', 'address_components'],
-    })
-    const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace()
-      if (!place.geometry?.location) return
-      const postalComp = place.address_components?.find(c => c.types.includes('postal_code'))
-      onChangeRef.current({
-        address: place.formatted_address ?? '',
-        postal_code: postalComp?.short_name ?? '',
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng(),
-      })
-    })
-    return () => { window.google.maps.event.removeListener(listener) }
-  }, [isLoaded, preset])
 
   function applyHome() {
     if (!profileAddress) return
@@ -118,12 +95,6 @@ export function StepScheduleLocation({ data, onChange, profileAddress, contractA
       },
       () => { setGeoLoading(false); setPreset('other') }
     )
-  }
-
-  function handleInputChange() {
-    if (data.lat !== null) {
-      onChangeRef.current({ address: inputRef.current?.value ?? '', lat: null, lng: null, postal_code: '' })
-    }
   }
 
   return (
@@ -213,16 +184,23 @@ export function StepScheduleLocation({ data, onChange, profileAddress, contractA
             {preset === 'other' && (
               <div className="space-y-1.5">
                 <Label>Street Address <span className="text-red-500">*</span></Label>
-                <div className="relative w-full max-w-full overflow-hidden">
-                <Input
-                  ref={inputRef}
-                  defaultValue={data.address}
-                  placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
-                  disabled={!isLoaded}
-                  onChange={handleInputChange}
-                  autoComplete="off"
-                  className="w-full"
-                />
+                <div className="w-full max-w-full">
+                  <AddressAutocomplete
+                    placeholder="Start typing your address…"
+                    defaultValue={data.address}
+                    onResolved={resolved => {
+                      onChangeRef.current(
+                        resolved
+                          ? {
+                              address: resolved.address,
+                              postal_code: resolved.postal_code,
+                              lat: resolved.lat,
+                              lng: resolved.lng,
+                            }
+                          : { address: '', postal_code: '', lat: null, lng: null }
+                      )
+                    }}
+                  />
                 </div>
                 {data.lat ? (
                   <p className="text-xs text-green-700">✓ Location confirmed</p>

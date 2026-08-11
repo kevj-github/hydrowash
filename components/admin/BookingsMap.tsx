@@ -36,13 +36,13 @@ interface Props {
 
 export function BookingsMap({ bookings, selected, onPinClick }: Props) {
   const [activeInfoId, setActiveInfoId] = useState<string | null>(null)
-  const isLoaded = useMapsLoaded()
+  const isLoaded = useMapsLoaded(false)
 
   const onLoad = useCallback((_map: google.maps.Map) => {}, [])
 
   if (!isLoaded) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400 text-sm rounded-xl">
+      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-600 text-sm rounded-xl">
         Loading map…
       </div>
     )

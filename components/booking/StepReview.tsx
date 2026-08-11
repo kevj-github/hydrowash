@@ -1,6 +1,14 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { SLOT_LABELS } from '@/lib/types'
+import { createClient } from '@/lib/supabase/client'
 import type { ServiceType, PreferredDateSlot } from '@/lib/types'
+
+const CATEGORY_LABELS: Record<string, string> = {
+  MAINTENANCE: 'General maintenance',
+  FAULT_REPAIR: 'Fault repair',
+  INSTALLATION: 'Installation',
+}
 
 interface BookingData {
   service_type_id: string
@@ -13,6 +21,7 @@ interface BookingData {
   access_notes?: string
   num_units?: number
   unit_location_ids?: string[]
+  unit_location_others?: string[]
   fault_description?: string
   urgency?: string
   ac_brand?: string
@@ -38,6 +47,32 @@ function Row({ label, value }: { label: string; value?: string | number | null }
 
 export function StepReview({ data, serviceTypes }: Props) {
   const service = serviceTypes.find(s => s.id === data.service_type_id)
+  const categoryLabel = CATEGORY_LABELS[data.category] ?? data.category
+
+  // Room labels aren't carried in booking data — resolve the ids so the customer
+  // can verify the rooms they were required to pick before submitting.
+  const [roomLabels, setRoomLabels] = useState<string[]>([])
+  const ids = (data.unit_location_ids ?? []).join(',')
+  useEffect(() => {
+    const idList = ids ? ids.split(',') : []
+    if (idList.length === 0) return
+    let cancelled = false
+    createClient()
+      .from('ac_unit_locations')
+      .select('id,label')
+      .in('id', idList)
+      .then(({ data: rows }) => {
+        if (cancelled) return
+        const byId = new Map((rows ?? []).map(r => [r.id as string, r.label as string]))
+        setRoomLabels(idList.map(id => byId.get(id)).filter((l): l is string => !!l))
+      })
+    return () => { cancelled = true }
+  }, [ids])
+
+  const allRooms = [
+    ...(ids ? roomLabels : []),
+    ...(data.unit_location_others ?? []).filter(Boolean),
+  ]
 
   return (
     <div className="space-y-5">
@@ -46,8 +81,24 @@ export function StepReview({ data, serviceTypes }: Props) {
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
         <h3 className="font-heading font-semibold text-sm text-primary mb-3">Service</h3>
         <Row label="Service" value={service?.name} />
-        <Row label="Category" value={data.category} />
+        {/* Category is dropped when it just restates the service name
+            ("General Maintenance" / "General maintenance"); it still earns its
+            row for fault repairs, where the service name is the fault itself. */}
+        {categoryLabel.toLowerCase() !== (service?.name ?? '').toLowerCase() && (
+          <Row label="Category" value={categoryLabel} />
+        )}
+        {/* Maintenance has no fixed price; say so rather than showing nothing —
+            the customer was otherwise committing to a home visit blind. */}
+        {service && (
+          <Row
+            label="Price"
+            value={service.price_sgd != null
+              ? `S$${Number(service.price_sgd).toFixed(2)}`
+              : 'Quoted after on-site inspection'}
+          />
+        )}
         {data.num_units && <Row label="Units" value={data.num_units} />}
+        {allRooms.length > 0 && <Row label="Rooms" value={allRooms.join(', ')} />}
         {data.fault_description && <Row label="Fault" value={data.fault_description} />}
         {data.urgency && <Row label="Urgency" value={data.urgency} />}
         {data.ac_brand && <Row label="Brand" value={data.ac_brand} />}

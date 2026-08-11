@@ -50,7 +50,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6">
+    <main className="min-h-screen flex items-center justify-center bg-background px-6">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8 justify-center">
           <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -59,7 +59,7 @@ function ResetPasswordForm() {
           <span className="font-heading font-bold text-lg text-primary">HydroWash</span>
         </div>
         <div className="mb-8 text-center">
-          <h2 className="font-heading font-bold text-2xl text-primary mb-1">Set new password</h2>
+          <h1 className="font-heading font-bold text-2xl text-primary mb-1">Set new password</h1>
           <p className="text-muted-foreground text-sm">Choose a new password for your account</p>
         </div>
         {verifying ? (
@@ -69,7 +69,7 @@ function ResetPasswordForm() {
             Password updated! Redirecting to sign-in…
           </p>
         ) : error && !password ? (
-          <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-3 text-center">
+          <p role="alert" className="text-sm text-red-800 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-3 text-center">
             {error}
           </p>
         ) : (
@@ -99,7 +99,7 @@ function ResetPasswordForm() {
               />
             </div>
             {error && (
-              <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+              <p role="alert" className="text-sm text-red-800 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
@@ -113,7 +113,7 @@ function ResetPasswordForm() {
           </form>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 

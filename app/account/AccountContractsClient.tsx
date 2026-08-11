@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import Script from 'next/script'
 import { QRCodeSVG } from 'qrcode.react'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,7 @@ import { ContractPricingTier } from '@/lib/types'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
 import { FileText, FileX, Home, MapPin, Pencil } from 'lucide-react'
-import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 
 interface ServiceDate {
   id: string
@@ -117,23 +117,6 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
   const [unitFloor, setUnitFloor] = useState(profileUnitFloor ?? '')
   const [buildingName, setBuildingName] = useState(profileBuildingName ?? '')
   const [geoLoading, setGeoLoading] = useState(false)
-  const addressInputRef = useRef<HTMLInputElement>(null)
-  const isLoaded = useMapsLoaded()
-
-  useEffect(() => {
-    if (!isLoaded || !addressInputRef.current || preset !== 'other') return
-    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      componentRestrictions: { country: 'sg' },
-      fields: ['formatted_address'],
-    })
-    const listener = ac.addListener('place_changed', () => {
-      const place = ac.getPlace()
-      if (!place.formatted_address) return
-      setAddressText(place.formatted_address)
-      setAddressConfirmed(true)
-    })
-    return () => { window.google.maps.event.removeListener(listener) }
-  }, [isLoaded, preset, dialogOpen])
 
   function applyHome() {
     setPreset('home')
@@ -240,7 +223,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-10">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="lazyOnload"
       />
 
@@ -395,14 +378,12 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
 
                       {preset === 'other' && (
                         <div className="space-y-1">
-                          <input
-                            ref={addressInputRef}
-                            type="text"
-                            placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
-                            disabled={!isLoaded}
-                            onChange={() => setAddressConfirmed(false)}
-                            autoComplete="off"
-                            className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
+                          <AddressAutocomplete
+                            placeholder="Start typing your address…"
+                            onResolved={resolved => {
+                              setAddressText(resolved?.address ?? '')
+                              setAddressConfirmed(!!resolved)
+                            }}
                           />
                           {addressConfirmed
                             ? <p className="text-xs text-green-700">✓ Address confirmed</p>
@@ -569,7 +550,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                                   ) : isPast ? (
                                     <Badge className="bg-red-100 text-red-700 text-xs">Overdue</Badge>
                                   ) : (
-                                    <Badge className="bg-slate-100 text-slate-500 text-xs">Upcoming</Badge>
+                                    <Badge className="bg-slate-100 text-slate-700 text-xs">Upcoming</Badge>
                                   )}
                                 </td>
                               </tr>
@@ -613,6 +594,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
             <span className="text-xs text-muted-foreground">From</span>
             <Input
               type="date"
+              aria-label="Invoices from date"
               value={invDateFrom}
               onChange={e => setInvDateFrom(e.target.value)}
               className="h-8 text-xs w-36"
@@ -622,6 +604,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
             <span className="text-xs text-muted-foreground">To</span>
             <Input
               type="date"
+              aria-label="Invoices to date"
               value={invDateTo}
               onChange={e => setInvDateTo(e.target.value)}
               className="h-8 text-xs w-36"

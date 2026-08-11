@@ -122,7 +122,7 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false, clas
                 <Button
                   onClick={handleMarkPaid}
                   disabled={submitting}
-                  className="w-full bg-green-600 text-white hover:bg-green-700"
+                  className="w-full bg-green-700 text-white hover:bg-green-800"
                 >
                   {submitting ? 'Saving…' : 'Confirm Payment'}
                 </Button>

@@ -174,7 +174,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
   return (
     <div className="max-w-lg mx-auto">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="lazyOnload"
       />
       {/* Progress bar */}
@@ -221,14 +221,19 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
 
       {/* Navigation */}
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
+        <Button
+          variant="outline"
+          onClick={() => setStep(s => s - 1)}
+          disabled={step === 0}
+          className="min-h-[44px] px-6"
+        >
           Back
         </Button>
         {step < STEPS.length - 1 ? (
           <Button
             onClick={() => setStep(s => s + 1)}
             disabled={!canNext()}
-            className="bg-accent hover:bg-accent/90 text-white"
+            className="bg-accent hover:bg-accent/90 text-white min-h-[44px] px-6"
           >
             Next
           </Button>

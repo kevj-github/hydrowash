@@ -8,7 +8,7 @@ import type { RouteStop, TimeSlot } from '@/lib/types'
 
 const RouteMap = dynamic(
   () => import('@/components/admin/RouteMap').then(m => m.RouteMap),
-  { ssr: false, loading: () => <div className="h-full flex items-center justify-center text-slate-400 text-sm">Loading map…</div> }
+  { ssr: false, loading: () => <div className="h-full flex items-center justify-center text-slate-600 text-sm">Loading map…</div> }
 )
 
 interface LatLng { lat: number; lng: number }
@@ -103,6 +103,7 @@ export function SchedulePageClient({ date, bookings, depotLatLng }: Props) {
         </div>
         <input
           type="date"
+          aria-label="Schedule date"
           value={date}
           onChange={e => router.push(`/admin/schedule/${e.target.value}`)}
           className="border border-border rounded-lg px-3 py-1.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent"

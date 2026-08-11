@@ -21,17 +21,28 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
 
   useEffect(() => {
     if (ready) return
-    const existing = document.querySelector('script[data-gm-route]')
-    if (!existing) {
+    let cancelled = false
+    // Under `loading=async` the script's onload fires before google.maps is
+    // populated, so awaiting importLibrary is the only safe readiness signal.
+    async function waitForMaps() {
+      for (let i = 0; i < 200 && !cancelled; i++) {
+        if (window.google?.maps?.importLibrary) {
+          await window.google.maps.importLibrary('maps')
+          if (!cancelled) setReady(true)
+          return
+        }
+        await new Promise(r => setTimeout(r, 100))
+      }
+    }
+    if (!document.querySelector('script[data-gm-route]')) {
       const script = document.createElement('script')
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async`
       script.async = true
       script.setAttribute('data-gm-route', '1')
-      script.onload = () => setReady(true)
       document.head.appendChild(script)
-    } else {
-      existing.addEventListener('load', () => setReady(true))
     }
+    waitForMaps()
+    return () => { cancelled = true }
   }, [apiKey, ready])
 
   useEffect(() => {
@@ -113,7 +124,7 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
 
   if (!ready) {
     return (
-      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+      <div className="h-full flex items-center justify-center text-slate-600 text-sm">
         Loading map…
       </div>
     )
