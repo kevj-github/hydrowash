@@ -909,3 +909,28 @@ Follow-up implementation pass to close D-5 at code level.
 **Notes**
 - This closes the deprecated Marker API usage in source.
 - For production styling parity and predictable marker rendering, set `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` in env; code falls back to `DEMO_MAP_ID` when absent.
+
+---
+
+# Phase 15 — B-6 structural dedupe fix (2026-08-12)
+
+## B-6 — Booking cards rendered twice with independent state (now fixed)
+
+**Root issue**
+- `AdminBookingsClient` mounted both mobile and desktop card trees at once and hid one via CSS (`md:hidden` / `hidden md:flex`).
+- Every `BookingCard` therefore had two live instances, each with its own local state.
+
+**Implemented**
+- `app/admin/bookings/AdminBookingsClient.tsx`
+  - Added viewport-mode tracking via `matchMedia('(min-width: 768px)')`.
+  - Render only one tree at a time:
+    - mobile tree when `< 768px`
+    - desktop tree when `>= 768px`
+  - Simplified pin→card scroll target selection to a single match now that duplicates are removed.
+
+**Verification run**
+- `npx tsc --noEmit` ✅
+- `npx eslint app/admin/bookings/AdminBookingsClient.tsx` ✅
+- `npm run build` ✅
+
+This closes the underlying duplication, not just the scroll workaround.
