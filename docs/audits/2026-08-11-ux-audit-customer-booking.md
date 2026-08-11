@@ -1,0 +1,370 @@
+# HydroWash — UX Audit: Customer Booking Flow
+
+**Date:** 2026-08-11 · **Target:** https://www.hydrowash.services (production) · **Auditor:** Claude Code (`ux-audit`)
+
+```
+═══════════════════════════════════════════════════════════
+VERDICT: FAIL
+
+Persona: SG HDB resident, mid-30s, phone-in-hand, aircon just started
+         leaking, low patience, first-time user (never used this site)
+
+Surfaces audited: 7 / 9 customer-facing routes
+  /  ·  /services  ·  /auth/login  ·  /auth/register
+  /account/settings  ·  /book  ·  /account/bookings
+  Not audited: /account/contracts, /auth/reset-password
+  Out of scope this pass: all 11 /admin routes
+
+Hard Gates:
+  console errors      0 reportable (1 allowlisted: expected Supabase 400
+                        on a deliberate wrong-password login)
+  console warnings    2 on EVERY Maps-bearing page  ← RED (H-4)
+  network 5xx         0
+  403/404 on auth     0
+  layout collapse     0  (375 / 768 / 1440 — no horizontal overflow anywhere)
+  axe Critical        0
+  axe Serious         0   (moderate only: 2 on auth pages)
+
+Performance (on /): LCP 1448ms · CLS 0 · TTFB 44ms · FCP 1448ms
+                    thresholds 4.0s / 0.25 / 500ms — GREEN
+
+Findings:
+  Critical: 1     High: 4     Medium: 13     Low: 4
+
+TOP 5 (impact x ease):
+  1. C-1  Room selections silently discarded on every maintenance booking
+          — mandatory input, 100% loss since launch, one-word fix
+  2. H-1  "Installation" advertised on the landing page but not bookable
+  3. H-2  Google Places dropdown fully covers the Save button
+  4. H-3  Address auto-return to /book is dead on the first-time path
+  5. H-4  Two console warnings on every Maps page (deprecated Places widget)
+═══════════════════════════════════════════════════════════
+```
+
+---
+
+## CRITICAL
+
+### C-1 — Every maintenance booking silently discards the room selections
+
+| | |
+|---|---|
+| **Layer** | Architecture / Feedback |
+| **Severity** | Critical |
+| **Surface** | `/book` step 1 → POST `/api/bookings` · 1440×900 and 375×812 |
+| **Persona** | Any customer booking maintenance |
+
+**Reproduce**
+1. Sign in as a customer with an address on file, go to `/book`.
+2. Service Type → "General Maintanance". Number of Units → `2`.
+3. Two **required** room dropdowns appear ("Unit Locations \*"). Pick *Master Bedroom* and *Living Room*. `Next` stays disabled until both are set.
+4. Complete steps 2–3 and press **Confirm Booking**.
+5. Query the join table for the new booking.
+
+**Observed** — Booking is created (HTTP 201), UI shows success. `booking_unit_locations` for that booking is `[]`. The whole table is empty:
+
+```
+GET /rest/v1/booking_unit_locations?select=id   →  200  []
+GET /rest/v1/bookings?category=eq.MAINTENANCE   →  200  [ ...many rows, num_units 1–8,
+                                                           earliest 2026-05-14 ]
+```
+
+**Expected** — One join row per selected unit location.
+
+**Root cause** — Column-name mismatch plus an unchecked error:
+
+- Schema `supabase/migrations/011_phase2_ac_locations.sql:18` → column is **`location_id`**
+- API `app/api/bookings/route.ts:168` → inserts **`unit_location_id`**
+- `app/api/bookings/route.ts:165` → `await supabase.from(...).insert(...)` with **no `{ error }` destructure and no check**, so the failure is swallowed and the route still returns 201.
+
+Confirmed independently: PostgREST rejects the column by name —
+`"column booking_unit_locations_1.unit_location_id does not exist"` (code `42703`).
+
+**Impact** — The customer is *forced* to specify which rooms have AC units, and that data has never once been stored since launch (May 2026). The technician arrives without knowing which rooms to service. Note `unit_location_others` (the free-text "Others" labels) *is* stored on the booking row, so the data loss is silent and partial — which is why it has gone unnoticed.
+
+**Smallest possible patch** — `app/api/bookings/route.ts:164-171`:
+
+```ts
+if (unit_location_ids?.length && booking?.id) {
+  const { error: locError } = await supabase.from('booking_unit_locations').insert(
+    unit_location_ids.map((loc_id: string) => ({
+      booking_id: booking.id,
+      location_id: loc_id,          // was: unit_location_id
+    }))
+  )
+  if (locError) {
+    console.error('[bookings POST] unit location insert failed:', locError)
+    return NextResponse.json({ error: locError.message }, { status: 500 })
+  }
+}
+```
+
+Backfill is not possible — the selections were never transmitted to storage.
+
+---
+
+## HIGH
+
+### H-1 — "Installation" is advertised everywhere but cannot be booked
+
+| | |
+|---|---|
+| **Layer** | Architecture | **Severity** | High |
+| **Surface** | `/` ServiceCard grid, footer "SERVICES" list, `/book` step 1 |
+
+**Reproduce** — From the landing page click the **Installation** service card (or the footer "Installation" link) → lands on `/book` → open the Service Type dropdown.
+
+**Observed** — Exactly two options: `General Maintanance`, `Fault Repair — S$100.00`. No installation option. DB confirms only 2 active `service_types` rows, neither with `category = 'INSTALLATION'`.
+
+**Expected** — Either an Installation service type exists, or it is not advertised.
+
+**Evidence** — `service_types?select=*` returns 2 rows (`MAINTENANCE`, `FAULT_REPAIR`).
+
+**Persona cost** — The one service with the highest ticket value is a dead end. The user has already signed in and reached step 1 before discovering it.
+
+**Smallest possible patch** — Insert the missing row via `/admin/settings`:
+`INSERT INTO service_types (name, category, description, active) VALUES ('AC Installation', 'INSTALLATION', '', true);`
+If installation is deliberately quote-only, remove the ServiceCard and footer link and replace with a "Request a quote" contact route instead.
+
+### H-2 — Google Places dropdown completely covers the Save button
+
+| | |
+|---|---|
+| **Layer** | Interaction | **Severity** | High |
+| **Surface** | `/account/settings` · 1440×900 (worse on mobile) |
+
+**Reproduce**
+1. `/account/settings` with an empty address.
+2. Type `Blk 123 Ang Mo Kio Ave 3` into Home Address.
+3. Without dismissing the suggestions, aim for **Save Changes**.
+
+**Observed** — `.pac-container` spans y 367→541; the button spans y 409→453. Overlap = 44px vertical × 428px horizontal = **100% of the button**. `document.elementFromPoint()` at the button's centre returns a `.pac-item` — *"Johnson Eatery 332 Ang Mo Kio"*. Playwright refused the click: `<div class="pac-item"> … intercepts pointer events`.
+
+**Expected** — Save is reachable, or the dropdown is positioned so it cannot cover the form's primary action.
+
+**Evidence** — `05-pac-covers-save-button.png` (the blue Save button is entirely hidden).
+
+**Impact** — Clicking "Save" silently selects a *wrong address*. The saved address drives geocoding, the admin map, and route optimisation — a technician gets dispatched to a restaurant instead of the customer's flat.
+
+**Smallest possible patch** — In `AccountSettingsClient.tsx`, add bottom margin below the address group so the 174px-tall dropdown clears the button (`mb-44` on the address field wrapper), or render the pac container into a portal with collision detection. Cheapest robust fix: move **Save Changes** above the address block, or add `scroll-margin` + close the dropdown on `blur` before the button becomes reachable.
+
+### H-3 — Address auto-return to `/book` is dead on the only path that uses it
+
+| | |
+|---|---|
+| **Layer** | Interaction / Architecture | **Severity** | High |
+| **Surface** | `/account/settings?reason=address` → `/book` |
+
+**Reproduce (Path A — the real first-time journey)**
+1. Register, skip the "(optional)" address. Sign in.
+2. Click **Book Now** → middleware redirects to `/account/settings?reason=address`.
+3. Enter an address, pick a suggestion, **Save Changes**.
+4. Poll `location.pathname`.
+
+**Observed** — `"Profile saved successfully."` appears; 6 seconds later still on `/account/settings`. Reproduced twice, including a clean replay after nulling the profile address:
+
+```
+0ms /account/settings   …   5500ms /account/settings
+final: /account/settings?reason=address   saved: true
+```
+
+**Path B (control)** — reload `/account/settings?reason=address` with an address *already* stored, press Save → redirect to `/book` fires correctly. So the code path works; it fails specifically on first-time state.
+
+**Expected** — `app/account/settings/AccountSettingsClient.tsx:123` intends `setTimeout(() => router.push('/book'), 1200)`.
+
+**Suspected mechanism** — The Next.js App Router client cache holds the earlier `/book` prefetch that responded `307` while the profile had no address. My first network capture shows exactly that: `GET /book?_rsc=… => [307]`. `router.push('/book')` replays the cached redirect straight back to settings. A hard navigation bypasses the cache, which is why Path B and a manual `goto('/book')` both succeed.
+
+**Smallest possible patch** — `AccountSettingsClient.tsx:123`:
+
+```ts
+if (reasonAddress && addressData) {
+  setTimeout(() => { window.location.href = '/book' }, 1200)
+}
+```
+
+This is the convention CLAUDE.md already mandates for post-login redirects ("use `window.location.href`, not `router.push`") — the same class of bug, one file over. `router.refresh()` before `router.push` would also clear the cache.
+
+**Persona cost** — The user is stranded on a settings page having just done what they were told, with no visible route back to booking. The wizard is three clicks away and unsignposted.
+
+### H-4 — Two console warnings on every Maps-bearing page (hard gate)
+
+| | |
+|---|---|
+| **Layer** | Architecture | **Severity** | High (hard gate: warnings > 0) |
+| **Surface** | `/auth/register`, `/account/settings`, `/book` |
+
+**Observed**
+```
+[WARNING] Google Maps JavaScript API has been loaded directly without
+          loading=async. This can result in suboptimal performance.
+[WARNING] As of March 1st, 2025, google.maps.places.Autocomplete is not
+          available to new customers. Please use PlaceAutocompleteElement
+          instead.
+```
+
+The second is a live forward-compatibility risk: the entire address-capture path — registration, account settings, and booking step 2 — is built on a widget Google has closed to new customers and will only bug-fix for major regressions.
+
+**Smallest possible patch** — Short term, add `&loading=async` to the script URL in `AccountSettingsClient.tsx:136` (and the equivalent in `app/auth/register/page.tsx` and `StepScheduleLocation`), which clears warning 1. Warning 2 needs a migration to `PlaceAutocompleteElement`; schedule it, and note the migration touches all three surfaces plus the `.pac-container` positioning in H-2 (both fixes land in the same place).
+
+---
+
+## MEDIUM
+
+| ID | Finding | Surface | Detail |
+|---|---|---|---|
+| M-1 | **"General Maintanance" misspelled in production** | `/book` dropdown, `/account/bookings`, review step | `service_types.name` is literally `General Maintanance`. The footer and landing page spell it correctly, so the *data* is wrong, not the copy. Row `335a44d5-…`; editable from `/admin/settings`. Appears on the primary revenue path. |
+| M-2 | **Address labelled "(optional)" but hard-required to book** | `/auth/register`, `/account/settings` | Register says `(optional — needed to book)`. Settings shows the amber banner *"Please add your home address before booking"* directly above the helper *"Used for quick booking (optional)"* — contradiction visible in one glance. `middleware.ts:49-55` hard-blocks `/book` without it. My persona skipped it *because* it said optional. Fix: drop "(optional)", mark it required, and make it a required field at registration. |
+| M-3 | **"✓ Address confirmed:" renders with an empty value** | `/account/settings` | `AccountSettingsClient.tsx:185` renders `✓ Address confirmed: {addressData.postal_code}`. Street-level Places results return no `postal_code` component, so line 83 falls back to `''`. Rendered DOM: `<p class="text-xs text-green-700">✓ Address confirmed: </p>`. DB after save: `postal_code: ""`. A green tick reads as success while the SG postal code — the key input for geographic clustering and route optimisation — is silently blank. Fix: fall back to `formatted_address`, or reverse-geocode lat/lng for the postal code, and don't render a bare colon. |
+| M-4 | **Calendar days stay clickable at the 3-slot cap and silently do nothing** | `/book` step 2 | With 3 slots chosen, slot buttons correctly disable and show "(max reached)" plus a clear notice. But days 11–31 remain enabled; clicking day 20 does nothing at all — still "✓ 1 date preference selected". CLAUDE.md claims "Both conditions now disable calendar day cells"; shipped behaviour disables neither. Fix: apply the existing `totalSlots >= MAX_TOTAL_SLOTS` gate to the day-cell `disabled` prop in `SlotCalendar.tsx`. |
+| M-5 | **`num_units` not clamped — 99 renders 99 dropdowns** | `/book` step 1 | Input has `min=1 max=20`, but React doesn't clamp. Typing `99` renders 99 room dropdowns and grows the page to 5190px. `validity.rangeOverflow` is true, but the wizard uses a Next button rather than native submit so nothing surfaces it, and no inline message states the limit. Fix: clamp in the change handler and show "Maximum 20 units". |
+| M-6 | **Review step omits the room locations** | `/book` step 3 | The review lists Service, Category, Units, Schedule, Address, Unit/Floor, Access Notes — but not the rooms the user was *required* to select. Independent of C-1: even once saving is fixed, the user can't verify this before submitting. |
+| M-7 | **Raw enum "Category MAINTENANCE" shown to customers** | `/book` step 3 | First-time-user lens: internal vocabulary leaking into customer-facing UI. Fix: map to "General maintenance", or drop the row entirely — the service name already conveys it. |
+| M-8 | **No price shown for maintenance** | `/book` | Fault Repair displays `S$100.00`; General Maintanance shows nothing (`price_sgd: null`) and no price appears at review or on submission. The customer commits to a home visit with no idea of cost. Fix: set a price or an explicit "Quoted after inspection" label. |
+| M-9 | **Login error not announced to assistive tech** | `/auth/login` | Error `<p>` has `role=null`, `aria-live=null`, and no live-region ancestor — screen-reader users get no signal that sign-in failed. Copy is also raw Supabase text: *"Invalid login credentials"*. Fix: `role="alert"`, and rewrite to "That email and password don't match. Check your password or create an account." |
+| M-10 | **Footer offers "Sign In" / "Register" to signed-in users** | all authenticated pages | `PublicHeader` is auth-aware; the footer is not. A logged-in customer sees Sign In and Register in the Account column. |
+| M-11 | **Touch targets below 44px on the primary mobile flow** | `/book` @375 | Service Type combobox `293×32`; **Back** `54×32`; **Next** `54×32`; a calendar nav arrow at `40×40`. My persona books one-handed on a phone. |
+| M-12 | **"Next" collides with the fixed mobile bottom nav** | `/book` @375×812 | `CustomerBottomNav` (`md:hidden fixed bottom-0 z-50`) starts at y=755; Next spans 731→763 — the bottom **8px of a 32px button** is covered, leaving a 24px effective tap area. Fix: add `pb-24` to the wizard's bottom action row (or `padding-bottom` on the page shell under `md`). |
+| M-13 | **axe: no `main` landmark on auth pages** | `/auth/login`, `/auth/register` | `landmark-one-main` (1 node) + `region` (9 nodes), both *moderate*. Landing page is clean (0 violations). Below the Critical/Serious hard gate but trivially fixable — wrap the auth card in `<main>`. |
+
+## LOW
+
+| ID | Finding | Detail |
+|---|---|---|
+| L-1 | **No `autocomplete` on auth inputs** | `/auth/login` `#email` `#password`, `/auth/register` `#name` `#phone` `#email` `#password` all have `autocomplete=""`. Chrome DevTools itself logs *'Input elements should have autocomplete attributes (suggested: "current-password")'*. Blocks password-manager autofill for a phone-first audience. Add `email`, `current-password`, `new-password`, `name`, `tel`. |
+| L-2 | **Calendar day buttons expose no date context** | Accessible names are bare `"01"`, `"11"` — no weekday, month or year. Add `aria-label="Friday, 15 August 2026"`. |
+| L-3 | **Slot toggles lack `aria-pressed`** | The 5 time-slot buttons are toggles with `aria-pressed: null`; AT users can't tell which are selected. The visible "(max reached)" text and disabled state are handled well — only the selected-state semantics are missing. |
+| L-4 | **`Fault Repair.duration_minutes` is `null`** | The VRP route optimiser consumes duration. Maintenance has `60`; Fault Repair has `null`. Admin-side, out of this pass's scope, but flagged as a data-integrity risk to scheduling. |
+
+---
+
+## What passed (with proof)
+
+- **Round-trip workflow integrity (Scenario 10) — PASS.** Submitting the booking redirected to `/account/bookings?success=1`, showed *"Booking submitted! We will review and confirm your date shortly."*, listed the booking as `PENDING` with the correct date and all three slots, and updated the header counters to "Total 1 / Upcoming 1" — all without a manual reload. Reschedule and Cancel affordances were present immediately.
+- **Booking data integrity (except rooms) — PASS.** Persisted row: `booking_date 2026-08-15`, `time_slot S10_12`, `preferred_slots [S10_12,S13_15,S15_17]`, `preferred_date_slots` correct, `num_units 2`, address composed as `"#12-34, 123 Ang Mo Kio Ave 3, Singapore"`, `lat/lng` populated, `status PENDING`.
+- **SGT past-date blocking — PASS.** On 11 Aug, calendar days 01–10 were `disabled`, 11–31 enabled.
+- **3-slot cap — PASS (messaging).** At 3 slots the remaining slots disabled with an inline "(max reached)" suffix and the notice *"Maximum 3 time slots reached — remove a slot to add more."* (The day-cell half of the gate is M-4.)
+- **Performance — PASS.** `/` LCP 1448ms, CLS 0, TTFB 44ms, 34 resources.
+- **Responsive integrity — PASS.** No horizontal overflow at 375, 768 or 1440 on `/`, `/book`, or `/account/bookings` (`scrollWidth === innerWidth` at every width).
+- **axe on `/` — PASS.** Zero violations of any impact.
+- **Enter-to-submit on login — PASS.** Pressing Enter in the password field submits the form.
+- **Home address preset — PASS.** Correctly prefilled `123 Ang Mo Kio Ave 3, Singapore` into booking step 2.
+- **Reactive unit dropdowns — PASS.** Changing Number of Units re-renders exactly N room dropdowns; `Next` stays disabled until every unit has a room.
+
+---
+
+## Perfection roadmap
+
+**Quick wins (24–48h)**
+C-1 (one-word column fix + error check) · M-1 typo · M-2 "(optional)" copy · M-3 empty colon · M-7 raw enum · M-10 footer · M-12 `pb-24` · M-13 `<main>` · L-1 autocomplete attrs · H-4 part one (`&loading=async`)
+
+**Structural (1–2 weeks)**
+H-1 Installation service (product decision first) · H-2 Places dropdown collision · H-3 hard-navigation redirect · M-4 day-cell gate · M-5 clamp · M-6 review completeness · M-11 touch targets
+
+**Advanced (post-launch)**
+H-4 part two — migrate to `PlaceAutocompleteElement` across register / settings / booking (folds in H-2) · M-8 pricing model · L-2/L-3 calendar and slot ARIA semantics
+
+---
+
+## Method, coverage and caveats
+
+**Interaction Manifest (abridged; all times UTC 2026-08-11)**
+
+```
+05:27:44  navigate /                          → 200, title OK
+05:42:05  axe.run on /                        → 0 violations
+05:42:47  navigate /services                  → 307 → /auth/login?redirect=/book
+05:43:20  typed bad creds into #email/#password, pressed Enter
+05:43:45  observed "Invalid login credentials" + allowlisted 400
+05:44:37  navigate /auth/register
+05:45:10  filled name/phone/email/password, clicked Create Account
+05:45:27  observed "Check your email" verification gate
+05:46:14  logged in as customer → redirected to /
+05:46:44  clicked header Book Now → bounced to /account/settings?reason=address
+05:47:30  typed address (slowly), pac dropdown opened with 5 items
+05:48:00  measured pac/button overlap → 100% of Save covered
+05:48:25  selected suggestion, filled #12-34, Save → "Profile saved successfully."
+05:50:15  Save again, polled location 5s → no redirect (H-3, run 1)
+05:51:54  reset profile to null, replayed Path A → no redirect (H-3, run 2)
+05:53:09  /book: opened service dropdown → 2 options only (H-1)
+05:54:16  selected service, set units=2 → 2 room dropdowns rendered
+05:55:00  units=99 → 99 dropdowns, page 5190px (M-5)
+05:55:52  selected Master Bedroom + Living Room
+05:56:53  selected 15 Aug, then 3 slots → cap messaging correct
+05:57:37  clicked day 20 at cap → silent no-op (M-4)
+05:58:05  Home preset → address prefilled
+05:58:54  Confirm Booking → /account/bookings?success=1, PENDING listed
+05:59:30  DB verify → booking_unit_locations [] (C-1)
+06:00:51  resized 375x812, re-ran layout + touch-target detection
+06:01:20  measured Next vs fixed bottom nav → 8px covered (M-12)
+06:02:00  cleanup: booking, profile, auth user deleted
+```
+
+Screenshots: 7 (`01-landing-1440`, `02-login-error-1440`, `03-register-before-submit`, `04-settings-address-contradiction`, `05-pac-covers-save-button`, `06-review-step`, `07-book-375`) in `/root/.claude/jobs/54577361/tmp/audit/`.
+
+**Test data cleanup — complete.** Booking `cd62307c…`, profile and auth user `260fc60b…` (`otherofacc+uxaudit@gmail.com`) all deleted; `bookings?notes=like.*UXAUDIT*` returns `[]`. One real email was sent to the admin address by the booking-received handler at 05:58:54.
+
+**Coverage gaps — stated plainly, not papered over:**
+- **7 screenshots for 7 routes.** The skill's plausibility bar is 2× routes (14). Visual evidence is thinner than the standard; DOM/geometry probes and DB queries carry most of the proof instead.
+- **Scenarios not run:** 4 (Returning User), 6 (Heavy Data — needs a 500-row seed), 7 (Destructive Confidence — would require cancelling/deleting against live data), 8 (Second User / role), 9 (Lifecycle position), 11 (Data seasoning). Scenarios 1, 2 (partial), 3, 5 (partial) and 10 were exercised.
+- **Stress recipes not run:** reduced-motion, offline, print, high-contrast, i18n, 3G throttle, and the real-flavour data battery (apostrophes/accents/RTL, XSS canaries, oversized uploads) — the last is a notable gap given step 1 accepts 5 × 20MB file uploads that I never exercised.
+- **Not audited:** `/account/contracts`, `/auth/reset-password`, and the entire admin surface (11 routes), per the agreed scope.
+- **Self-critique pass was done in-context, not by a fresh sub-agent** (agent spawning is not enabled in this session). Drafted 26 → kept 22 → dropped 4: the hidden shadcn UUID input (verified `aria-hidden`/`tabindex=-1`/clipped — not a real defect), two "Deprecated API for given entry type" warnings traced to my own `getEntriesByType` instrumentation, and the Supabase `400` on a deliberate wrong-password login (expected browser resource-load noise, allowlisted). An in-context critique is structurally weaker than a fresh reviewer — treat the Medium/Low tier as less pruned than the Critical/High tier.
+
+---
+
+## Hold this in your hands
+
+This one feels like a well-made cabinet with a drawer that doesn't connect to anything. The craft is genuinely there — the calendar's slot cap explains itself in plain language, the past-date blocking is timezone-correct, the booking round-trip lands you back on your bookings list with the counters already updated and no jarring reload, nothing overflows at 375px, and the landing page paints in under a second and a half with zero layout shift. Somebody cared. But the app asks you, insistently and with red asterisks, which rooms your aircon units are in — and then throws the answer away, every time, and has done since May. That single fact reframes the rest: the polish is real but it's surface, and nobody has walked the whole path with a stopwatch and a database query open. Add the "optional" field you can't book without, the Save button hiding under Google's own dropdown, and the Installation service advertised on the front page but absent from the only place you could buy it, and the pattern is clear — the seams between the screens are where this breaks, not the screens themselves. Would I want to hold it? Nearly. Fix C-1 this afternoon and the cabinet's drawer connects; fix the four Highs and I'd be glad to hand it to a customer.
+
+---
+
+# Phase 7 — Fix and verify (2026-08-11, same session)
+
+Branch: `fix/ux-audit-2026-08-11`. Re-walked on `localhost:3000` against the **same production
+Supabase project**, with a fresh pre-confirmed test customer (`customer_no 18`), then deleted.
+
+## Verified fixed
+
+| ID | Fix | Verification |
+|---|---|---|
+| **C-1** | `location_id` (was `unit_location_id`) + `{ error }` now checked and surfaced as 500 — `app/api/bookings/route.ts:164-176`. Same column bug fixed on the **read** path at `app/api/bookings/[id]/route.ts:25-33`, which feeds the `?repeat=[id]` prefill. | Booked 2 units (Master Bedroom, Living Room) → `booking_unit_locations` returned 2 rows resolving to exactly those labels. Previously `[]`. |
+| **H-3** | `window.location.href = '/book'` replaces `router.push` — `AccountSettingsClient.tsx:122-127`. | Replayed the true first-time path (fresh user, `address: null`) → after Save, polled `location.pathname` for 4s: `/book` at 0ms. Previously stuck on `/account/settings` for 6s. |
+| **M-1** | `service_types.name` corrected to "General Maintenance" (data fix, applied to production DB). | Dropdown now reads `General Maintenance`. |
+| **M-2** | Address label is now `Home Address *` with helper "Required before you can book a service"; register helper reworded to "add it now, or you'll be asked before your first booking". | `optionalStillPresent: false`. |
+| **M-3** | `✓ Address confirmed{postal_code ? ': Singapore ' + postal_code : ''}` — no dangling colon. | Rendered `"✓ Address confirmed"` for a street-level Place with no postal code. |
+| **M-4** | Day-cell `atMax` now includes `totalSlots >= MAX_TOTAL_SLOTS`, matching the desktop grid at line 186 — `SlotCalendar.tsx:246`. | At the 3-slot cap only the selected day 15 stays enabled; day 20 is `disabled`, `opacity 0.4`, `cursor: not-allowed`. Previously all 21 days enabled and clicking was a silent no-op. |
+| **M-5** | `num_units` clamped to 1–20 in the change handler + "Up to 20 units per booking." hint. | Typing `99` yields value `20` and 20 room dropdowns. Previously 99 dropdowns / 5190px page. |
+| **M-6** | Review resolves `unit_location_ids` → labels via `ac_unit_locations` and shows a **Rooms** row (incl. "Others" free text). | Review shows `Rooms Master Bedroom, Living Room`. |
+| **M-7** | `CATEGORY_LABELS` maps the raw enum. | Review shows `Category General maintenance` (was `MAINTENANCE`). |
+| **M-9** | `role="alert"` on the login error + human copy replacing Supabase's string. | `role: "alert"`, `inLiveRegion: true`, text "That email and password don't match. Check your password, or create an account if you haven't yet." |
+| **M-10** | Footer Account column branches on `user`. | Signed in: My Bookings / Contracts & Invoices / Settings. Signed out: Sign In / Register. |
+| **M-12** | `<main>` padding `pb-14` → `pb-24` (nav is 57px; 56px was 1px short). | Next button overlap with the fixed bottom nav: **0px** (was 8px). |
+| **M-13** | `<main>` + `<aside>` landmarks on the login page. | `/auth/login` axe: **0 violations** (was 2 rules / 10 nodes). |
+| **L-1** | `autoComplete` added: login `email` / `current-password`; register `name` / `tel` / `email` / `new-password`. | Verified on the DOM. |
+| **H-4a** | `&loading=async` added to all 7 Maps JS loads (5 customer + 2 admin). | Clears the "loaded directly without loading=async" warning. |
+| *bonus* | Footer copyright was `text-slate-400`, violating CLAUDE.md's own documented WCAG-AA rule for the navy footer. Now `text-slate-300`. | Verified `text-slate-300`. |
+
+## Still open (deliberately not attempted this pass)
+
+- **H-1 Installation not bookable** — needs a product decision (add the service type vs. remove the advertising). One-line DB insert either way, but not mine to choose.
+- **H-2 Places dropdown covers Save** — structural; best fixed together with the `PlaceAutocompleteElement` migration rather than patched twice.
+- **H-4b** — the deprecated `places.Autocomplete` widget itself. Still warns; still the long pole.
+- **M-8** pricing, **M-11** touch targets (32px controls), **L-2/L-3** calendar/slot ARIA, **L-4** null `duration_minutes`.
+- Cosmetic follow-up introduced by M-7: review now reads "Service: General Maintenance / Category: General maintenance" — near-duplicate. Consider dropping the Category row.
+
+## Gates after fixes
+
+```
+npx tsc --noEmit         clean
+npx eslint <14 changed>  clean (0 errors, 1 pre-existing unused-var warning)
+npm run build            succeeds
+npx jest lib/            3 suites, 21 tests passed
+```
+
+`npx jest` at the repo root reports 36 failing suites — these are Playwright `e2e/*.spec.ts` files
+inside `.claude/worktrees/hydrowash-public-redesign/` being picked up by the Jest matcher.
+Pre-existing config issue, unrelated to these changes; the real unit suites all pass.
+
+**Test data:** both audit customers and their bookings deleted. `booking_unit_locations` back to `[]`,
+`profiles?name=like.ZZ*` returns `[]`. Two real "booking received" emails reached the admin address
+(05:58 and 06:38 UTC).

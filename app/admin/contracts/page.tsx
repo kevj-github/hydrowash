@@ -276,7 +276,7 @@ export default function AdminContractsPage() {
   return (
     <>
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="afterInteractive"
       />
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">

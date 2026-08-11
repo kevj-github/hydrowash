@@ -168,9 +168,16 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
             <Input
               type="number" min={1} max={20}
               value={data.num_units ?? ''}
-              onChange={e => onChange({ num_units: Number(e.target.value) })}
+              onChange={e => {
+                const raw = e.target.value
+                if (raw === '') { onChange({ num_units: undefined }); return }
+                // Clamp: max is otherwise only an HTML hint, and every extra unit
+                // renders another room dropdown.
+                onChange({ num_units: Math.min(20, Math.max(1, Math.floor(Number(raw)))) })
+              }}
               placeholder="e.g. 3"
             />
+            <p className="text-xs text-muted-foreground">Up to 20 units per booking.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Unit Locations <span className="text-red-500">*</span></Label>

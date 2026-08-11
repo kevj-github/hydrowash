@@ -162,12 +162,16 @@ export async function POST(request: NextRequest) {
 
   // Insert unit location join rows if provided
   if (unit_location_ids?.length && booking?.id) {
-    await supabase.from('booking_unit_locations').insert(
+    const { error: locError } = await supabase.from('booking_unit_locations').insert(
       unit_location_ids.map((loc_id: string) => ({
         booking_id: booking.id,
-        unit_location_id: loc_id,
+        location_id: loc_id,
       }))
     )
+    if (locError) {
+      console.error('[bookings POST] Failed to insert unit locations:', locError)
+      return NextResponse.json({ error: locError.message }, { status: 500 })
+    }
   }
 
   await sendBookingReceived(booking, user.email!).catch(err =>

@@ -17,7 +17,9 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <>
       <PublicHeader isLoggedIn={!!user} isAdmin={isAdmin} />
-      <main className="flex-1 pb-14 md:pb-0">{children}</main>
+      {/* pb-24 clears the 57px fixed CustomerBottomNav with room to spare —
+          pb-14 (56px) left page-bottom actions partly under it. */}
+      <main className="flex-1 pb-24 md:pb-0">{children}</main>
       <CustomerBottomNav isLoggedIn={!!user} />
       <footer className="bg-primary border-t border-white/10 text-slate-300 py-12 mt-auto mb-14 md:mb-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,14 +47,23 @@ export default async function PublicLayout({ children }: { children: React.React
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-300 mb-3">Account</p>
                 <ul className="space-y-2 text-sm">
-                  <li><Link href="/auth/login" className="hover:text-white transition-colors cursor-pointer">Sign In</Link></li>
-                  <li><Link href="/auth/register" className="hover:text-white transition-colors cursor-pointer">Register</Link></li>
-                  <li><Link href="/account/bookings" className="hover:text-white transition-colors cursor-pointer">My Bookings</Link></li>
+                  {user ? (
+                    <>
+                      <li><Link href="/account/bookings" className="hover:text-white transition-colors cursor-pointer">My Bookings</Link></li>
+                      <li><Link href="/account/contracts" className="hover:text-white transition-colors cursor-pointer">Contracts &amp; Invoices</Link></li>
+                      <li><Link href="/account/settings" className="hover:text-white transition-colors cursor-pointer">Settings</Link></li>
+                    </>
+                  ) : (
+                    <>
+                      <li><Link href="/auth/login" className="hover:text-white transition-colors cursor-pointer">Sign In</Link></li>
+                      <li><Link href="/auth/register" className="hover:text-white transition-colors cursor-pointer">Register</Link></li>
+                    </>
+                  )}
                 </ul>
               </div>
             </div>
           </div>
-          <div className="border-t border-white/10 mt-10 pt-6 text-xs text-slate-400 text-center">
+          <div className="border-t border-white/10 mt-10 pt-6 text-xs text-slate-300 text-center">
             © {new Date().getFullYear()} HydroWash. All rights reserved.
           </div>
         </div>

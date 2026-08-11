@@ -120,7 +120,10 @@ export default function AccountSettingsClient({ profile }: Props) {
       }
       setSaved(true)
       if (reasonAddress && addressData) {
-        setTimeout(() => router.push('/book'), 1200)
+        // Hard navigation: the App Router client cache still holds the /book
+        // prefetch that 307'd back here while the profile had no address, so
+        // router.push would replay that stale redirect.
+        setTimeout(() => { window.location.href = '/book' }, 1200)
       }
     } catch {
       setError('Network error. Please try again.')
@@ -134,7 +137,7 @@ export default function AccountSettingsClient({ profile }: Props) {
   return (
     <div className="max-w-lg mx-auto py-10 px-4">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="lazyOnload"
       />
       <h1 className="font-heading font-bold text-2xl text-primary mb-1">Account Settings</h1>
@@ -162,8 +165,10 @@ export default function AccountSettingsClient({ profile }: Props) {
 
         <div className="space-y-1.5">
           <div className="space-y-0.5">
-            <Label htmlFor="address" className="text-sm font-medium text-primary">Home Address</Label>
-            <p className="text-xs text-muted-foreground">Used for quick booking (optional)</p>
+            <Label htmlFor="address" className="text-sm font-medium text-primary">
+              Home Address <span className="text-destructive">*</span>
+            </Label>
+            <p className="text-xs text-muted-foreground">Required before you can book a service</p>
           </div>
           <div className="relative">
             <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -182,7 +187,9 @@ export default function AccountSettingsClient({ profile }: Props) {
             />
           </div>
           {addressData ? (
-            <p className="text-xs text-green-700">✓ Address confirmed: {addressData.postal_code}</p>
+            <p className="text-xs text-green-700">
+              ✓ Address confirmed{addressData.postal_code ? `: Singapore ${addressData.postal_code}` : ''}
+            </p>
           ) : addressDisplay ? (
             <p className="text-xs text-slate-400">Select an address from the dropdown suggestions.</p>
           ) : null}

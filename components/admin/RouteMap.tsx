@@ -24,7 +24,7 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
     const existing = document.querySelector('script[data-gm-route]')
     if (!existing) {
       const script = document.createElement('script')
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async`
       script.async = true
       script.setAttribute('data-gm-route', '1')
       script.onload = () => setReady(true)

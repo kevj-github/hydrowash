@@ -174,7 +174,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
   return (
     <div key={refreshKey} className="flex flex-col h-[calc(100vh-10rem)]">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&loading=async`}
         strategy="lazyOnload"
       />
       <div className="flex items-center justify-between mb-4">

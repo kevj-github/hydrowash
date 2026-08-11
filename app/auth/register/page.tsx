@@ -12,10 +12,10 @@ import { MapPin, Wind } from 'lucide-react'
 import Link from 'next/link'
 
 const fields = [
-  { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Jane Tan' },
-  { key: 'phone', label: 'Phone Number', type: 'text', placeholder: '+65 9123 4567' },
-  { key: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
-  { key: 'password', label: 'Password', type: 'password', placeholder: '••••••••' },
+  { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Jane Tan', autoComplete: 'name' },
+  { key: 'phone', label: 'Phone Number', type: 'text', placeholder: '+65 9123 4567', autoComplete: 'tel' },
+  { key: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com', autoComplete: 'email' },
+  { key: 'password', label: 'Password', type: 'password', placeholder: '••••••••', autoComplete: 'new-password' },
 ] as const
 
 type FormKey = typeof fields[number]['key']
@@ -174,7 +174,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="lazyOnload"
       />
       {leftPanel}
@@ -207,6 +207,7 @@ export default function RegisterPage() {
                   onChange={set(field.key)}
                   placeholder={field.placeholder}
                   required
+                  autoComplete={field.autoComplete}
                   className="h-11"
                 />
               </div>
@@ -216,7 +217,9 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label htmlFor="address" className="text-sm font-medium text-primary">
                 Home Address{' '}
-                <span className="text-muted-foreground font-normal text-xs">(optional — needed to book)</span>
+                <span className="text-muted-foreground font-normal text-xs">
+                  — add it now, or you&apos;ll be asked before your first booking
+                </span>
               </Label>
               <div className="relative">
                 <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />

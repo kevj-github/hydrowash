@@ -243,7 +243,9 @@ export function SlotCalendar({ value, onChange }: Props) {
           const isSelected = value.some(e => e.date === d.date)
           const isActive = d.date === activeDate
           const isToday = d.date === todaySGT
-          const atMax = value.length >= MAX_DATES && !isSelected
+          // Adding a date is pointless once the total-slot budget is spent —
+          // the day would open with every slot already disabled.
+          const atMax = !isSelected && (value.length >= MAX_DATES || totalSlots >= MAX_TOTAL_SLOTS)
           const disabled = isPast || fullyBlocked || atMax
           return (
             <button

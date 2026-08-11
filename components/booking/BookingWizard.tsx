@@ -174,7 +174,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
   return (
     <div className="max-w-lg mx-auto">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="lazyOnload"
       />
       {/* Progress bar */}

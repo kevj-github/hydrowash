@@ -240,7 +240,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-10">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="lazyOnload"
       />
 

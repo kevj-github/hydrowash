@@ -24,12 +24,12 @@ export async function GET(
 
   const { data: unitLocations } = await supabase
     .from('booking_unit_locations')
-    .select('unit_location_id')
+    .select('location_id')
     .eq('booking_id', id)
 
   return NextResponse.json({
     booking,
-    unit_location_ids: (unitLocations ?? []).map((row: { unit_location_id: string }) => row.unit_location_id),
+    unit_location_ids: (unitLocations ?? []).map((row: { location_id: string }) => row.location_id),
   })
 }
 
