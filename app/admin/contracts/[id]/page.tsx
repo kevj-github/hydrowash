@@ -276,7 +276,7 @@ export default function ContractDetailPage() {
           </div>
           <div className="flex gap-2">
             <Dialog open={setPriceOpen} onOpenChange={setSetPriceOpen}>
-              <DialogTrigger className={cn(buttonVariants(), 'bg-green-600 text-white hover:bg-green-700')}>
+              <DialogTrigger className={cn(buttonVariants(), 'bg-green-700 text-white hover:bg-green-800')}>
                 Set Price
               </DialogTrigger>
               <DialogContent className="max-w-md">
@@ -285,8 +285,9 @@ export default function ContractDetailPage() {
                 </DialogHeader>
                 <form onSubmit={handleSetPrice} className="space-y-4 pt-2">
                   <div>
-                    <Label>Price (SGD / year)</Label>
+                    <Label htmlFor="sp-price">Price (SGD / year)</Label>
                     <Input
+                      id="sp-price"
                       type="number"
                       min={0}
                       step="0.01"
@@ -298,8 +299,9 @@ export default function ContractDetailPage() {
                     />
                   </div>
                   <div>
-                    <Label>Confirmed start date</Label>
+                    <Label htmlFor="sp-start">Confirmed start date</Label>
                     <Input
+                      id="sp-start"
                       type="date"
                       value={setPriceForm.start_date}
                       onChange={e => setSetPriceForm(f => ({ ...f, start_date: e.target.value }))}
@@ -308,15 +310,16 @@ export default function ContractDetailPage() {
                     />
                   </div>
                   <div>
-                    <Label>Notes for customer (optional)</Label>
+                    <Label htmlFor="sp-notes">Notes for customer (optional)</Label>
                     <Textarea
+                      id="sp-notes"
                       value={setPriceForm.notes}
                       onChange={e => setSetPriceForm(f => ({ ...f, notes: e.target.value }))}
                       rows={2}
                       className="mt-1"
                     />
                   </div>
-                  <Button type="submit" disabled={settingPrice} className="w-full bg-green-600 text-white hover:bg-green-700">
+                  <Button type="submit" disabled={settingPrice} className="w-full bg-green-700 text-white hover:bg-green-800">
                     {settingPrice ? 'Saving & sending…' : 'Set Price & Send to Customer'}
                   </Button>
                 </form>
@@ -362,7 +365,7 @@ export default function ContractDetailPage() {
             <Button
               onClick={handleMarkPaid}
               disabled={markingPaid}
-              className="bg-green-600 text-white hover:bg-green-700"
+              className="bg-green-700 text-white hover:bg-green-800"
             >
               {markingPaid ? 'Activating…' : 'Mark Paid & Activate'}
             </Button>
@@ -506,7 +509,7 @@ export default function ContractDetailPage() {
           <div className="overflow-x-auto">
           <table className="min-w-max w-full text-left">
             <thead>
-              <tr className="text-xs text-gray-400 border-b border-gray-200">
+              <tr className="text-xs text-gray-600 border-b border-gray-200">
                 <th className="py-1 px-3">Visit</th>
                 <th className="py-1 px-3">Due Date</th>
                 <th className="py-1 px-3">Booking</th>
@@ -540,12 +543,12 @@ export default function ContractDetailPage() {
           </Link>
         </div>
         {invoices.length === 0 ? (
-          <p className="text-sm text-gray-400">No invoices yet.</p>
+          <p className="text-sm text-gray-600">No invoices yet.</p>
         ) : (
           <div className="overflow-x-auto">
           <table className="min-w-max w-full text-left">
             <thead>
-              <tr className="text-xs text-gray-400 border-b border-gray-200">
+              <tr className="text-xs text-gray-600 border-b border-gray-200">
                 <th className="py-1 px-3">Description</th>
                 <th className="py-1 px-3">Amount</th>
                 <th className="py-1 px-3">Status</th>

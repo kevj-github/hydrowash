@@ -107,7 +107,7 @@ function MobileInvoiceCard({ invoice, onPaid }: { invoice: InvoiceWithCustomer; 
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={handleMarkPaid} disabled={submitting} className="w-full bg-green-600 text-white hover:bg-green-700">
+                <Button onClick={handleMarkPaid} disabled={submitting} className="w-full bg-green-700 text-white hover:bg-green-800">
                   {submitting ? 'Saving…' : 'Confirm Payment'}
                 </Button>
               </div>

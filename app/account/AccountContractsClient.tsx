@@ -550,7 +550,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                                   ) : isPast ? (
                                     <Badge className="bg-red-100 text-red-700 text-xs">Overdue</Badge>
                                   ) : (
-                                    <Badge className="bg-slate-100 text-slate-500 text-xs">Upcoming</Badge>
+                                    <Badge className="bg-slate-100 text-slate-700 text-xs">Upcoming</Badge>
                                   )}
                                 </td>
                               </tr>
@@ -594,6 +594,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
             <span className="text-xs text-muted-foreground">From</span>
             <Input
               type="date"
+              aria-label="Invoices from date"
               value={invDateFrom}
               onChange={e => setInvDateFrom(e.target.value)}
               className="h-8 text-xs w-36"
@@ -603,6 +604,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
             <span className="text-xs text-muted-foreground">To</span>
             <Input
               type="date"
+              aria-label="Invoices to date"
               value={invDateTo}
               onChange={e => setInvDateTo(e.target.value)}
               className="h-8 text-xs w-36"
