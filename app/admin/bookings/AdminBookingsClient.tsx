@@ -67,6 +67,9 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
 
   // Mobile map bottom sheet
   const [mapSheetOpen, setMapSheetOpen] = useState(false)
+  // Keep only one card tree mounted (desktop OR mobile) so cards don't have
+  // split local state across hidden duplicates.
+  const [isDesktopLayout, setIsDesktopLayout] = useState(true)
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/bookings?admin=1')
@@ -146,15 +149,20 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
   })()
 
   // Scroll to card when pin clicked.
-  // Every booking renders twice — once in the mobile bottom sheet, once in the
-  // desktop sidebar — so querySelector can (and did) return the hidden copy and
-  // scroll nothing. Pick the copy that is actually laid out.
   useEffect(() => {
     if (!selectedJobId) return
     const matches = Array.from(document.querySelectorAll(`[data-job-id="${selectedJobId}"]`))
-    const el = matches.find(n => (n as HTMLElement).offsetParent !== null) ?? matches[0]
+    const el = matches[0] as HTMLElement | undefined
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [selectedJobId])
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 768px)')
+    const apply = () => setIsDesktopLayout(media.matches)
+    apply()
+    media.addEventListener('change', apply)
+    return () => media.removeEventListener('change', apply)
+  }, [])
 
   // Drag-to-resize sidebar
   useEffect(() => {
@@ -212,7 +220,8 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
       </div>
 
       {/* ── Mobile: card list + Show Map FAB ── */}
-      <div className="md:hidden flex flex-col flex-1 min-h-0 relative">
+      {!isDesktopLayout && (
+      <div className="flex flex-col flex-1 min-h-0 relative">
         {/* Mobile map bottom sheet backdrop */}
         {mapSheetOpen && (
           <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setMapSheetOpen(false)} />
@@ -355,9 +364,11 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
           {mapSheetOpen ? 'Hide Map' : 'Show Map'}
         </button>
       </div>
+      )}
 
       {/* ── Desktop: map + drag handle + sidebar ── */}
-      <div ref={containerRef} className="hidden md:flex flex-1 min-h-0">
+      {isDesktopLayout && (
+      <div ref={containerRef} className="flex flex-1 min-h-0">
         {/* Map */}
         <div className="flex-1 rounded-xl overflow-hidden border border-border min-w-0">
           <BookingsMap
@@ -570,6 +581,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }

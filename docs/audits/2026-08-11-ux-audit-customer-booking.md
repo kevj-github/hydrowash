@@ -877,3 +877,60 @@ went out: one rejection and two approvals, all to the test address.
 - Closed-shadow-DOM address widget still undrivable by Playwright.
 - `/admin/bookings` reject/approve still send real customer email — there is no staging
   database, so every write test costs a real send.
+
+---
+
+# Phase 14 — Marker deprecation migration (2026-08-12)
+
+Follow-up implementation pass to close D-5 at code level.
+
+## D-5 — `google.maps.Marker` deprecated warning (High, hard gate)
+
+**Implemented**
+- `components/admin/BookingsMap.tsx`
+  - Replaced `<Marker>` usage with `google.maps.marker.AdvancedMarkerElement`.
+  - Added `PinElement` styling for status and selected states.
+  - Added marker lifecycle cleanup (`clearInstanceListeners`, `marker.map = null`) to prevent stale handlers across re-renders.
+  - Set map options with `mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'`.
+- `components/admin/RouteMap.tsx`
+  - Replaced both `new google.maps.Marker(...)` call sites with `AdvancedMarkerElement`.
+  - Replaced SymbolPath circle icons with `PinElement` glyph pins (`D` for depot, sequence numbers for stops).
+  - Upgraded route map initialisation to `importLibrary('maps')` + `importLibrary('marker')` before render.
+  - Added cleanup for polyline and advanced marker listeners.
+
+**Supporting change**
+- Added `lib/design-tokens.ts` and reused it in both map components for shared map colours.
+
+**Verification run**
+- `npx tsc --noEmit` ✅
+- `npx eslint components/admin/BookingsMap.tsx components/admin/RouteMap.tsx lib/design-tokens.ts` ✅
+- `npm run build` ✅
+
+**Notes**
+- This closes the deprecated Marker API usage in source.
+- For production styling parity and predictable marker rendering, set `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` in env; code falls back to `DEMO_MAP_ID` when absent.
+
+---
+
+# Phase 15 — B-6 structural dedupe fix (2026-08-12)
+
+## B-6 — Booking cards rendered twice with independent state (now fixed)
+
+**Root issue**
+- `AdminBookingsClient` mounted both mobile and desktop card trees at once and hid one via CSS (`md:hidden` / `hidden md:flex`).
+- Every `BookingCard` therefore had two live instances, each with its own local state.
+
+**Implemented**
+- `app/admin/bookings/AdminBookingsClient.tsx`
+  - Added viewport-mode tracking via `matchMedia('(min-width: 768px)')`.
+  - Render only one tree at a time:
+    - mobile tree when `< 768px`
+    - desktop tree when `>= 768px`
+  - Simplified pin→card scroll target selection to a single match now that duplicates are removed.
+
+**Verification run**
+- `npx tsc --noEmit` ✅
+- `npx eslint app/admin/bookings/AdminBookingsClient.tsx` ✅
+- `npm run build` ✅
+
+This closes the underlying duplication, not just the scroll workaround.
