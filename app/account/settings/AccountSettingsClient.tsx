@@ -1,13 +1,13 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Script from 'next/script'
-import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 
 interface ProfileData {
   name: string
@@ -67,31 +67,7 @@ export default function AccountSettingsClient({ profile }: Props) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const addressInputRef = useRef<HTMLInputElement>(null)
 
-  const isLoaded = useMapsLoaded()
-
-  useEffect(() => {
-    if (!isLoaded || !addressInputRef.current) return
-    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      componentRestrictions: { country: 'sg' },
-      fields: ['formatted_address', 'geometry', 'address_components'],
-    })
-    const listener = ac.addListener('place_changed', () => {
-      const place = ac.getPlace()
-      if (!place.geometry?.location) return
-      const postalComp = place.address_components?.find(c => c.types.includes('postal_code'))
-      const resolved = {
-        address: place.formatted_address ?? '',
-        postal_code: postalComp?.short_name ?? '',
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng(),
-      }
-      setAddressData(resolved)
-      setAddressDisplay(resolved.address)
-    })
-    return () => { window.google.maps.event.removeListener(listener) }
-  }, [isLoaded])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -170,22 +146,15 @@ export default function AccountSettingsClient({ profile }: Props) {
             </Label>
             <p className="text-xs text-muted-foreground">Required before you can book a service</p>
           </div>
-          <div className="relative">
-            <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <Input
-              id="address"
-              ref={addressInputRef}
-              value={addressDisplay}
-              onChange={e => {
-                setAddressDisplay(e.target.value)
-                if (addressData) setAddressData(null)
-              }}
-              placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
-              disabled={!isLoaded}
-              autoComplete="off"
-              className="h-11 pl-9"
-            />
-          </div>
+          <AddressAutocomplete
+            id="address"
+            placeholder="Start typing your address…"
+            defaultValue={profile.address ?? ''}
+            onResolved={resolved => {
+              setAddressData(resolved)
+              if (resolved) setAddressDisplay(resolved.address)
+            }}
+          />
           {addressData ? (
             <p className="text-xs text-green-700">
               ✓ Address confirmed{addressData.postal_code ? `: Singapore ${addressData.postal_code}` : ''}

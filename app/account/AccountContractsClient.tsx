@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import Script from 'next/script'
 import { QRCodeSVG } from 'qrcode.react'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,7 @@ import { ContractPricingTier } from '@/lib/types'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
 import { FileText, FileX, Home, MapPin, Pencil } from 'lucide-react'
-import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 
 interface ServiceDate {
   id: string
@@ -117,23 +117,6 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
   const [unitFloor, setUnitFloor] = useState(profileUnitFloor ?? '')
   const [buildingName, setBuildingName] = useState(profileBuildingName ?? '')
   const [geoLoading, setGeoLoading] = useState(false)
-  const addressInputRef = useRef<HTMLInputElement>(null)
-  const isLoaded = useMapsLoaded()
-
-  useEffect(() => {
-    if (!isLoaded || !addressInputRef.current || preset !== 'other') return
-    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      componentRestrictions: { country: 'sg' },
-      fields: ['formatted_address'],
-    })
-    const listener = ac.addListener('place_changed', () => {
-      const place = ac.getPlace()
-      if (!place.formatted_address) return
-      setAddressText(place.formatted_address)
-      setAddressConfirmed(true)
-    })
-    return () => { window.google.maps.event.removeListener(listener) }
-  }, [isLoaded, preset, dialogOpen])
 
   function applyHome() {
     setPreset('home')
@@ -395,14 +378,12 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
 
                       {preset === 'other' && (
                         <div className="space-y-1">
-                          <input
-                            ref={addressInputRef}
-                            type="text"
-                            placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
-                            disabled={!isLoaded}
-                            onChange={() => setAddressConfirmed(false)}
-                            autoComplete="off"
-                            className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
+                          <AddressAutocomplete
+                            placeholder="Start typing your address…"
+                            onResolved={resolved => {
+                              setAddressText(resolved?.address ?? '')
+                              setAddressConfirmed(!!resolved)
+                            }}
                           />
                           {addressConfirmed
                             ? <p className="text-xs text-green-700">✓ Address confirmed</p>

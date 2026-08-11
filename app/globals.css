@@ -169,3 +169,24 @@
     }
   }
 }
+/* Google PlaceAutocompleteElement — match the shadcn <Input> it replaced.
+   The widget is a web component, so it takes design tokens through the
+   documented --gmp-* custom properties rather than utility classes. */
+.hw-place-autocomplete-host {
+  display: block;
+}
+
+gmp-place-autocomplete,
+.hw-place-autocomplete {
+  display: block;
+  width: 100%;
+  --gmp-mat-color-surface: var(--background);
+  --gmp-mat-color-on-surface: var(--foreground);
+  --gmp-mat-color-on-surface-variant: var(--muted-foreground);
+  --gmp-mat-color-outline: var(--border);
+  --gmp-mat-color-primary: var(--accent);
+  --gmp-mat-color-info: var(--accent);
+  --gmp-mat-font-family: inherit;
+  --gmp-mat-font-size-body: 0.875rem;
+  border-radius: var(--radius);
+}
