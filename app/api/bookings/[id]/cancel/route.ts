@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookingCancelled } from '@/lib/email/send'
 
 const SGT_OFFSET_MS = 8 * 60 * 60 * 1000
@@ -77,6 +78,16 @@ export async function PATCH(
 
   if (error || !updated) {
     return NextResponse.json({ error: error?.message ?? 'Update failed' }, { status: 500 })
+  }
+
+  // Free the contract service date slot if this booking was linked to one.
+  if (booking.contract_id) {
+    const adminClient = createAdminClient()
+    await adminClient
+      .from('contract_service_dates')
+      .update({ booking_id: null })
+      .eq('booking_id', id)
+      .eq('contract_id', booking.contract_id)
   }
 
   const adminEmail = await getAdminEmail(supabase)

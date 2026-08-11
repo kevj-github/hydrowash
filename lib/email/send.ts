@@ -4,12 +4,15 @@ import type { BookingWithRelations } from '@/lib/types'
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'HydroWash <noreply@hydrowash.services>'
 
+const fmtDate = (d: string) =>
+  new Date(d + 'T00:00:00Z').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+
 export async function sendBookingReceived(booking: BookingWithRelations, email: string) {
   const { BookingReceived } = await import('./templates/BookingReceived')
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Booking received — HydroWash',
+    subject: `Your ${booking.service_type.name} booking (${fmtDate(booking.booking_date)}) has been received — HydroWash`,
     react: BookingReceived({ booking }),
   })
 }
@@ -19,7 +22,7 @@ export async function sendBookingApproved(booking: BookingWithRelations, email: 
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Booking confirmed — HydroWash',
+    subject: `Your ${booking.service_type.name} is confirmed for ${fmtDate(booking.confirmed_date ?? booking.booking_date)} — HydroWash`,
     react: BookingApproved({ booking }),
   })
 }
@@ -29,7 +32,7 @@ export async function sendBookingRejected(booking: BookingWithRelations, email: 
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Booking update — HydroWash',
+    subject: `Update on your ${booking.service_type.name} booking (${fmtDate(booking.booking_date)}) — HydroWash`,
     react: BookingRejected({ booking }),
   })
 }
@@ -53,7 +56,7 @@ export async function sendDayBeforeReminder(booking: BookingWithRelations, email
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Reminder: your appointment is tomorrow — HydroWash',
+    subject: `Reminder: your ${booking.service_type.name} tomorrow (${fmtDate(booking.confirmed_date ?? booking.booking_date)}) — HydroWash`,
     react: DayBeforeReminder({ booking }),
   })
 }
@@ -66,7 +69,7 @@ export async function sendBookingRescheduled(
   return resend.emails.send({
     from: FROM,
     to: adminEmail,
-    subject: `Booking rescheduled — #${data.bookingId}`,
+    subject: `${data.customerName} rescheduled: ${data.serviceType} — HydroWash`,
     react: BookingRescheduled(data),
   })
 }
@@ -79,7 +82,7 @@ export async function sendBookingCancelled(
   return resend.emails.send({
     from: FROM,
     to: adminEmail,
-    subject: `Booking cancelled — #${data.bookingId}`,
+    subject: `${data.customerName} cancelled: ${data.serviceType} — HydroWash`,
     react: BookingCancelled(data),
   })
 }
@@ -92,7 +95,7 @@ export async function sendContractServiceDue(
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Your quarterly aircon service is due — HydroWash',
+    subject: `Your quarterly aircon service is due ${fmtDate(data.dueDate)} — HydroWash`,
     react: ContractServiceDue(data),
   })
 }
@@ -105,7 +108,7 @@ export async function sendContractExpiring(
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Your maintenance contract expires soon — HydroWash',
+    subject: `Your maintenance contract expires ${fmtDate(data.endDate)} — HydroWash`,
     react: ContractExpiring(data),
   })
 }
@@ -177,7 +180,6 @@ export async function sendContractPricing(
 export async function sendWorkOrderReport(
   data: {
     customerName: string
-    workOrderNo: number
     date: string
     serviceType: string
     address: string
@@ -185,6 +187,7 @@ export async function sendWorkOrderReport(
     paynowQrDataUrl: string
     paynowMobile: string
     referenceId: string
+    pdfFilename: string
   },
   customerEmail: string,
   pdfBuffer: Buffer
@@ -193,8 +196,8 @@ export async function sendWorkOrderReport(
   return resend.emails.send({
     from: FROM,
     to: customerEmail,
-    subject: `Your HydroWash Work Order #${data.workOrderNo} — S$${data.totalSgd.toFixed(2)} due`,
+    subject: `${data.serviceType} on ${fmtDate(data.date)} — S$${data.totalSgd.toFixed(2)} due — HydroWash`,
     react: WorkOrderEmail(data),
-    attachments: [{ filename: `work-order-${data.workOrderNo}.pdf`, content: pdfBuffer }],
+    attachments: [{ filename: data.pdfFilename, content: pdfBuffer }],
   })
 }

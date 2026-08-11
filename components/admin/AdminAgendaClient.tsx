@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { SLOT_KEYS, SLOT_LABELS } from '@/lib/types'
@@ -26,29 +27,59 @@ interface Props {
 }
 
 export function AdminAgendaClient({ days, grid, todayStr, weekStartStr, status, prevWeek, nextWeek }: Props) {
-  const [selectedDay, setSelectedDay] = useState<string>(days[0] ?? todayStr)
+  const router = useRouter()
+  const [selectedDay, setSelectedDay] = useState<string>(
+    days.includes(todayStr) ? todayStr : (days[0] ?? todayStr)
+  )
 
-  function prevDay() {
-    setSelectedDay(d => {
-      const nd = new Date(d + 'T00:00:00Z')
-      nd.setUTCDate(nd.getUTCDate() - 1)
-      return nd.toISOString().slice(0, 10)
-    })
+  const dayIdx = days.indexOf(selectedDay)
+
+  function prevDay() { if (dayIdx > 0) setSelectedDay(days[dayIdx - 1]) }
+  function nextDay() { if (dayIdx < days.length - 1) setSelectedDay(days[dayIdx + 1]) }
+
+  function goToToday() {
+    if (days.includes(todayStr)) {
+      setSelectedDay(todayStr)
+    } else {
+      const d = new Date(todayStr + 'T00:00:00Z')
+      const dow = d.getUTCDay()
+      d.setUTCDate(d.getUTCDate() + (dow === 0 ? -6 : 1 - dow))
+      router.push(`/admin/agenda?week=${d.toISOString().slice(0, 10)}&status=${status}`)
+    }
   }
-  function nextDay() {
-    setSelectedDay(d => {
-      const nd = new Date(d + 'T00:00:00Z')
-      nd.setUTCDate(nd.getUTCDate() + 1)
-      return nd.toISOString().slice(0, 10)
-    })
-  }
+
+  const weekLabel = days.length >= 7
+    ? `${new Date(days[0] + 'T00:00:00Z').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', timeZone: 'UTC' })} – ${new Date(days[6] + 'T00:00:00Z').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}`
+    : ''
 
   return (
     <>
       {/* ── Mobile day-list (< md) ── */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={prevDay} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted">
+        {/* Week navigation row */}
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => router.push(`/admin/agenda?week=${prevWeek}&status=${status}`)}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted"
+          >
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <span className="text-xs text-muted-foreground font-medium">{weekLabel}</span>
+          <button
+            onClick={() => router.push(`/admin/agenda?week=${nextWeek}&status=${status}`)}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted"
+          >
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Day navigation row */}
+        <div className="flex items-center justify-between mb-1">
+          <button
+            onClick={prevDay}
+            disabled={dayIdx <= 0}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted disabled:opacity-30"
+          >
             <ChevronLeft className="w-5 h-5 text-primary" />
           </button>
           <div className="text-center">
@@ -59,9 +90,22 @@ export function AdminAgendaClient({ days, grid, todayStr, weekStartStr, status, 
               <span className="text-xs text-accent font-medium">Today</span>
             )}
           </div>
-          <button onClick={nextDay} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted">
+          <button
+            onClick={nextDay}
+            disabled={dayIdx >= days.length - 1}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted disabled:opacity-30"
+          >
             <ChevronRight className="w-5 h-5 text-primary" />
           </button>
+        </div>
+
+        {/* Today shortcut — only when not already on today */}
+        <div className="flex justify-center mb-4">
+          {(selectedDay !== todayStr || !days.includes(todayStr)) && (
+            <button onClick={goToToday} className="text-xs text-accent hover:underline">
+              Today
+            </button>
+          )}
         </div>
 
         <div className="space-y-2">

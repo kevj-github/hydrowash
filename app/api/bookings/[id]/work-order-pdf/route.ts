@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateWorkOrderPdf } from '@/lib/pdf/generate'
 import type { WorkOrderProps } from '@/lib/pdf/WorkOrderTemplate'
+import { buildServiceReportPdfFilename } from '@/lib/utils/pdf-filename'
 
 export async function GET(
   _req: NextRequest,
@@ -67,7 +68,6 @@ export async function GET(
   const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
 
   const props: WorkOrderProps = {
-    workOrderNo: booking.work_order_no ?? 0,
     customerName: booking.customer?.name ?? customerUser?.email ?? 'Customer',
     customerNo: booking.customer?.customer_no ?? 0,
     contactNo: booking.customer?.phone ?? customerUser?.phone ?? '',
@@ -95,11 +95,16 @@ export async function GET(
   }
 
   const buf = await generateWorkOrderPdf(props)
+  const pdfFilename = buildServiceReportPdfFilename({
+    customerName: booking.customer?.name,
+    bookingType: booking.service_type?.name ?? booking.category ?? 'service',
+    bookingDate: booking.confirmed_date ?? booking.booking_date ?? jc.completed_at,
+  })
 
   return new Response(new Uint8Array(buf), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="work-order-${booking.work_order_no ?? id}.pdf"`,
+      'Content-Disposition': `inline; filename="${pdfFilename}"`,
     },
   })
 }

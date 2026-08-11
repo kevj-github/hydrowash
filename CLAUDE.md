@@ -70,7 +70,9 @@ app/
   (public)/book/page.tsx       # 3-step booking wizard (uses public layout + navbar)
   auth/login/page.tsx
   auth/register/page.tsx
-  auth/callback/route.ts       # Supabase auth callback
+  auth/callback/route.ts       # Supabase auth callback; ?next= param validated (relative paths only)
+  auth/reset-password/page.tsx # Client: verifies recovery OTP via token_hash, calls updateUser({password}), redirects to login
+  api/auth/signout/route.ts    # GET: server-side signOut() + redirect to /
   account/layout.tsx           # Customer auth guard + nav (also has Contracts & Invoices link)
   account/bookings/page.tsx    # Customer booking history
   account/contracts/page.tsx   # Server wrapper: fetches contracts + invoices, delegates to AccountContractsClient
@@ -162,34 +164,7 @@ lib/
   types.ts                     # Shared TypeScript types — TimeSlot, PreferredDateSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings, AcUnitDetail, ChecklistItem, AdditionalCharge, JobCompletion
 
 middleware.ts                  # Auth routing (role-based redirects — admin and customer only) ⚠ Next.js 16 deprecated this filename in favour of proxy.ts — still works but will need renaming
-supabase/migrations/001_schema.sql
-supabase/migrations/002_rls.sql
-supabase/migrations/003_seed_services.sql
-supabase/migrations/003_contracts.sql        # contracts, contract_service_dates, invoices + RLS
-supabase/migrations/004_media_urls.sql       # media_urls text[] column on bookings
-supabase/migrations/005_auto_create_profile.sql  # SECURITY DEFINER trigger: auto-creates profile on auth.users insert
-supabase/migrations/006_tech_bookings_rls.sql    # (superseded by 008 — policies dropped)
-supabase/migrations/007_tech_profiles_rls.sql    # (superseded by 008 — policies dropped)
-supabase/migrations/008_remove_cars_and_jobs.sql # Drops service_cars, scheduled_jobs, daily_car_availability; removes technician role ✅ applied
-supabase/migrations/009_contract_address.sql     # Adds address text column to contracts table
-supabase/migrations/010_phase2_slot_model.sql    # Drops earliest_date/latest_date/preferred_slot/room_type; adds booking_date + time_slot + partial unique index ✅ applied
-supabase/migrations/011_phase2_ac_locations.sql  # ac_unit_locations, booking_unit_locations, ac_unit_types, ac_brands + seeds ✅ applied
-supabase/migrations/012_phase2_app_settings.sql  # paynow_mobile, contract_pricing_tiers on app_settings ✅ applied
-supabase/migrations/013_phase2_blocked_slots.sql # blocked_slots table with full-day + slot-level unique indexes ✅ applied
-supabase/migrations/016_phase2_rls.sql           # RLS for all Phase 2 new tables ✅ applied
-supabase/migrations/017_profile_address.sql      # address, address_lat, address_lng, postal_code on profiles ✅ applied
-supabase/migrations/018_contract_pending.sql     # price_sgd nullable; PENDING_REVIEW status; expiry_reminder_sent ✅ applied
-supabase/migrations/019_contracts_customer_insert.sql  # RLS INSERT for customer self-signup ✅ applied
-supabase/migrations/020_multi_slot.sql               # preferred_slots text[], confirmed_slot text; drop PENDING slot uniqueness; new APPROVED confirmed_slot unique index; drop booking_unit_locations unique constraint ✅ applied
-supabase/migrations/021_multi_date_slots.sql         # preferred_date_slots jsonb ✅ applied
-supabase/migrations/022_contract_awaiting_payment.sql # contracts status adds AWAITING_PAYMENT ✅ applied
-supabase/migrations/023_booking_cancellation.sql     # adds CANCELLED to bookings status; cancelled_at, cancelled_by, cancelled_reason columns ✅ applied
-supabase/migrations/024_month_only_service_dates.sql # adds due_month text + second_reminder_sent bool to contract_service_dates ✅ applied
-supabase/migrations/025_app_settings_company.sql     # adds company_address, company_phone, company_email, company_instagram, authorised_officer_name to app_settings ✅ applied
-supabase/migrations/026_completion_invoice.sql       # profiles.customer_no (bigint, auto-seq trigger); bookings.work_order_no + attended_by; job_completions table; RLS ✅ applied
-supabase/migrations/027_service_type_price.sql       # service_types.default_price_sgd numeric ✅ applied
-supabase/migrations/028_customer_booking_update.sql  # RLS UPDATE policy for customers on own bookings ✅ applied
-supabase/migrations/029_booking_contract_others.sql  # bookings.unit_location_others text[] + bookings.contract_id uuid ✅ applied
+supabase/migrations/           # Migrations 001–031 all applied; see individual SQL files for schema history
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -318,20 +293,8 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 
 **Animation utilities:** `.animate-fade-up`, `.animate-fade-up-delay-1/2/3` in `globals.css`. Hero elements only.
 
-## Feature completeness (as of 2026-06-03)
-All features shipped. See git log for change history.
-- Booking portal (3-step wizard, multi-date slots, SGT-aware calendar, "Others" locations) ✅
-- Contract-linked bookings lock address to contract location (auto-geocoded, read-only in step 1) ✅
-- Admin dashboard (bookings map, route optimiser, agenda week-grid, customer 360) ✅
-- Contracts + invoices (PDF generation, PayNow QR, quarterly reminders, customer self-signup) ✅
-- Contract pricing email auto-sent on set-price (single-step dialog, no separate send button) ✅
-- Customer /account/contracts shows "How contracts work" description + pricing tier chips ✅
-- Job completion workflow (3-step dialog, save_only preview, work order PDF, auto work_order_no) ✅
-- Work-order invoice linked to contract: authoritative via `booking.contract_id` (customer selection), or admin's explicit service-date link if present ✅
-- Auth via Supabase hook → Resend; custom domain `noreply@hydrowash.services` ✅
-- Mobile UX (CustomerBottomNav, AdminBottomNav, week-strip calendar, responsive dialogs) ✅
-- Mobile admin invoices: full mark-paid dialog + View PDF + contract ref + paid details on cards ✅
-- Admin settings: CRUD for service types, AC brands, unit types, unit locations ✅
+## Feature completeness
+All features shipped as of 2026-06-05. See git log for change history.
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -344,7 +307,6 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 ## Misc
 - **Design tokens — never hardcode hex.** Use `bg-accent`/`text-accent` for `#0369A1`, `bg-primary`/`text-primary` for `#0F172A`, `bg-muted` for section backgrounds, `border-border` for borders, `text-muted-foreground` for secondary text.
 - **Icons — Lucide only.** Never use emoji as icons. Import from `lucide-react`.
-- Run `export CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` before writing large implementation plan files.
 - The service role client (`lib/supabase/admin.ts`) bypasses RLS — only use server-side.
 - Cron endpoints are secured with a `CRON_SECRET` header check.
 - shadcn/ui v4 uses `@base-ui` (NOT `@radix-ui`). `onValueChange` is `(value: string | null, event: Event) => void` — always use `?? ''` when assigning to string state.
@@ -371,5 +333,10 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Select component:** `SelectTrigger` is `w-full` (was `w-fit`); `SelectPopup` uses `min-w-(--anchor-width)` so dropdown options are never clipped.
 - **Contract-linked booking address:** `BookingData` has `contract_address?: string`. When a contract is selected in `StepServiceDetails`, `contract_address` is set alongside `contract_id`. `StepScheduleLocation` accepts `contractAddress?: string` prop — when provided, address picker is hidden and replaced with a locked display; a `useEffect` geocodes the contract address via `POST /api/geocode` on mount (sets lat/lng). `canNext` at step 1 allows proceeding when `contract_address` is set even if geocoding fails.
 - **Admin invoices mobile:** `MobileInvoiceCard` component (file-local, not exported) in `app/admin/invoices/page.tsx` handles mark-paid dialog state per card. Shows: customer, status badge, description, "Contract linked" chip when `contract_id` set, amount + created date, paid date + payment method, View PDF button (when `booking_id` set), Mark Paid button (when UNPAID).
-- **Last updated:** 2026-06-04. All migrations 001–030 applied. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
-- **DB connection (VPS):** `postgresql://postgres@db.qasbovdxswjrtxouxejh.supabase.co:5432/postgres` — password in `.env.local` comments or ask owner.
+- **Password reset callback:** `app/auth/callback/route.ts` redirects to `/auth/reset-password` when `type === 'recovery'` (after `verifyOtp`). The page uses `supabase.auth.updateUser({ password })` client-side.
+- **Open redirect protection:** `?redirect=` in `app/auth/login/page.tsx` and `?next=` in `app/auth/callback/route.ts` both validate the value starts with `/` and not `//` before following. Values that fail validation fall through to the default (`/`).
+- **Email subjects:** `lib/email/send.ts` has a `fmtDate` helper (`"5 Jun 2026"` format, UTC) used in all booking and contract email subjects. Subjects include service type name + date to prevent Gmail threading. Work order emails use service type name + date + amount (no work order number).
+- **Post-login redirect — use `window.location.href`, not `router.push`:** After `supabase.auth.signInWithPassword`, `@supabase/ssr`'s `createBrowserClient` writes the session cookie asynchronously via `onAuthStateChange`. Calling `router.push` immediately races ahead before the cookie is committed, so the middleware's `supabase.auth.getUser()` sees no session and bounces the user back to login. Always use `window.location.href = path` for a hard redirect after any Supabase sign-in/sign-up.
+- **Security headers:** `next.config.ts` exports a `headers()` function adding `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy: same-origin`, and a scoped `Permissions-Policy` to all routes. Do not remove these.
+- **Footer contrast:** Footer uses `text-slate-300` (not `text-slate-400`/`text-slate-500`/`text-slate-600`) for all text on the `bg-primary` dark navy background to meet WCAG AA contrast requirements.
+- **Last updated:** 2026-06-16. All migrations 001–031 applied. Security: RLS role-escalation + booking self-approval (031), open-redirect on auth params, user-enumeration via check-email endpoint — all fixed. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.

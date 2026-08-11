@@ -33,3 +33,14 @@ coverage/
 e2e/.auth/
 e2e/screenshots/
 playwright-report/
+.playwright-mcp/
+
+# QA screenshots and test artefacts (root-level)
+qa-*.png
+mobile-*.png
+*.jpeg
+*.jpg
+test-results/
+
+# Claude worktrees
+.claude/worktrees/

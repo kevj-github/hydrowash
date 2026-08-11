@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Wind, Wrench, Zap, Package, ArrowRight, CalendarCheck, Cpu, MapPin, ShieldCheck, FileText } from 'lucide-react'
+import { Wind, Wrench, Zap, Package, ArrowRight, Cpu, MapPin, ShieldCheck, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Section, SectionInner } from '@/components/ui/section'
 import { SectionHeading } from '@/components/ui/section-heading'
 import { ServiceCard } from '@/components/ui/service-card'
-import { StepItem } from '@/components/ui/step-item'
+import { HowItWorksSteps } from './HowItWorksSteps'
 
 const PHOTO_HERO = 'https://images.pexels.com/photos/6471913/pexels-photo-6471913.jpeg?auto=compress&cs=tinysrgb&w=1920'
 const PHOTO_SERVICE_MAINTENANCE = 'https://images.pexels.com/photos/32588555/pexels-photo-32588555.jpeg?auto=compress&cs=tinysrgb&w=800'
@@ -14,6 +14,15 @@ const PHOTO_SERVICE_INSTALL = 'https://images.pexels.com/photos/7347538/pexels-p
 const PHOTO_WHY_US = 'https://images.pexels.com/photos/5463576/pexels-photo-5463576.jpeg?auto=compress&cs=tinysrgb&w=1200'
 const PHOTO_CTA = 'https://images.pexels.com/photos/7587368/pexels-photo-7587368.jpeg?auto=compress&cs=tinysrgb&w=1920'
 
+const featuredService = {
+  icon: Zap,
+  title: 'Fault Repair',
+  tag: 'Urgent? We come to you',
+  description: 'Fast diagnosis and repair for all aircon faults — from water leaks to no cooling.',
+  photoSrc: PHOTO_SERVICE_FAULT,
+  photoAlt: 'Aircon fault repair technician',
+}
+
 const services = [
   {
     icon: Wrench,
@@ -21,13 +30,6 @@ const services = [
     description: 'Regular servicing, chemical wash, and overhaul to keep your AC running at peak efficiency year-round.',
     photoSrc: PHOTO_SERVICE_MAINTENANCE,
     photoAlt: 'Aircon maintenance and cleaning',
-  },
-  {
-    icon: Zap,
-    title: 'Fault Repair',
-    description: 'Fast diagnosis and repair for all aircon faults — from water leaks to no cooling. We come to you.',
-    photoSrc: PHOTO_SERVICE_FAULT,
-    photoAlt: 'Aircon fault repair technician',
   },
   {
     icon: Package,
@@ -40,12 +42,12 @@ const services = [
 
 const steps = [
   { label: 'Choose your service', description: 'Select the type of job' },
-  { label: 'Pick a date & slot', description: 'Choose a time that suits you' },
-  { label: 'We confirm & arrive', description: 'Your booking is locked in' },
+  { label: 'Offer up to 5 dates & times', description: 'Pick as many options as suit you' },
+  { label: 'We lock in one slot', description: 'Confirmed, no back-and-forth' },
 ]
 
 const whyFeatures = [
-  { icon: Zap,         label: 'Same-day availability',      desc: 'Book in the morning, we arrive the same day.' },
+  { icon: Zap,         label: 'Fast response for urgent faults', desc: 'Flexible date & time options, confirmed quickly by our team.' },
   { icon: Cpu,         label: 'All makes & models',          desc: 'Mitsubishi, Daikin, Panasonic, Samsung, and more.' },
   { icon: ShieldCheck, label: 'Transparent pricing',         desc: 'Fixed rates, no hidden fees, ever.' },
   { icon: FileText,    label: '1-year maintenance contracts', desc: 'Quarterly servicing, fully managed for you.' },
@@ -102,7 +104,7 @@ export default async function HomePage() {
               href={bookHref}
               className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30 cursor-pointer"
             >
-              Book a Service
+              Book Now
               <ArrowRight size={16} />
             </Link>
             {!user && (
@@ -114,28 +116,16 @@ export default async function HomePage() {
               </Link>
             )}
           </div>
-        </SectionInner>
-      </section>
-
-      {/* Stat strip */}
-      <section className="bg-white border-b border-border">
-        <SectionInner className="py-8">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="flex flex-col items-center gap-1">
-              <CalendarCheck size={22} className="text-accent mb-1" strokeWidth={1.75} />
-              <p className="font-heading font-bold text-3xl text-primary">5+</p>
-              <p className="text-sm text-muted-foreground">Years in service</p>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Cpu size={22} className="text-accent mb-1" strokeWidth={1.75} />
-              <p className="font-heading font-bold text-3xl text-primary">All</p>
-              <p className="text-sm text-muted-foreground">AC makes &amp; models</p>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <MapPin size={22} className="text-accent mb-1" strokeWidth={1.75} />
-              <p className="font-heading font-bold text-3xl text-primary">SG</p>
-              <p className="text-sm text-muted-foreground">Island-wide coverage</p>
-            </div>
+          <div className="animate-fade-up-delay-3 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
+            <span className="inline-flex items-center gap-1.5">
+              <Cpu size={14} strokeWidth={1.75} />
+              All AC makes &amp; models
+            </span>
+            <span className="hidden sm:block w-px h-3.5 bg-white/15" aria-hidden />
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin size={14} strokeWidth={1.75} />
+              Island-wide coverage
+            </span>
           </div>
         </SectionInner>
       </section>
@@ -144,21 +134,31 @@ export default async function HomePage() {
       <Section className="bg-white py-20">
         <SectionInner>
           <SectionHeading
-            label="Our Services"
-            title="Everything your AC needs"
+            title={<>Everything your <span className="text-accent">AC</span> needs</>}
             subtitle="From routine maintenance to emergency repairs, we handle all makes and models across Singapore."
           />
-          <div className="grid sm:grid-cols-3 gap-6">
-            {services.map(s => (
-              <ServiceCard
-                key={s.title}
-                icon={s.icon}
-                title={s.title}
-                description={s.description}
-                photoSrc={s.photoSrc}
-                photoAlt={s.photoAlt}
-              />
-            ))}
+          <div className="grid gap-6">
+            <ServiceCard
+              featured
+              icon={featuredService.icon}
+              title={featuredService.title}
+              tag={featuredService.tag}
+              description={featuredService.description}
+              photoSrc={featuredService.photoSrc}
+              photoAlt={featuredService.photoAlt}
+            />
+            <div className="grid sm:grid-cols-2 gap-6">
+              {services.map(s => (
+                <ServiceCard
+                  key={s.title}
+                  icon={s.icon}
+                  title={s.title}
+                  description={s.description}
+                  photoSrc={s.photoSrc}
+                  photoAlt={s.photoAlt}
+                />
+              ))}
+            </div>
           </div>
         </SectionInner>
       </Section>
@@ -168,7 +168,7 @@ export default async function HomePage() {
         <SectionInner>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Photo */}
-            <div className="relative h-80 lg:h-[440px] rounded-2xl overflow-hidden">
+            <div className="relative h-80 lg:h-[440px] rounded-2xl overflow-hidden bg-muted">
               <Image
                 src={PHOTO_WHY_US}
                 alt="Professional HydroWash technician"
@@ -181,9 +181,8 @@ export default async function HomePage() {
             {/* Features */}
             <div>
               <SectionHeading
-                label="Why choose us"
-                title="Your AC in expert hands"
-                subtitle="We've been keeping Singapore cool since 2019."
+                title={<>Your <span className="text-accent">AC</span> in expert hands</>}
+                subtitle="We've been keeping Singapore cool for 5 years."
                 align="left"
               />
               <ul className="space-y-5 mt-6">
@@ -208,26 +207,10 @@ export default async function HomePage() {
       <Section className="bg-muted py-20">
         <SectionInner>
           <SectionHeading
-            label="Process"
             title="How it works"
             subtitle="Three steps and we handle the rest."
           />
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-0 max-w-2xl mx-auto">
-            {steps.map((step, i) => (
-              <div key={step.label} className="flex items-center">
-                <div className="flex flex-col items-center text-center px-4">
-                  <div className="w-14 h-14 rounded-full bg-accent text-white font-heading font-bold text-xl flex items-center justify-center mb-3 shadow-md shadow-accent/20">
-                    {i + 1}
-                  </div>
-                  <p className="font-heading font-semibold text-primary text-base">{step.label}</p>
-                  <p className="text-sm text-muted-foreground mt-1 max-w-[140px]">{step.description}</p>
-                </div>
-                {i < steps.length - 1 && (
-                  <div className="hidden sm:block w-16 h-0.5 bg-accent/30 flex-shrink-0 mb-10" />
-                )}
-              </div>
-            ))}
-          </div>
+          <HowItWorksSteps steps={steps} />
         </SectionInner>
       </Section>
 
@@ -239,8 +222,7 @@ export default async function HomePage() {
         </div>
         <SectionInner className="relative text-center">
           <SectionHeading
-            label="Get started"
-            title="Ready to book?"
+            title={<>Ready to <span className="text-sky-400">book</span>?</>}
             subtitle="Create an account in seconds and schedule your first service today."
             light
           />
@@ -248,7 +230,7 @@ export default async function HomePage() {
             href={bookHref}
             className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30 cursor-pointer"
           >
-            Get Started
+            Book Now
             <ArrowRight size={16} />
           </Link>
         </SectionInner>

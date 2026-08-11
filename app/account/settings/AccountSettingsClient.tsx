@@ -1,12 +1,13 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Script from 'next/script'
-import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 
 interface ProfileData {
   name: string
@@ -27,6 +28,29 @@ export default function AccountSettingsClient({ profile }: Props) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const reasonAddress = searchParams.get('reason') === 'address'
+  const supabase = createClient()
+
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwError, setPwError] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) { setPwError('Passwords do not match'); return }
+    if (newPassword.length < 8) { setPwError('Password must be at least 8 characters'); return }
+    setPwSaving(true)
+    setPwError('')
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      setPwError(error.message)
+      setPwSaving(false)
+      return
+    }
+    // Sign out so the new session token takes effect cleanly, then redirect to login
+    await supabase.auth.signOut()
+    router.push('/auth/login?pw=updated')
+  }
 
   const [name, setName] = useState(profile.name)
   const [phone, setPhone] = useState(profile.phone)
@@ -43,31 +67,7 @@ export default function AccountSettingsClient({ profile }: Props) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const addressInputRef = useRef<HTMLInputElement>(null)
 
-  const isLoaded = useMapsLoaded()
-
-  useEffect(() => {
-    if (!isLoaded || !addressInputRef.current) return
-    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      componentRestrictions: { country: 'sg' },
-      fields: ['formatted_address', 'geometry', 'address_components'],
-    })
-    const listener = ac.addListener('place_changed', () => {
-      const place = ac.getPlace()
-      if (!place.geometry?.location) return
-      const postalComp = place.address_components?.find(c => c.types.includes('postal_code'))
-      const resolved = {
-        address: place.formatted_address ?? '',
-        postal_code: postalComp?.short_name ?? '',
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng(),
-      }
-      setAddressData(resolved)
-      setAddressDisplay(resolved.address)
-    })
-    return () => { window.google.maps.event.removeListener(listener) }
-  }, [isLoaded])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -96,7 +96,10 @@ export default function AccountSettingsClient({ profile }: Props) {
       }
       setSaved(true)
       if (reasonAddress && addressData) {
-        setTimeout(() => router.push('/book'), 1200)
+        // Hard navigation: the App Router client cache still holds the /book
+        // prefetch that 307'd back here while the profile had no address, so
+        // router.push would replay that stale redirect.
+        setTimeout(() => { window.location.href = '/book' }, 1200)
       }
     } catch {
       setError('Network error. Please try again.')
@@ -110,7 +113,7 @@ export default function AccountSettingsClient({ profile }: Props) {
   return (
     <div className="max-w-lg mx-auto py-10 px-4">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="lazyOnload"
       />
       <h1 className="font-heading font-bold text-2xl text-primary mb-1">Account Settings</h1>
@@ -137,29 +140,25 @@ export default function AccountSettingsClient({ profile }: Props) {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="address" className="text-sm font-medium text-primary">
-            Home Address
-            <span className="ml-1 text-muted-foreground font-normal text-xs">(used for quick booking)</span>
-            {opt}
-          </Label>
-          <div className="relative">
-            <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <Input
-              id="address"
-              ref={addressInputRef}
-              value={addressDisplay}
-              onChange={e => {
-                setAddressDisplay(e.target.value)
-                if (addressData) setAddressData(null)
-              }}
-              placeholder={isLoaded ? 'Start typing your address…' : 'Loading…'}
-              disabled={!isLoaded}
-              autoComplete="off"
-              className="h-11 pl-9"
-            />
+          <div className="space-y-0.5">
+            <Label htmlFor="address" className="text-sm font-medium text-primary">
+              Home Address <span className="text-destructive">*</span>
+            </Label>
+            <p className="text-xs text-muted-foreground">Required before you can book a service</p>
           </div>
+          <AddressAutocomplete
+            id="address"
+            placeholder="Start typing your address…"
+            defaultValue={profile.address ?? ''}
+            onResolved={resolved => {
+              setAddressData(resolved)
+              if (resolved) setAddressDisplay(resolved.address)
+            }}
+          />
           {addressData ? (
-            <p className="text-xs text-green-700">✓ Address confirmed: {addressData.postal_code}</p>
+            <p className="text-xs text-green-700">
+              ✓ Address confirmed{addressData.postal_code ? `: Singapore ${addressData.postal_code}` : ''}
+            </p>
           ) : addressDisplay ? (
             <p className="text-xs text-slate-400">Select an address from the dropdown suggestions.</p>
           ) : null}
@@ -214,6 +213,47 @@ export default function AccountSettingsClient({ profile }: Props) {
           className="w-full h-11 bg-accent hover:bg-accent/90 text-white font-semibold rounded-lg"
         >
           {saving ? 'Saving…' : 'Save Changes'}
+        </Button>
+      </form>
+      <h2 className="font-heading font-semibold text-lg text-primary mt-10 mb-1">Change Password</h2>
+      <p className="text-muted-foreground text-sm mb-4">Update your account password</p>
+
+      <form onSubmit={handleChangePassword} className="space-y-5 bg-white rounded-2xl border border-border p-6 shadow-sm">
+        <div className="space-y-1.5">
+          <Label htmlFor="new_password" className="text-sm font-medium text-primary">New Password</Label>
+          <Input
+            id="new_password"
+            type="password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            required
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="confirm_password" className="text-sm font-medium text-primary">Confirm Password</Label>
+          <Input
+            id="confirm_password"
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            placeholder="Repeat your password"
+            required
+            className="h-11"
+          />
+        </div>
+        {pwError && (
+          <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+            {pwError}
+          </p>
+        )}
+        <Button
+          type="submit"
+          disabled={pwSaving}
+          className="w-full h-11 bg-accent hover:bg-accent/90 text-white font-semibold rounded-lg"
+        >
+          {pwSaving ? 'Updating…' : 'Update Password'}
         </Button>
       </form>
     </div>

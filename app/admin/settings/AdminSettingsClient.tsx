@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +8,12 @@ import { Textarea } from '@/components/ui/textarea'
 import type { AppSettings, ServiceType, AcBrand, AcUnitType, AcUnitLocation } from '@/lib/types'
 
 type CatalogItem = { id: string; label: string; display_order: number; is_active: boolean }
+
+const TABLE_KIND: Record<'ac_brands' | 'ac_unit_types' | 'ac_unit_locations', string> = {
+  ac_brands: 'brands',
+  ac_unit_types: 'unit_types',
+  ac_unit_locations: 'locations',
+}
 
 function CatalogSection({
   title,
@@ -19,7 +24,7 @@ function CatalogSection({
   tableName: 'ac_brands' | 'ac_unit_types' | 'ac_unit_locations'
   initialItems: CatalogItem[]
 }) {
-  const supabase = createClient()
+  const kind = TABLE_KIND[tableName]
   const [items, setItems] = useState(initialItems)
   const [showForm, setShowForm] = useState(false)
   const [newLabel, setNewLabel] = useState('')
@@ -37,13 +42,14 @@ function CatalogSection({
   async function addItem() {
     if (!newLabel.trim()) return
     const nextOrder = items.length > 0 ? Math.max(...items.map(i => i.display_order)) + 1 : 1
-    const { data, error } = await supabase
-      .from(tableName)
-      .insert({ label: newLabel.trim(), display_order: nextOrder })
-      .select()
-      .single()
-    if (error) { flash('Error: ' + error.message, true); return }
-    setItems(prev => [...prev, data as CatalogItem])
+    const res = await fetch(`/api/admin/ac-catalog?kind=${kind}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: newLabel.trim(), display_order: nextOrder }),
+    })
+    const json = await res.json()
+    if (!res.ok) { flash('Error: ' + json.error, true); return }
+    setItems(prev => [...prev, json as CatalogItem])
     setNewLabel('')
     setShowForm(false)
     flash('Added.')
@@ -51,23 +57,38 @@ function CatalogSection({
 
   async function saveEdit(id: string) {
     if (!editLabel.trim()) return
-    const { error } = await supabase.from(tableName).update({ label: editLabel.trim() }).eq('id', id)
-    if (error) { flash('Error: ' + error.message, true); return }
+    const res = await fetch(`/api/admin/ac-catalog?kind=${kind}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, label: editLabel.trim() }),
+    })
+    const json = await res.json()
+    if (!res.ok) { flash('Error: ' + json.error, true); return }
     setItems(prev => prev.map(i => i.id === id ? { ...i, label: editLabel.trim() } : i))
     setEditingId(null)
     flash('Saved.')
   }
 
   async function toggleActive(item: CatalogItem) {
-    await supabase.from(tableName).update({ is_active: !item.is_active }).eq('id', item.id)
+    const res = await fetch(`/api/admin/ac-catalog?kind=${kind}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item.id, is_active: !item.is_active }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      flash('Error: ' + (json.error ?? 'could not update'), true)
+      return
+    }
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: !i.is_active } : i))
   }
 
   async function deleteItem(id: string) {
-    const { error } = await supabase.from(tableName).delete().eq('id', id)
-    if (error) {
+    const res = await fetch(`/api/admin/ac-catalog?kind=${kind}&id=${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const json = await res.json()
       setConfirmDeleteId(null)
-      flash(error.code === '23503' ? 'Cannot delete: referenced by existing data. Deactivate instead.' : 'Error: ' + error.message, true)
+      flash(json.code === '23503' ? 'Cannot delete: referenced by existing data. Deactivate instead.' : 'Error: ' + json.error, true)
       return
     }
     setItems(prev => prev.filter(i => i.id !== id))
@@ -175,7 +196,6 @@ interface ServiceTypeForm {
 const emptyForm: ServiceTypeForm = { name: '', category: 'MAINTENANCE', description: '', duration_minutes: '', price_sgd: '' }
 
 export function AdminSettingsClient({ initialSettings, initialServiceTypes, initialBrands, initialUnitTypes, initialLocations }: Props) {
-  const supabase = createClient()
   const [settings, setSettings] = useState(initialSettings ?? {
     depot_address: '', depot_lat: 0, depot_lng: 0, company_name: 'HydroWash', contact_email: '',
     company_address: '404B Fernvale Lane, S792404', company_phone: '(+65) 8811 1105',
@@ -207,7 +227,18 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes, init
       const geo = await geoRes.json()
       lat = geo.lat; lng = geo.lng
     }
-    await supabase.from('app_settings').update({ ...settings, depot_lat: lat, depot_lng: lng }).eq('id', 1)
+    const res = await fetch('/api/admin/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...settings, depot_lat: lat, depot_lng: lng }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setMsg('Error: ' + (json.error ?? 'could not save settings'))
+      setSaving(false)
+      setTimeout(() => setMsg(''), 5000)
+      return
+    }
     setSettings(s => ({ ...s, depot_lat: lat, depot_lng: lng }))
     setMsg('Settings saved.')
     setSaving(false)
@@ -228,16 +259,14 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes, init
 
   async function createServiceType() {
     if (!newForm.name.trim() || !newForm.category) return
-    const { data, error } = await supabase.from('service_types').insert({
-      name: newForm.name.trim(),
-      category: newForm.category,
-      description: newForm.description.trim(),
-      duration_minutes: newForm.duration_minutes ? Number(newForm.duration_minutes) : null,
-      price_sgd: newForm.price_sgd ? Number(newForm.price_sgd) : null,
-      active: true,
-    }).select().single()
-    if (error) { flashStError('Error: ' + error.message); return }
-    setServiceTypes(prev => [...prev, data])
+    const res = await fetch('/api/admin/service-types', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newForm),
+    })
+    const json = await res.json()
+    if (!res.ok) { flashStError('Error: ' + json.error); return }
+    setServiceTypes(prev => [...prev, json])
     setNewForm(emptyForm)
     setShowNewForm(false)
     flashStMsg('Service type created.')
@@ -255,32 +284,41 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes, init
   }
 
   async function saveEdit(id: string) {
-    const { data, error } = await supabase.from('service_types').update({
-      name: editForm.name.trim(),
-      category: editForm.category,
-      description: editForm.description.trim(),
-      duration_minutes: editForm.duration_minutes ? Number(editForm.duration_minutes) : null,
-      price_sgd: editForm.price_sgd ? Number(editForm.price_sgd) : null,
-    }).eq('id', id).select().single()
-    if (error) { flashStError('Error: ' + error.message); return }
-    setServiceTypes(prev => prev.map(s => s.id === id ? data : s))
+    const res = await fetch('/api/admin/service-types', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...editForm }),
+    })
+    const json = await res.json()
+    if (!res.ok) { flashStError('Error: ' + json.error); return }
+    setServiceTypes(prev => prev.map(s => s.id === id ? json : s))
     setEditingId(null)
     flashStMsg('Saved.')
   }
 
   async function toggleServiceType(st: ServiceType) {
-    await supabase.from('service_types').update({ active: !st.active }).eq('id', st.id)
+    const res = await fetch('/api/admin/service-types', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: st.id, active: !st.active }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      flashStError('Error: ' + (json.error ?? 'could not update'))
+      return
+    }
     setServiceTypes(prev => prev.map(s => s.id === st.id ? { ...s, active: !s.active } : s))
   }
 
   async function deleteServiceType(id: string) {
-    const { error } = await supabase.from('service_types').delete().eq('id', id)
-    if (error) {
+    const res = await fetch(`/api/admin/service-types?id=${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const json = await res.json()
       setConfirmDeleteId(null)
-      if (error.code === '23503') {
+      if (json.code === '23503') {
         flashStError('Cannot delete: existing bookings use this service type. Deactivate it instead.')
       } else {
-        flashStError('Error: ' + error.message)
+        flashStError('Error: ' + json.error)
       }
       return
     }
@@ -298,32 +336,32 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes, init
         <h2 className="font-heading font-semibold text-primary mb-4">Company & Depot</h2>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Company Name</Label>
-            <Input value={settings.company_name} onChange={e => setSettings(s => ({ ...s, company_name: e.target.value }))} />
+            <Label htmlFor="company_name">Company Name</Label>
+            <Input id="company_name" value={settings.company_name} onChange={e => setSettings(s => ({ ...s, company_name: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Contact Email</Label>
-            <Input type="email" value={settings.contact_email} onChange={e => setSettings(s => ({ ...s, contact_email: e.target.value }))} />
+            <Label htmlFor="contact_email">Contact Email</Label>
+            <Input id="contact_email" type="email" value={settings.contact_email} onChange={e => setSettings(s => ({ ...s, contact_email: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Company Address (shown on PDF documents)</Label>
-            <Input value={settings.company_address ?? ''} onChange={e => setSettings(s => ({ ...s, company_address: e.target.value }))} />
+            <Label htmlFor="company_address">Company Address (shown on PDF documents)</Label>
+            <Input id="company_address" value={settings.company_address ?? ''} onChange={e => setSettings(s => ({ ...s, company_address: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Company Phone (shown on PDF documents)</Label>
-            <Input value={settings.company_phone ?? ''} onChange={e => setSettings(s => ({ ...s, company_phone: e.target.value }))} />
+            <Label htmlFor="company_phone">Company Phone (shown on PDF documents)</Label>
+            <Input id="company_phone" value={settings.company_phone ?? ''} onChange={e => setSettings(s => ({ ...s, company_phone: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Company Email (shown on PDF documents)</Label>
-            <Input value={settings.company_email ?? ''} onChange={e => setSettings(s => ({ ...s, company_email: e.target.value }))} />
+            <Label htmlFor="company_email">Company Email (shown on PDF documents)</Label>
+            <Input id="company_email" value={settings.company_email ?? ''} onChange={e => setSettings(s => ({ ...s, company_email: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Instagram Handle (shown on PDF documents)</Label>
-            <Input value={settings.company_instagram ?? ''} onChange={e => setSettings(s => ({ ...s, company_instagram: e.target.value }))} placeholder="@Hydrowash.sg" />
+            <Label htmlFor="company_instagram">Instagram Handle (shown on PDF documents)</Label>
+            <Input id="company_instagram" value={settings.company_instagram ?? ''} onChange={e => setSettings(s => ({ ...s, company_instagram: e.target.value }))} placeholder="@Hydrowash.sg" />
           </div>
           <div className="space-y-1.5">
-            <Label>Authorised Officer Name (PDF signature)</Label>
-            <Input value={settings.authorised_officer_name ?? ''} onChange={e => setSettings(s => ({ ...s, authorised_officer_name: e.target.value }))} />
+            <Label htmlFor="authorised_officer_name">Authorised Officer Name (PDF signature)</Label>
+            <Input id="authorised_officer_name" value={settings.authorised_officer_name ?? ''} onChange={e => setSettings(s => ({ ...s, authorised_officer_name: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
             <Label>PayNow Mobile Number (for QR code on invoices &amp; contracts)</Label>

@@ -24,14 +24,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </div>
             <span className="font-heading font-bold text-base text-white">HydroWash</span>
             <span className="text-white/30 mx-2 text-sm hidden sm:block">|</span>
-            <span className="text-slate-400 text-sm font-medium hidden sm:block">Admin</span>
+            <span className="text-slate-300 text-sm font-medium hidden sm:block">Admin</span>
           </div>
           <div className="hidden md:flex">
             <AdminNav />
           </div>
           <Link
             href="/"
-            className="text-sm text-slate-500 hover:text-slate-300 px-3 py-1.5 rounded-md hover:bg-white/10 transition-all duration-150 shrink-0 hidden lg:block"
+            className="text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-md hover:bg-white/10 transition-all duration-150 shrink-0 hidden lg:block"
           >
             ← Site
           </Link>

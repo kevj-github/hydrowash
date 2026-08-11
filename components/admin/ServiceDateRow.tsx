@@ -1,9 +1,18 @@
 'use client'
 
+import { useState } from 'react'
 import { ContractServiceDateWithBooking } from '@/lib/types'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
-import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 interface Props {
   index: number
@@ -19,17 +28,16 @@ export default function ServiceDateRow({
   availableBookings,
   onLink,
 }: Props) {
+  const [open, setOpen] = useState(false)
+  const [linking, setLinking] = useState(false)
   const todayMonth = new Date().toISOString().slice(0, 7)
   const isPast = serviceDate.due_month < todayMonth
 
-  async function handleLink() {
-    const bookingId = prompt(
-      'Enter booking ID to link (or pick from the list):\n' +
-        availableBookings.map((b) => `${b.label}: ${b.id}`).join('\n')
-    )
-    if (bookingId) {
-      await onLink(serviceDate.id, bookingId.trim())
-    }
+  async function handleSelect(bookingId: string) {
+    setLinking(true)
+    await onLink(serviceDate.id, bookingId)
+    setLinking(false)
+    setOpen(false)
   }
 
   return (
@@ -38,7 +46,9 @@ export default function ServiceDateRow({
       <td className="py-2 px-3 font-medium">{formatDueMonth(serviceDate.due_month)}</td>
       <td className="py-2 px-3">
         {serviceDate.booking ? (
-          <span className="text-green-700">Linked: {serviceDate.booking.id.slice(0, 8)}…</span>
+          <span className="text-green-700">
+            {serviceDate.booking.confirmed_date ?? 'TBD'} — {serviceDate.booking.address?.split(',')[0]}
+          </span>
         ) : (
           <span className={isPast ? 'text-red-600' : 'text-gray-400'}>
             {isPast ? 'Overdue — no booking' : 'Not yet booked'}
@@ -54,16 +64,44 @@ export default function ServiceDateRow({
       </td>
       <td className="py-2 px-3">
         {serviceDate.reminder_sent ? (
-          <Badge className="bg-blue-100 text-blue-700">Reminder shown</Badge>
+          <Badge className="bg-blue-100 text-blue-700">Reminder sent</Badge>
         ) : (
           <span className="text-gray-400">—</span>
         )}
       </td>
       <td className="py-2 px-3">
         {!serviceDate.booking_id && (
-          <Button size="sm" variant="outline" onClick={handleLink}>
-            Link Booking
-          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+              Link Booking
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Link booking to Visit {index + 1}</DialogTitle>
+              </DialogHeader>
+              <div className="pt-2">
+                {availableBookings.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    No approved maintenance bookings found for this customer.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                    {availableBookings.map(b => (
+                      <button
+                        key={b.id}
+                        disabled={linking}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => handleSelect(b.id)}
+                        className="w-full text-left px-3 py-2.5 rounded-lg border border-border hover:bg-muted text-sm transition-colors disabled:opacity-50 cursor-pointer"
+                      >
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </td>
     </tr>

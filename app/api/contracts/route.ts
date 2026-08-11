@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { CreateContractPayload } from '@/lib/types'
+import { generateServiceDates } from '@/lib/contracts/service-dates'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -49,16 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: contractError?.message ?? 'Insert failed' }, { status: 500 })
   }
 
-  const serviceDates = [1, 2, 3, 4].map((n) => {
-    const d = new Date(`${start_date}T00:00:00Z`)
-    d.setUTCMonth(d.getUTCMonth() + 3 * n)
-    return {
-      contract_id: contract.id,
-      due_date: d.toISOString().split('T')[0],
-      reminder_sent: false,
-      booking_id: null,
-    }
-  })
+  const serviceDates = generateServiceDates(contract.id, start_date)
 
   const { error: datesError } = await supabase
     .from('contract_service_dates')

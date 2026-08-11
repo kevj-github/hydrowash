@@ -92,7 +92,8 @@ export default async function AdminCustomerDetailPage({
         {!bookings.length ? (
           <p className="text-sm text-muted-foreground">No bookings.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="min-w-max w-full text-sm">
             <thead className="text-xs text-muted-foreground uppercase">
               <tr>
                 <th className="text-left pb-2">Date / Slots</th>
@@ -132,6 +133,7 @@ export default async function AdminCustomerDetailPage({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Home, MapPin, Pencil, SlidersHorizontal } from 'lucide-react'
-import { useMapsLoaded } from '@/lib/hooks/useMapsLoaded'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 
 type LocationPreset = 'home' | 'current' | 'other'
 
@@ -36,7 +36,6 @@ type CustomerOption = {
 
 export default function AdminContractsPage() {
   const supabase = createClient()
-  const isLoaded = useMapsLoaded()
 
   const [contracts, setContracts] = useState<ContractRow[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -65,7 +64,6 @@ export default function AdminContractsPage() {
   const [preset, setPreset] = useState<LocationPreset>('other')
   const [geoLoading, setGeoLoading] = useState(false)
   const [addressConfirmed, setAddressConfirmed] = useState(false)
-  const addressInputRef = useRef<HTMLInputElement>(null)
   const onChangeAddressRef = useRef<(addr: string) => void>(() => {})
 
   const [form, setForm] = useState<{
@@ -127,21 +125,6 @@ export default function AdminContractsPage() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
-
-  // Wire up Places Autocomplete when dialog opens in 'other' mode
-  useEffect(() => {
-    if (!isLoaded || !dialogOpen || preset !== 'other' || !addressInputRef.current) return
-    const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      componentRestrictions: { country: 'sg' },
-      fields: ['formatted_address', 'address_components'],
-    })
-    const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace()
-      if (!place.formatted_address) return
-      onChangeAddressRef.current(place.formatted_address)
-    })
-    return () => { window.google.maps.event.removeListener(listener) }
-  }, [isLoaded, dialogOpen, preset])
 
   function applyHome() {
     if (!selectedCustomer?.address) return
@@ -276,7 +259,7 @@ export default function AdminContractsPage() {
   return (
     <>
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
         strategy="afterInteractive"
       />
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -449,16 +432,13 @@ export default function AdminContractsPage() {
 
                   {preset === 'other' && (
                     <div className="space-y-1">
-                      <Input
-                        ref={addressInputRef}
-                        value={form.address}
-                        placeholder={isLoaded ? 'Start typing an address…' : 'Loading Maps…'}
-                        disabled={!isLoaded}
-                        onChange={e => {
-                          setForm(f => ({ ...f, address: e.target.value }))
-                          setAddressConfirmed(false)
+                      <AddressAutocomplete
+                        placeholder="Start typing an address…"
+                        defaultValue={form.address}
+                        onResolved={resolved => {
+                          onChangeAddressRef.current(resolved?.address ?? '')
+                          setAddressConfirmed(!!resolved)
                         }}
-                        autoComplete="off"
                       />
                       {addressConfirmed ? (
                         <p className="text-xs text-green-700">✓ Address confirmed</p>
@@ -519,25 +499,25 @@ export default function AdminContractsPage() {
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Start date</p>
               <div className="flex gap-1 items-center">
-                <Input type="date" value={startFrom} onChange={e => setStartFrom(e.target.value)} className="h-8 text-xs flex-1" placeholder="From" />
+                <Input type="date" aria-label="Start date from" value={startFrom} onChange={e => setStartFrom(e.target.value)} className="h-8 text-xs flex-1" placeholder="From" />
                 <span className="text-xs text-slate-400">–</span>
-                <Input type="date" value={startTo} onChange={e => setStartTo(e.target.value)} className="h-8 text-xs flex-1" placeholder="To" />
+                <Input type="date" aria-label="Start date to" value={startTo} onChange={e => setStartTo(e.target.value)} className="h-8 text-xs flex-1" placeholder="To" />
               </div>
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Expiry date</p>
               <div className="flex gap-1 items-center">
-                <Input type="date" value={endFrom} onChange={e => setEndFrom(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Expiry date from" value={endFrom} onChange={e => setEndFrom(e.target.value)} className="h-8 text-xs flex-1" />
                 <span className="text-xs text-slate-400">–</span>
-                <Input type="date" value={endTo} onChange={e => setEndTo(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Expiry date to" value={endTo} onChange={e => setEndTo(e.target.value)} className="h-8 text-xs flex-1" />
               </div>
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Next service due</p>
               <div className="flex gap-1 items-center">
-                <Input type="date" value={serviceDueFrom} onChange={e => setServiceDueFrom(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Next service due from" value={serviceDueFrom} onChange={e => setServiceDueFrom(e.target.value)} className="h-8 text-xs flex-1" />
                 <span className="text-xs text-slate-400">–</span>
-                <Input type="date" value={serviceDueTo} onChange={e => setServiceDueTo(e.target.value)} className="h-8 text-xs flex-1" />
+                <Input type="date" aria-label="Next service due to" value={serviceDueTo} onChange={e => setServiceDueTo(e.target.value)} className="h-8 text-xs flex-1" />
               </div>
             </div>
           </div>

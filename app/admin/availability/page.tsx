@@ -182,6 +182,7 @@ export default function AdminAvailabilityPage() {
           {fetching && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
           <button
             onClick={prevMonth}
+            aria-label="Previous month"
             className="w-8 h-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted/60 transition-colors"
           >
             <ChevronLeft size={16} />
@@ -189,6 +190,7 @@ export default function AdminAvailabilityPage() {
           <span className="font-heading font-semibold text-primary text-sm w-36 text-center">{monthLabel}</span>
           <button
             onClick={nextMonth}
+            aria-label="Next month"
             className="w-8 h-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted/60 transition-colors"
           >
             <ChevronRight size={16} />

@@ -1,6 +1,6 @@
 'use client'
 import { Suspense, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,9 +15,20 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
+  const passwordUpdated = searchParams.get('pw') === 'updated'
   const supabase = createClient()
+
+  async function handleReset() {
+    if (!email) { setError('Enter your email first'); return }
+    setLoading(true)
+    setError('')
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    })
+    setResetSent(true)
+    setLoading(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -25,28 +36,36 @@ function LoginForm() {
     setError('')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      setError(error.message)
+      // Supabase returns the developer-facing "Invalid login credentials";
+      // give the customer something actionable instead.
+      setError(
+        error.message === 'Invalid login credentials'
+          ? "That email and password don't match. Check your password, or create an account if you haven't yet."
+          : error.message
+      )
       setLoading(false)
       return
     }
     const explicit = searchParams.get('redirect')
-    if (explicit) {
-      router.push(explicit)
-      router.refresh()
-      return
+    // Resolve against current origin so /\evil.com and protocol-relative
+    // bypasses are rejected — window.location.href follows any URL unlike router.push.
+    // Admins land on their dashboard rather than the marketing homepage.
+    let destination = '/'
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles').select('role').eq('id', data.user.id).single()
+      if (profile?.role === 'admin') destination = '/admin'
     }
-    router.push('/')
-    router.refresh()
-  }
-
-  async function handleReset() {
-    if (!email) { setError('Enter your email first'); return }
-    setLoading(true)
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
-    })
-    setResetSent(true)
-    setLoading(false)
+    if (explicit) {
+      try {
+        const parsed = new URL(explicit, window.location.origin)
+        if (parsed.origin === window.location.origin) destination = explicit
+      } catch {}
+    }
+    // Hard redirect so the browser sends the newly-set auth cookies in the
+    // next request — router.push fires before @supabase/ssr's onAuthStateChange
+    // can write the session cookie, causing middleware to see no session.
+    window.location.href = destination
   }
 
   return (
@@ -60,6 +79,7 @@ function LoginForm() {
           onChange={e => setEmail(e.target.value)}
           placeholder="you@example.com"
           required
+          autoComplete="email"
           className="h-11"
         />
       </div>
@@ -82,16 +102,22 @@ function LoginForm() {
           onChange={e => setPassword(e.target.value)}
           placeholder="••••••••"
           required
+          autoComplete="current-password"
           className="h-11"
         />
       </div>
+      {passwordUpdated && (
+        <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          Password updated. Please sign in with your new password.
+        </p>
+      )}
       {resetSent && (
         <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          Password reset email sent — check your inbox.
+          If an account exists for that email, a reset link has been sent.
         </p>
       )}
       {error && (
-        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+        <p role="alert" className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
@@ -116,7 +142,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel — photo */}
-      <div className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
+      <aside className="hidden md:flex md:w-2/5 flex-col items-center justify-center px-10 py-16 relative overflow-hidden">
         <Image
           src="https://images.pexels.com/photos/6471913/pexels-photo-6471913.jpeg?auto=compress&cs=tinysrgb&w=1200"
           alt="HydroWash aircon technician"
@@ -142,10 +168,10 @@ export default function LoginPage() {
             Book aircon services online — just pick a date and we&apos;ll handle the rest.
           </p>
         </div>
-      </div>
+      </aside>
 
       {/* Right panel — white form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
         {/* Mobile logo */}
         <div className="flex items-center gap-2 mb-8 md:hidden">
           <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -166,7 +192,7 @@ export default function LoginPage() {
             <Link href="/" className="hover:underline cursor-pointer">← Back to home</Link>
           </p>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

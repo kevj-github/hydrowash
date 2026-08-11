@@ -73,10 +73,13 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
       if (!user) return
       const { data: rows } = await supabase
         .from('contracts')
-        .select('id, address, num_units, start_date, end_date')
+        .select('id, address, num_units, start_date, end_date, contract_service_dates!inner(id)')
         .eq('customer_id', user.id)
         .eq('status', 'ACTIVE')
-      setContracts(rows ?? [])
+        .filter('contract_service_dates.booking_id', 'is', null)
+      setContracts(
+        (rows ?? []).map(({ contract_service_dates: _, ...c }) => c as ContractOption)
+      )
     }
     loadContracts()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,10 +94,23 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
       setUploadError(`Maximum ${MAX_FILES} files allowed.`)
       return
     }
-    const toUpload = files.slice(0, remaining)
-    const oversized = toUpload.filter(f => f.size > MAX_MB * 1024 * 1024)
+    // Anything past the cap used to be dropped without a word — say so.
+    const notices: string[] = []
+    const withinCap = files.slice(0, remaining)
+    if (files.length > remaining) {
+      notices.push(`Only the first ${remaining} file${remaining === 1 ? '' : 's'} were added — maximum ${MAX_FILES}.`)
+    }
+
+    // One oversized file used to discard the whole selection silently alongside it.
+    // Keep the good ones and name the ones that didn't fit.
+    const toUpload = withinCap.filter(f => f.size <= MAX_MB * 1024 * 1024)
+    const oversized = withinCap.filter(f => f.size > MAX_MB * 1024 * 1024)
     if (oversized.length) {
-      setUploadError(`Files must be under ${MAX_MB} MB each.`)
+      notices.push(`${oversized.map(f => f.name).join(', ')} — over ${MAX_MB} MB, not added.`)
+    }
+    if (!toUpload.length) {
+      setUploadError(notices.join(' '))
+      if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
@@ -105,14 +121,19 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
     const prefix = `${user?.id ?? 'anon'}/${Date.now()}`
 
     const uploaded: string[] = []
-    for (const file of toUpload) {
-      const path = `${prefix}/${file.name}`
+    for (const [i, file] of toUpload.entries()) {
+      // Storage keys reject apostrophes, accents and most punctuation, so a photo
+      // named "façade's photo #1.jpg" failed with a raw "Invalid key" error.
+      // Derive a safe key instead of trusting the filename.
+      const ext = (file.name.split('.').pop() ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5)
+      const path = `${prefix}/${i}-${Math.random().toString(36).slice(2, 10)}${ext ? `.${ext}` : ''}`
       const { error } = await supabase.storage.from('booking-media').upload(path, file, { upsert: true })
-      if (error) { setUploadError(`Upload failed: ${error.message}`); break }
+      if (error) { notices.push(`${file.name} failed to upload: ${error.message}`); break }
       const { data: urlData } = supabase.storage.from('booking-media').getPublicUrl(path)
       uploaded.push(urlData.publicUrl)
     }
 
+    if (notices.length) setUploadError(notices.join(' '))
     onChange({ media_urls: [...existingUrls, ...uploaded] })
     setUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -136,7 +157,7 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
           <SelectTrigger>
             <SelectValue placeholder="Select a service…">
               {selected
-                ? `${selected.name}${selected.price_sgd ? ` — S$${Number(selected.price_sgd).toFixed(2)}` : ''}`
+                ? `${selected.name}${selected.price_sgd ? ` — S$${Number(selected.price_sgd).toFixed(2)}` : ' — quoted on site'}`
                 : null}
             </SelectValue>
           </SelectTrigger>
@@ -149,7 +170,8 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
                 {group.items.map(s => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
-                    {s.price_sgd ? ` — S$${Number(s.price_sgd).toFixed(2)}` : ''}
+                    {/* Priceless services said nothing at all before, which read as free. */}
+                    {s.price_sgd ? ` — S$${Number(s.price_sgd).toFixed(2)}` : ' — quoted on site'}
                   </SelectItem>
                 ))}
               </div>
@@ -165,9 +187,16 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
             <Input
               type="number" min={1} max={20}
               value={data.num_units ?? ''}
-              onChange={e => onChange({ num_units: Number(e.target.value) })}
+              onChange={e => {
+                const raw = e.target.value
+                if (raw === '') { onChange({ num_units: undefined }); return }
+                // Clamp: max is otherwise only an HTML hint, and every extra unit
+                // renders another room dropdown.
+                onChange({ num_units: Math.min(20, Math.max(1, Math.floor(Number(raw)))) })
+              }}
               placeholder="e.g. 3"
             />
+            <p className="text-xs text-muted-foreground">Up to 20 units per booking.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Unit Locations <span className="text-red-500">*</span></Label>
@@ -334,9 +363,11 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
               />
               {uploading ? 'Uploading…' : `Click to add photos or videos (${existingUrls.length}/${MAX_FILES})`}
             </label>
-            {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
           </>
         )}
+        {/* Outside the picker block on purpose: at the 5-file cap the picker
+            unmounts, and the message explaining what was dropped went with it. */}
+        {uploadError && <p role="alert" className="text-xs text-red-600">{uploadError}</p>}
       </div>
     </div>
   )
