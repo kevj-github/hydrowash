@@ -36,7 +36,7 @@ interface Props {
 
 export function BookingsMap({ bookings, selected, onPinClick }: Props) {
   const [activeInfoId, setActiveInfoId] = useState<string | null>(null)
-  const isLoaded = useMapsLoaded()
+  const isLoaded = useMapsLoaded(false)
 
   const onLoad = useCallback((_map: google.maps.Map) => {}, [])
 
