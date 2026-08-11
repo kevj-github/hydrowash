@@ -476,3 +476,65 @@ resolves `destination` from `?redirect` else `/`; it never branches on role.
   and needs either a staging database or explicit permission to write to production.
 - File-upload battery on booking step 1 (5 x 20MB) — still never exercised.
 - Scenarios 4, 6, 7, 8, 9, 11 — still not run.
+
+---
+
+# Phase 9 — Places unblocked + admin remediation (2026-08-11)
+
+## H-2 / H-4b — RESOLVED and merged
+
+Places API (New) was enabled on project 866927000260. Re-verified on `/auth/register`:
+**0 console errors** (was 40x 403), typing returns predictions, and keyboard selection
+(ArrowDown + Enter) resolves the place — "✓ Address confirmed" renders and the
+Unit/Floor + Building Name fields reveal, proving `gmp-select` → `toPlace()` →
+`fetchFields` works end to end. Keyboard operability is a bonus a11y win over the
+old widget. Merged to `fix/ux-audit-2026-08-11` as `b1b79cc`.
+
+Still open on this: the widget's **closed shadow root** means Playwright cannot drive
+the inner input, so address entry remains un-coverable by e2e tests, and whether real
+screen readers expose the field was still not independently verified.
+
+## Admin remediation — all Critical/Serious cleared (commit `c6f4080`)
+
+| Route | Before (Crit / Serious) | After |
+|---|---|---|
+| `/admin` | 0 / color-contrast:2 | 0 / 0 (1 moderate heading-order remains) |
+| `/admin/bookings` | 0 / color-contrast:2, label-title-only:1 | **0 / 0** |
+| `/admin/agenda` | 0 / color-contrast:1, link-name:2 | **0 / 0** |
+| `/admin/customers` | 0 / color-contrast:1 | **0 / 0** |
+| `/admin/invoices` | **label:4** / color-contrast:1 | **0 / 0** |
+| `/admin/contracts` | **label:4** / color-contrast:1 | **0 / 0** |
+| `/admin/settings` | **label:6** / color-contrast:1 | **0 / 0** |
+| `/admin/availability` | **button-name:2** / color-contrast:1 | **0 / 0** |
+
+A-1 (14 unlabelled inputs), A-2 (icon-only buttons/links), A-3 ("← Site" at 4.15:1 on
+every page), A-4 (dashboard subtitles), A-5 (admin landing on the marketing homepage —
+now lands on `/admin`) are all fixed and verified. A extra find during remediation:
+"Loading map…" placeholders were `text-slate-400` on `bg-slate-100` = **2.4:1** in four
+components; now `text-slate-600`.
+
+Gates: `tsc --noEmit` clean · `npm run build` succeeds · `npx jest lib/` 21/21.
+The 4 remaining eslint errors in touched admin files (`set-state-in-effect` x3,
+`no-explicit-any` x2) were confirmed pre-existing by linting `main`'s version.
+
+## Remaining open after Phase 9
+
+**Findings not fixed**
+- M-8 no price shown for maintenance bookings.
+- L-4 `Fault Repair.duration_minutes` is null and feeds the VRP optimiser.
+- `/admin` moderate `heading-order` (h3 before h2).
+- Sub-44px targets on mobile: HydroWash logo link (32px), one 40px icon button,
+  inline footer text links (19px).
+- Cosmetic: booking review reads "Service: General Maintenance / Category: General
+  maintenance" — near-duplicate since the M-7 fix.
+
+**Never audited**
+- `/account/contracts`, `/auth/reset-password`.
+- `/admin/contracts/[id]`, `/admin/customers/[id]`, `/admin/schedule/[date]`.
+- **All admin write flows** — approve/reject, bulk approve, route optimiser,
+  JobCompletionDialog's 3-step work order, PDF generation, mark-paid. These mutate live
+  business records and email real customers; they need a staging database or explicit
+  permission to write to production. This is the single largest remaining gap.
+- File-upload battery on booking step 1 (5 x 20MB).
+- Scenarios 4 (returning user), 6 (heavy data), 7 (destructive confidence),
+  8 (second user / role), 9 (lifecycle position), 11 (data seasoning).
