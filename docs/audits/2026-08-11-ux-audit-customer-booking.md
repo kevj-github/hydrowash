@@ -612,3 +612,43 @@ makes the surface hard to test.
 - `/account/contracts`, `/auth/reset-password` — still unaudited.
 - File-upload battery (5 x 20MB) on booking step 1 — still never exercised.
 - Scenarios 4, 6, 7, 8, 9, 11.
+
+---
+
+# Phase 11 — Remediation of the admin write-flow findings (commit `a36d9bd`)
+
+| ID | Fix | Verification |
+|---|---|---|
+| **B-3** | "Next: Pricing" gated on `attended_by`, both times, and brand+model per unit, with an inline list of what's missing. | Button `disabled: true`; message reads "Still needed before you can price this job: attended by, time arrived, time completed, brand and model for 2 units." |
+| **B-4** | `aria-label` on all 6 per-unit selects (mobile + desktop layouts); `htmlFor`/`id` on Attended By / Time Arrived / Time Completed and the Job Description / Job Rendered / Remarks textareas. | JobCompletionDialog axe: **0 Critical, 0 Serious, 0 Moderate** (was label:3 + select-name:6). |
+| **B-5** | `aria-label="Schedule date"` on the `/admin/schedule/[date]` date picker. | — |
+
+## Second-order bug found and fixed during this pass
+
+The Phase 10 fix to `useMapsLoaded` gated on the *presence* of `window.google.maps`.
+Under `loading=async` that namespace exists before the library is populated, so
+`BookingsMap` crashed on `google.maps.SymbolPath.CIRCLE` and took the entire
+`/admin/bookings` route down with "This page couldn't load" — worse than the original
+symptom. `useMapsLoaded` now awaits `importLibrary('maps')` (and `'places'` when
+required), matching the RouteMap fix. Verified: page renders, map canvas present,
+0 console errors.
+
+Worth recording as a pattern: **every `loading=async` change needs a rendered-map
+check.** Three separate bugs in this area (B-1, B-2, and this one) all passed a
+console-only or presence-only check and still failed in the browser.
+
+Gates: `tsc --noEmit` clean · `npm run build` succeeds · `npx jest lib/` 21/21.
+Test data removed — `profiles?name=like.ZZ*`, `bookings?notes=like.*UXAUDIT*` and the
+test invoices all return `[]`.
+
+## Open after Phase 11
+
+- **B-6** booking cards render twice with independent state (Low).
+- **Reject booking**, **bulk approve**, and the full **contract lifecycle**
+  (create → set price → PDF + email → mark paid → activate) — still not exercised.
+- `/admin/contracts/[id]`, `/admin/customers/[id]`, `/account/contracts`,
+  `/auth/reset-password` — still unaudited.
+- File-upload battery (5 x 20MB) on booking step 1 — still never exercised.
+- Scenarios 4, 6, 7, 8, 9, 11.
+- M-8 (no price shown for maintenance), L-4 (`Fault Repair.duration_minutes` null),
+  `/admin` moderate `heading-order`, sub-44px logo/footer links.
