@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     supabase.from('app_settings').select('depot_lat,depot_lng').single(),
     supabase
       .from('bookings')
-      .select('id, address, lat, lng, notes, time_slot, service_type:service_types(name, duration_minutes), customer:profiles(name)')
+      .select('id, address, lat, lng, notes, time_slot, confirmed_slot, service_type:service_types(name, duration_minutes), customer:profiles(name)')
       .in('id', selectedBookingIds),
   ])
 
@@ -45,14 +45,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 502 })
   }
 
-  const missingSlot = ordered.find((b: any) => !b.time_slot)
+  // The VRP's slot windows must use the slot the job is actually confirmed for,
+  // not the customer's first preference.
+  const effectiveSlot = (b: { confirmed_slot?: string | null; time_slot?: string | null }) =>
+    b.confirmed_slot ?? b.time_slot
+
+  const missingSlot = ordered.find((b: any) => !effectiveSlot(b))
   if (missingSlot) return NextResponse.json({ error: `Booking ${missingSlot.id} has no time_slot` }, { status: 422 })
 
   const jobs = ordered.map((b: any, i: number) => ({
     bookingId: b.id,
     locationIndex: i + 1,
     durationMinutes: (b.service_type as any)?.duration_minutes ?? 60,
-    timeSlot: b.time_slot as TimeSlot,
+    timeSlot: effectiveSlot(b) as TimeSlot,
   }))
 
   const vrpResult = optimizeRoute(jobs, travelMatrix)
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
       address: booking.address,
       serviceType: (booking.service_type as any)?.name ?? '',
       durationMinutes: (booking.service_type as any)?.duration_minutes ?? 60,
-      timeSlot: booking.time_slot as TimeSlot,
+      timeSlot: effectiveSlot(booking) as TimeSlot,
       notes: booking.notes ?? null,
     }
   })

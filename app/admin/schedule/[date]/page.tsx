@@ -9,15 +9,24 @@ export default async function SchedulePage({ params }: { params: Promise<{ date:
     supabase.from('app_settings').select('depot_lat,depot_lng').single(),
     supabase
       .from('bookings')
-      .select('id, address, lat, lng, notes, time_slot, service_type:service_types(name, duration_minutes), customer:profiles(name, phone)')
+      .select('id, address, lat, lng, notes, time_slot, confirmed_slot, service_type:service_types(name, duration_minutes), customer:profiles(name, phone)')
       .eq('status', 'APPROVED')
-      .eq('booking_date', date),
+      // A booking belongs to the day the admin CONFIRMED it for. booking_date is
+      // only the customer's first preference, so filtering on it hid every job the
+      // admin had moved — they showed on the day requested, not the day happening.
+      .or(`confirmed_date.eq.${date},and(confirmed_date.is.null,booking_date.eq.${date})`),
   ])
+
+  // The confirmed slot is what the day actually runs on.
+  const bookings = (bookingsRes.data ?? []).map(b => ({
+    ...b,
+    time_slot: b.confirmed_slot ?? b.time_slot,
+  }))
 
   return (
     <SchedulePageClient
       date={date}
-      bookings={(bookingsRes.data ?? []) as any}
+      bookings={bookings as any}
       depotLatLng={settingsRes.data ? { lat: settingsRes.data.depot_lat, lng: settingsRes.data.depot_lng } : null}
     />
   )

@@ -934,3 +934,110 @@ Follow-up implementation pass to close D-5 at code level.
 - `npm run build` ✅
 
 This closes the underlying duplication, not just the scroll workaround.
+
+---
+
+# Phase 15 — Review of the Copilot-authored fixes (2026-08-12)
+
+Phases 13–14 were done on branches. `fix/ux-audit-2026-08-11` was merged to `main`, but
+`chore/advanced-markers` (Phase 14) **was not** — the marker migration was re-implemented
+independently instead. This phase reviewed what landed and repaired the gaps.
+
+## What landed correctly
+
+- All Phase 13 fixes are present on `main` (bulk-approve guard, upload sanitisation and
+  notices, price labels, touch targets, heading order).
+- **B-6 is genuinely fixed** — `d46e693` deduped the card render trees. Verified live:
+  5 cards, 0 duplicated `data-job-id`. Better than my Phase 13 patch, which only worked
+  around the symptom by picking the visible copy.
+- The marker migration uses `PinElement`, which is nicer than the raw div I had used, and
+  handles the Map ID with the same `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'` fallback.
+
+## F-1 — Admin bookings map rendered ZERO pins (Critical, shipped on main)
+
+**Observed** — `/admin/bookings` with 5 bookings on screen: `gmp-advanced-marker` count **0**.
+Map canvas present, console clean, no pins at all. The entire maintenance map — clustering,
+pin↔card sync, InfoWindow — was dead again.
+
+**Root cause** — the map instance was stored in a **ref**:
+
+```ts
+const mapRef = useRef<google.maps.Map | null>(null)
+const onLoad = useCallback((map) => { mapRef.current = map }, [])
+useEffect(() => { if (!mapRef.current) return; /* render markers */ },
+          [bookings, onPinClick, selected])
+```
+
+Ref assignment triggers no render, so the effect ran once — before `onLoad`, while
+`isLoaded` was still false and `<GoogleMap>` was not even mounted — bailed out, and never
+re-ran. This is the fourth incarnation of the same bug family as B-1 and B-2.
+
+**Fixed** — the map instance is `useState`, with `map` added to the dependency array.
+Verified: **5 markers, 5 pins**, correct titles.
+
+## F-2 — Three more deprecation warnings (High, hard gate)
+
+Each only appeared after the previous one was cleared, so they had to be peeled off in
+sequence — and each one fails the console gate on its own.
+
+| Warning | Fix |
+|---|---|
+| `<gmp-advanced-marker>: Please use addEventListener('gmp-click', …)` | `gmp-click` + `gmpClickable: true` in both maps |
+| `<gmp-pin>: The 'element' property is deprecated. Please use the PinElement directly.` | pass `pin` as `content`, not `pin.element` (3 sites) |
+| `<gmp-pin>: The 'glyph' property is deprecated. Please use 'glyphSrc' or 'glyphText'` | `glyphText` for the depot `D` and the numbered stops |
+
+**Verified** — `/admin/bookings` and `/admin/schedule/[date]` both **0 errors / 0 warnings**.
+Keyboard Enter on a focused pin opens the InfoWindow with real data.
+
+## E-1 and E-2 re-applied
+
+Neither Phase 14 fix reached `main`, so both were re-applied and re-verified here:
+
+- **E-1** route map collapsed to `732x0` — `min-h-[400px]`. Now `732x400` with the depot
+  pin, numbered stops 1/2/3, polyline and drive times (12 / 9 / 23 min) all visible.
+  Screenshot: `15-route-map-pins.png`.
+- **E-2** confirmed-date scheduling across `/admin/schedule/[date]`, `/api/optimize` and
+  `/api/cron/reminders`. Verified with three bookings whose preferred dates were 1–3 Sep
+  and confirmed date 10 Sep: the optimiser now lists all three on **10 Sep** with their
+  confirmed slots. Before the fix they appeared on 1/2/3 Sep and 10 Sep showed nothing.
+
+## H-1 — CLOSED at last (the original High from Phase 1)
+
+Migration `032_add_installation_service.sql` existed on an unmerged branch (`aa24cb6`) and
+had **never been applied** — `service_types` still held only 2 rows, so the Installation
+card on the landing page remained a dead end, exactly as first reported.
+
+Cherry-picked into `main` and applied to production (the migration's `WHERE NOT EXISTS`
+guard was mirrored in the insert). `service_types` now has `AC Installation` /
+`INSTALLATION` / 180 min / no fixed price.
+
+**Verified** — the booking dropdown reads *"AC Installation — quoted on site"* (M-8's label
+applying to it), and selecting it renders the installation branch: AC Brand, AC Model,
+Number of Units, notes and uploads.
+
+## Gates
+
+```
+npx tsc --noEmit         clean
+npx eslint <5 changed>   11 errors — identical to the stashed baseline (no new issues)
+npm run build            succeeds
+npx jest lib/            3 suites, 21 tests passed
+```
+
+Test data removed and verified: no `uxaudit` auth users, `bookings?notes=like.*UXAUDIT*`
+`[]`, `profiles?name=like.ZZ*` `[]`. No customer emails sent — approvals were written
+directly to the database.
+
+## Open after Phase 15
+
+- **Provision a production Google Maps Map ID** and set `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`.
+  Both maps still run on `DEMO_MAP_ID`, which is rate-limited and unsupported in production.
+  This is the one item that genuinely needs the owner.
+- `chore/advanced-markers` is now redundant — `main` carries a better version of everything
+  on it. Safe to delete.
+- Scenarios 4, 6, 8, 9, 11 remain unrun; the closed-shadow-DOM address widget remains
+  undrivable by Playwright.
+
+**Pattern worth keeping:** every Google Maps change in this codebase has broken something
+that a console check and a "canvas present" check both passed. Four times now. The check
+that actually works is: count the markers, measure the box, click a pin.

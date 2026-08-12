@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
     .from('bookings')
     .select('*, customer:profiles(name,phone), service_type:service_types(name,duration_minutes,price_sgd)')
     .eq('status', 'APPROVED')
-    .eq('booking_date', tomorrowStr)
+    // Remind for the date the booking is CONFIRMED for. Filtering on
+    // booking_date (the customer's first preference) sent "your service is
+    // tomorrow" on the wrong day for every booking the admin had moved, and
+    // sent nothing on the real day.
+    .or(`confirmed_date.eq.${tomorrowStr},and(confirmed_date.is.null,booking_date.eq.${tomorrowStr})`)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

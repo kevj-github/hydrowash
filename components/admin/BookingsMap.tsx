@@ -38,12 +38,16 @@ interface Props {
 
 export function BookingsMap({ bookings, selected, onPinClick }: Props) {
   const [activeInfoId, setActiveInfoId] = useState<string | null>(null)
-  const mapRef = useRef<google.maps.Map | null>(null)
+  // The map instance must be STATE, not a ref: the marker effect below needs to
+  // re-run once the map exists. A ref assignment triggers no render, so the
+  // effect ran exactly once (before onLoad) and returned early — leaving the map
+  // permanently pinless.
+  const [map, setMap] = useState<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const isLoaded = useMapsLoaded(false)
 
-  const onLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map
+  const onLoad = useCallback((m: google.maps.Map) => {
+    setMap(m)
   }, [])
 
   const onUnmount = useCallback(() => {
@@ -52,14 +56,13 @@ export function BookingsMap({ bookings, selected, onPinClick }: Props) {
       marker.map = null
     })
     markersRef.current = []
-    mapRef.current = null
+    setMap(null)
   }, [])
 
   useEffect(() => {
     let cancelled = false
 
     async function renderMarkers() {
-      const map = mapRef.current
       if (!map || !window.google?.maps?.importLibrary) return
 
       const markerLib = await window.google.maps.importLibrary('marker') as google.maps.MarkerLibrary
@@ -83,10 +86,15 @@ export function BookingsMap({ bookings, selected, onPinClick }: Props) {
           map,
           position: { lat: b.lat, lng: b.lng },
           title: `${b.customer?.name ?? ''} — ${b.service_type?.name ?? ''}`,
-          content: pin.element,
+          gmpClickable: true,
+          // The PinElement itself, not pin.element — `.element` is deprecated
+          // and warns, and console warnings are a hard gate here.
+          content: pin,
         })
 
-        marker.addListener('click', () => {
+        // 'gmp-click', not 'click' — the element warns on the DOM event name,
+        // and console warnings are a hard gate for this app.
+        marker.addListener('gmp-click', () => {
           setActiveInfoId(prev => prev === b.id ? null : b.id)
           onPinClick?.(b.id)
         })
@@ -98,7 +106,7 @@ export function BookingsMap({ bookings, selected, onPinClick }: Props) {
     return () => {
       cancelled = true
     }
-  }, [bookings, onPinClick, selected])
+  }, [map, bookings, onPinClick, selected])
 
   if (!isLoaded) {
     return (

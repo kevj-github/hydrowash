@@ -80,13 +80,15 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
         background: COLORS.PRIMARY,
         borderColor: '#FFFFFF',
         glyphColor: '#FFFFFF',
-        glyph: 'D',
+        // glyphText, not glyph — `glyph` is deprecated and warns.
+        glyphText: 'D',
       })
       markers.push(new markerLib.AdvancedMarkerElement({
         position: polyline[0],
         map,
         title: 'Depot (start)',
-        content: depotPin.element,
+        // PinElement directly — `.element` is deprecated and warns.
+        content: depotPin,
       }))
 
       route.forEach(stop => {
@@ -104,16 +106,18 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
           background: COLORS.ACCENT,
           borderColor: '#FFFFFF',
           glyphColor: '#FFFFFF',
-          glyph: String(stop.sequenceOrder),
+          glyphText: String(stop.sequenceOrder),
         })
         const marker = new markerLib.AdvancedMarkerElement({
           position: { lat: stop.lat, lng: stop.lng },
           map,
           title: `${stop.customerName} · ${stop.estimatedStart}`,
-          content: stopPin.element,
+          gmpClickable: true,
+          content: stopPin,
         })
 
-        marker.addListener('click', () => {
+        // 'gmp-click', not 'click' — see BookingsMap.
+        marker.addListener('gmp-click', () => {
           infoWindow.open({ map, anchor: marker })
         })
         markers.push(marker)
@@ -145,5 +149,8 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
     )
   }
 
-  return <div ref={ref} className="h-full w-full rounded-xl" />
+  // h-full is height:100%, which resolves to auto — and so to 0 — because the
+  // parent's 400px comes from min-height, not height. The map rendered its tiles
+  // and markers into a 732x0 box: present in the DOM, invisible on screen.
+  return <div ref={ref} className="h-full w-full min-h-[400px] rounded-xl" />
 }
