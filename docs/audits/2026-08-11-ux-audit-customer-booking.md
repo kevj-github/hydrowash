@@ -1030,9 +1030,16 @@ directly to the database.
 
 ## Open after Phase 15
 
-- **Provision a production Google Maps Map ID** and set `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`.
-  Both maps still run on `DEMO_MAP_ID`, which is rate-limited and unsupported in production.
-  This is the one item that genuinely needs the owner.
+- ~~Provision a production Google Maps Map ID~~ — **DONE.** A raster JavaScript Map ID
+  (`a91ebf610c05ce38923cd4c8`, named "Hydrowash") was created and set as
+  `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` in `.env.local`. Re-verified on the real ID:
+  `/admin/bookings` 8 markers / 8 pins, `/admin/schedule/[date]` 732x400 with depot +
+  stops 1/2/3, polyline and drive times, **0 errors / 0 warnings on both**, and 0 requests
+  to `DEMO_MAP_ID` (the real ID appears in the tile requests). Screenshot:
+  `17-real-mapid-route.png`.
+  **Still to do by the owner:** add the same variable in Vercel (Production + Preview) and
+  redeploy — `NEXT_PUBLIC_*` is inlined at build time, so production keeps using the demo
+  fallback until that is set.
 - `chore/advanced-markers` is now redundant — `main` carries a better version of everything
   on it. Safe to delete.
 - Scenarios 4, 6, 8, 9, 11 remain unrun; the closed-shadow-DOM address widget remains
