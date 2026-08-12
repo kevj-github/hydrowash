@@ -150,7 +150,7 @@ lib/
   supabase/admin.ts            # Service role client — exports createAdminClient(); used for auth.admin.getUserById()
   booking/slots.ts             # Pure functions: isDayFullyBlocked, isSlotBlocked, getSlotsForDate, resolveContractTierPrice
   utils/paynow.ts              # buildPayNowPayload() + crc16ccitt() — EMVCo SGQR format for Singapore PayNow
-  booking/__tests__/slots.test.ts
+  (no tests for booking/slots.ts — the pure slot/pricing helpers are untested)
   vrp/optimizer.ts             # Single-route nearest-neighbour VRP; uses timeSlot (not preferredSlot); DAY_START=10*60; SLOT_WINDOWS keyed by TimeSlot
   vrp/__tests__/optimizer.test.ts
   maps/geocode.ts              # Google Geocoding API wrapper (forward geocode)
