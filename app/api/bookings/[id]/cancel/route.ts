@@ -3,12 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookingCancelled } from '@/lib/email/send'
 
-const SGT_OFFSET_MS = 8 * 60 * 60 * 1000
-
 function isBeforeCutoff(effectiveDate: string): boolean {
   const cutoff = new Date(`${effectiveDate}T00:00:00+08:00`)
   cutoff.setTime(cutoff.getTime() - 24 * 60 * 60 * 1000)
-  return new Date(Date.now() + SGT_OFFSET_MS) < cutoff
+  return Date.now() < cutoff.getTime()
 }
 
 async function getAdminEmail(supabase: Awaited<ReturnType<typeof createClient>>) {
