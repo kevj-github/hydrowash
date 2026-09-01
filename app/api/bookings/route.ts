@@ -119,6 +119,41 @@ export async function POST(request: NextRequest) {
   const slots = sanitisedEntries[0].slots
   const time_slot = slots[0]
 
+  // The service type must exist, be active, and belong to the category the client
+  // claims — otherwise a caller can book a withdrawn service and inherit its stale
+  // price_sgd, which feeds the work-order total. Enforced again by a DB trigger in
+  // migration 033; this check exists to return a useful 4xx instead of a 500.
+  const { data: serviceType } = await supabase
+    .from('service_types')
+    .select('id')
+    .eq('id', body.service_type_id)
+    .eq('category', body.category)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (!serviceType) {
+    return NextResponse.json(
+      { error: 'Unknown or inactive service type for this category' },
+      { status: 422 }
+    )
+  }
+
+  // A contract may only be linked by the customer who owns it. Without this a
+  // booking — and the invoice generated from it — can be billed against a third
+  // party's contract. Also enforced by migration 033.
+  if (contract_id) {
+    const { data: ownedContract } = await supabase
+      .from('contracts')
+      .select('id')
+      .eq('id', contract_id)
+      .eq('customer_id', user.id)
+      .maybeSingle()
+
+    if (!ownedContract) {
+      return NextResponse.json({ error: 'Contract not found' }, { status: 404 })
+    }
+  }
+
   // Use lat/lng from Places API if provided; fall back to geocoding
   let lat: number = body.lat
   let lng: number = body.lng

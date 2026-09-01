@@ -8,7 +8,15 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type')
   const rawNext = searchParams.get('next') ?? '/'
-  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
+  // Resolve against this origin rather than prefix-matching: a `startsWith('/')`
+  // check lets `/\evil.com` through, which browsers normalise to a protocol-relative
+  // URL. This route carries recovery token_hash values, so an off-origin redirect
+  // leaks them. Same check as app/auth/login/page.tsx.
+  let next = '/'
+  try {
+    const parsed = new URL(rawNext, origin)
+    if (parsed.origin === origin) next = `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {}
 
   const supabase = await createClient()
 

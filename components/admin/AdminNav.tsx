@@ -21,7 +21,7 @@ export function AdminNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex items-center gap-0.5 overflow-x-auto">
+    <nav className="flex items-center gap-0.5 overflow-x-auto min-w-0">
       {navItems.map(({ href, label, icon: Icon }) => {
         const isActive = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
         return (

@@ -44,3 +44,10 @@ test-results/
 
 # Claude worktrees
 .claude/worktrees/
+
+# Static analysis output
+static_analysis_semgrep_*/
+static_analysis_codeql_*/
+
+# Supabase CLI local state
+supabase/.temp/

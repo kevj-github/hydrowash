@@ -15,6 +15,36 @@ declare global {
   interface Window { google: typeof google }
 }
 
+function infoLine(text: string, style: string): HTMLParagraphElement {
+  const el = document.createElement('p')
+  el.setAttribute('style', style)
+  // textContent, not innerHTML — this is the escaping boundary.
+  el.textContent = text
+  return el
+}
+
+function buildStopInfoContent(stop: RouteStop): HTMLDivElement {
+  const wrap = document.createElement('div')
+  wrap.setAttribute('style', 'font-family:sans-serif;max-width:220px')
+  wrap.append(
+    infoLine(
+      `#${stop.sequenceOrder} · ${stop.estimatedStart}–${stop.estimatedEnd}`,
+      'font-weight:600;margin:0 0 2px',
+    ),
+    infoLine(stop.customerName, 'margin:0 0 2px;font-size:13px'),
+    infoLine(stop.address, 'margin:0;font-size:12px;color:#64748b'),
+  )
+  if (stop.notes) {
+    wrap.append(
+      infoLine(
+        stop.notes,
+        'margin:4px 0 0;font-size:12px;color:#92400e;background:#fef3c7;padding:4px 6px;border-radius:4px',
+      ),
+    )
+  }
+  return wrap
+}
+
 export function RouteMap({ polyline, route, apiKey }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
@@ -92,14 +122,11 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
       }))
 
       route.forEach(stop => {
+        // Built as DOM nodes, never an HTML string: customerName, address and notes
+        // are customer-controlled (profile name and booking fields), and InfoWindow
+        // parses a string `content` as HTML. See docs/security/2026-08-31-security-audit.md.
         const infoWindow = new window.google.maps.InfoWindow({
-          content: `
-            <div style="font-family:sans-serif;max-width:220px">
-              <p style="font-weight:600;margin:0 0 2px">#${stop.sequenceOrder} · ${stop.estimatedStart}–${stop.estimatedEnd}</p>
-              <p style="margin:0 0 2px;font-size:13px">${stop.customerName}</p>
-              <p style="margin:0;font-size:12px;color:#64748b">${stop.address}</p>
-              ${stop.notes ? `<p style="margin:4px 0 0;font-size:12px;color:#92400e;background:#fef3c7;padding:4px 6px;border-radius:4px">${stop.notes}</p>` : ''}
-            </div>`,
+          content: buildStopInfoContent(stop),
         })
 
         const stopPin = new markerLib.PinElement({

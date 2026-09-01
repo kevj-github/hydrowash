@@ -26,7 +26,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="text-white/30 mx-2 text-sm hidden sm:block">|</span>
             <span className="text-slate-300 text-sm font-medium hidden sm:block">Admin</span>
           </div>
-          <div className="hidden md:flex">
+          {/* min-w-0 lets AdminNav's own overflow-x-auto actually engage. Without
+              it the nav is a flex item sized to its content (845px), so at the
+              768px tablet width it pushed the whole admin surface into a 1101px
+              horizontal scroll instead of scrolling within itself. */}
+          <div className="hidden md:flex min-w-0 flex-1 justify-end">
             <AdminNav />
           </div>
           <Link
