@@ -27,9 +27,10 @@ export default async function AdminOverviewPage() {
       .select(`
         id,
         due_date,
-        contract:contracts!contract_service_dates_contract_id_fkey (
+        contract:contracts!contract_service_dates_contract_id_fkey!inner (
           id,
           num_units,
+          status,
           customer:profiles!contracts_customer_id_fkey (
             id, name, phone
           )
@@ -38,6 +39,7 @@ export default async function AdminOverviewPage() {
       .gte('due_date', firstOfMonth)
       .lte('due_date', lastOfMonth)
       .is('booking_id', null)
+      .eq('contract.status', 'ACTIVE')
       .order('due_date'),
     supabase
       .from('contracts')

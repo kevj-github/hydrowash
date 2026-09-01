@@ -26,10 +26,11 @@ export async function GET(req: NextRequest) {
     const isSecond = todayDay === 15
     const { data: dueDates, error: fetchError } = await supabase
       .from('contract_service_dates')
-      .select('id, contract_id, due_month, contracts(customer_id, num_units, customer:profiles!contracts_customer_id_fkey(name))')
+      .select('id, contract_id, due_month, contracts!inner(customer_id, num_units, status, customer:profiles!contracts_customer_id_fkey(name))')
       .eq('due_month', todayMonth)
       .is('booking_id', null)
       .eq(isSecond ? 'second_reminder_sent' : 'reminder_sent', false)
+      .eq('contracts.status', 'ACTIVE')
 
     if (fetchError) {
       console.error('[cron/contracts] fetch error:', fetchError.message)

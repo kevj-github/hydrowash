@@ -95,7 +95,7 @@ export async function sendContractServiceDue(
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: `Your quarterly aircon service is due ${fmtDate(data.dueDate)} — HydroWash`,
+    subject: `Your quarterly aircon service is due in ${data.dueDate} — HydroWash`,
     react: ContractServiceDue(data),
   })
 }
