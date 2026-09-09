@@ -73,11 +73,19 @@ export async function DELETE(
 
   const adminClient = createAdminClient()
 
-  const { data: existing } = await adminClient
+  const { data: existingData } = await adminClient
     .from('contracts')
     .select('id, customer:profiles(name), status, start_date, end_date')
     .eq('id', id)
     .single()
+
+  const existing = existingData as {
+    id: string
+    customer: { name: string } | null
+    status: string
+    start_date: string
+    end_date: string
+  } | null
 
   if (!existing) return NextResponse.json({ error: 'Contract not found' }, { status: 404 })
 
