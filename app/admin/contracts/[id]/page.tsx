@@ -217,12 +217,7 @@ export default function ContractDetailPage() {
     setDeleting(false)
     setDeleteOpen(false)
     if (res.ok) {
-      const body = await res.json()
-      if (body.deleted) {
-        router.push('/admin/contracts')
-      } else {
-        fetchData()
-      }
+      router.push('/admin/contracts')
     } else {
       const err = await res.json()
       alert(`Error: ${err.error}`)
