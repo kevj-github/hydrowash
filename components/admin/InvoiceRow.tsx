@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { InvoiceWithCustomer, PaymentMethod } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   Dialog,
@@ -25,11 +27,14 @@ interface Props {
   onPaid: () => void
   showCustomer?: boolean
   className?: string
+  selected?: boolean
+  onToggleSelect?: () => void
+  onDeleteClick?: () => void
 }
 
 const PAYMENT_METHODS: PaymentMethod[] = ['Cash', 'PayNow', 'Bank Transfer', 'Other']
 
-export default function InvoiceRow({ invoice, onPaid, showCustomer = false, className }: Props) {
+export default function InvoiceRow({ invoice, onPaid, showCustomer = false, className, selected = false, onToggleSelect, onDeleteClick }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
   const [submitting, setSubmitting] = useState(false)
@@ -53,6 +58,11 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false, clas
 
   return (
     <tr className={cn('border-b border-border/50 text-sm hover:bg-accent/5 transition-colors', className)}>
+      {onToggleSelect && (
+        <td className="py-2 px-3 w-8">
+          <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select invoice ${invoice.description}`} />
+        </td>
+      )}
       {showCustomer && (
         <td className="py-2 px-3 font-medium">{invoice.customer?.name ?? '—'}</td>
       )}
@@ -77,7 +87,14 @@ export default function InvoiceRow({ invoice, onPaid, showCustomer = false, clas
         {invoice.paid_at ? invoice.paid_at.split('T')[0] : '—'}
       </td>
       <td className="py-2 px-3">
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex gap-1.5 flex-wrap items-center">
+          {onDeleteClick && <button
+            onClick={onDeleteClick}
+            aria-label={`Delete invoice ${invoice.description}`}
+            className="text-slate-400 hover:text-red-600 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>}
         {invoice.booking_id && (
           <a
             href={`/api/bookings/${invoice.booking_id}/work-order-pdf`}
