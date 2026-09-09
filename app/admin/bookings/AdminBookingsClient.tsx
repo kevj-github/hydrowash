@@ -1,9 +1,11 @@
 'use client'
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Script from 'next/script'
 import { Input } from '@/components/ui/input'
 import { BookingCard } from '@/components/admin/BookingCard'
+import { ConfirmDeleteModal } from '@/components/admin/ConfirmDeleteModal'
+import { Checkbox } from '@/components/ui/checkbox'
 import type { BookingWithRelations } from '@/lib/types'
 
 const BookingsMap = dynamic(
@@ -41,6 +43,20 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
 
   // Pin-click selection for all tabs
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+
+  // Multi-select delete (independent of pin-click selection above)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [singleDeleteBooking, setSingleDeleteBooking] = useState<BookingWithRelations | null>(null)
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   // Maintenance filters
   const [maintSearch, setMaintSearch] = useState('')
@@ -131,6 +147,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
   function switchTab(tab: Tab) {
     setActiveTab(tab)
     setSelectedJobId(null)
+    setSelectedIds(new Set())
   }
 
   const pendingCount = (list: BookingWithRelations[]) => list.filter(b => b.status === 'PENDING').length
@@ -147,6 +164,49 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
     }
     return list
   })()
+
+  const activeList = activeTab === 'MAINTENANCE' ? maintenanceFiltered
+    : activeTab === 'FAULT_REPAIR' ? faultRepairFiltered
+    : activeTab === 'INSTALLATION' ? installationFiltered
+    : allFiltered
+
+  const allVisibleSelected = activeList.length > 0 && activeList.every(b => selectedIds.has(b.id))
+
+  function toggleSelectAllVisible() {
+    setSelectedIds(prev => {
+      if (allVisibleSelected) return new Set()
+      return new Set(activeList.map(b => b.id))
+    })
+  }
+
+  const deleteModalItems = useMemo(() => {
+    if (singleDeleteBooking) {
+      return [{ id: singleDeleteBooking.id, label: `${singleDeleteBooking.customer.name} — ${singleDeleteBooking.service_type.name}` }]
+    }
+    return bookings
+      .filter(b => selectedIds.has(b.id))
+      .map(b => ({ id: b.id, label: `${b.customer.name} — ${b.service_type.name}` }))
+  }, [singleDeleteBooking, selectedIds, bookings])
+
+  async function handleConfirmDelete() {
+    const ids = singleDeleteBooking ? [singleDeleteBooking.id] : Array.from(selectedIds)
+    const res = await fetch('/api/bookings/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.error ?? 'Delete failed')
+    }
+    const body = await res.json()
+    if (body.failed?.length) {
+      throw new Error(`${body.failed.length} of ${ids.length} bookings could not be deleted`)
+    }
+    setSingleDeleteBooking(null)
+    setSelectedIds(new Set())
+    await refresh()
+  }
 
   // Scroll to card when pin clicked.
   useEffect(() => {
@@ -219,6 +279,30 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
         })}
       </div>
 
+      {/* Bulk-select action bar — shared across mobile/desktop layouts */}
+      <div className="flex items-center gap-3 mb-3 shrink-0">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+          <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible bookings" />
+          Select all
+        </label>
+        {selectedIds.size > 0 && (
+          <button
+            onClick={() => setDeleteModalOpen(true)}
+            className="text-xs font-medium bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg"
+          >
+            Delete {selectedIds.size} Selected
+          </button>
+        )}
+      </div>
+
+      <ConfirmDeleteModal
+        open={deleteModalOpen || !!singleDeleteBooking}
+        onOpenChange={(open) => { if (!open) { setDeleteModalOpen(false); setSingleDeleteBooking(null) } }}
+        title={singleDeleteBooking ? 'Delete Booking' : `Delete ${selectedIds.size} Bookings`}
+        items={deleteModalItems}
+        onConfirm={handleConfirmDelete}
+      />
+
       {/* ── Mobile: card list + Show Map FAB ── */}
       {!isDesktopLayout && (
       <div className="flex flex-col flex-1 min-h-0 relative">
@@ -268,7 +352,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ? <p className="text-sm text-muted-foreground text-center py-8">No maintenance bookings.</p>
                   : maintenanceFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                       </div>
                     ))
                 }
@@ -295,7 +379,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ? <p className="text-sm text-muted-foreground text-center py-8">No fault repair bookings.</p>
                   : faultRepairFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                       </div>
                     ))
                 }
@@ -322,7 +406,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ? <p className="text-sm text-muted-foreground text-center py-8">No installation bookings.</p>
                   : installationFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                       </div>
                     ))
                 }
@@ -344,7 +428,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ? <p className="text-sm text-muted-foreground text-center py-8">No bookings here.</p>
                   : allFiltered.map(b => (
                       <div key={b.id} data-job-id={b.id}>
-                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                        <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                       </div>
                     ))
                 }
@@ -430,7 +514,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                 ) : (
                   maintenanceFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                     </div>
                   ))
                 )}
@@ -481,7 +565,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                 ) : (
                   faultRepairFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                     </div>
                   ))
                 )}
@@ -532,7 +616,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                 ) : (
                   installationFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                     </div>
                   ))
                 )}
@@ -572,7 +656,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                 ) : (
                   allFiltered.map(b => (
                     <div key={b.id} data-job-id={b.id}>
-                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} />
+                      <BookingCard booking={b} onUpdate={refresh} highlighted={selectedJobId === b.id} onCardClick={() => setSelectedJobId(b.id)} contractVisitInfo={visitMap[b.id]} selected={selectedIds.has(b.id)} onToggleSelect={() => toggleSelect(b.id)} onDeleteClick={() => setSingleDeleteBooking(b)} />
                     </div>
                   ))
                 )}
