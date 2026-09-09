@@ -4,12 +4,17 @@ import { ContractWithCustomer, ContractServiceDate } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
 
 interface Props {
   contract: ContractWithCustomer & { contract_service_dates: ContractServiceDate[] }
   isOverdue?: boolean
+  selected: boolean
+  onToggleSelect: () => void
+  onDeleteClick: () => void
 }
 
 function getNextServiceDue(dates: ContractServiceDate[]): string | null {
@@ -32,7 +37,7 @@ function isExpiringSoon(endDate: string): boolean {
   return end <= in30
 }
 
-export default function ContractCard({ contract, isOverdue }: Props) {
+export default function ContractCard({ contract, isOverdue, selected, onToggleSelect, onDeleteClick }: Props) {
   const nextDue = getNextServiceDue(contract.contract_service_dates)
   const dueBadge = isServiceDueThisMonth(contract.contract_service_dates)
   const expiringSoon = contract.status === 'ACTIVE' && isExpiringSoon(contract.end_date)
@@ -58,14 +63,19 @@ export default function ContractCard({ contract, isOverdue }: Props) {
     <Card className="border border-border shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="font-semibold text-primary">{contract.customer.name}</p>
-            <p className="text-sm text-muted-foreground">{contract.customer.phone}</p>
-            {contract.address && (
-              <p className="text-xs text-muted-foreground mt-0.5">{contract.address}</p>
-            )}
+          <div className="flex items-start gap-2">
+            <div className="pt-0.5">
+              <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select contract for ${contract.customer.name}`} />
+            </div>
+            <div>
+              <p className="font-semibold text-primary">{contract.customer.name}</p>
+              <p className="text-sm text-muted-foreground">{contract.customer.phone}</p>
+              {contract.address && (
+                <p className="text-xs text-muted-foreground mt-0.5">{contract.address}</p>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1 justify-end">
+          <div className="flex flex-wrap gap-1 justify-end items-start">
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[contract.status]}`}>
               {statusLabels[contract.status] ?? contract.status}
             </span>
@@ -78,6 +88,13 @@ export default function ContractCard({ contract, isOverdue }: Props) {
             {expiringSoon && (
               <Badge className="bg-red-100 text-red-700 text-xs">Expiring Soon</Badge>
             )}
+            <button
+              onClick={onDeleteClick}
+              aria-label={`Delete contract for ${contract.customer.name}`}
+              className="text-slate-400 hover:text-red-600 transition-colors ml-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </CardHeader>

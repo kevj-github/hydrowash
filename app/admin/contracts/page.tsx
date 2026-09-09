@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Script from 'next/script'
 import { createClient } from '@/lib/supabase/client'
 import ContractCard from '@/components/admin/ContractCard'
+import { ConfirmDeleteModal } from '@/components/admin/ConfirmDeleteModal'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ContractWithCustomer, ContractServiceDate, CreateContractPayload } from '@/lib/types'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +54,19 @@ export default function AdminContractsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [singleDeleteContract, setSingleDeleteContract] = useState<ContractRow | null>(null)
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const [customers, setCustomers] = useState<CustomerOption[]>([])
 
@@ -216,6 +231,41 @@ export default function AdminContractsPage() {
         s === 'PENDING_REVIEW' ? 0 : s === 'AWAITING_PAYMENT' ? 1 : 2
       return priority(a.status) - priority(b.status)
     })
+
+  const allVisibleSelected = filteredContracts.length > 0 && filteredContracts.every(c => selectedIds.has(c.id))
+
+  function toggleSelectAllVisible() {
+    setSelectedIds(prev => allVisibleSelected ? new Set() : new Set(filteredContracts.map(c => c.id)))
+  }
+
+  const deleteModalItems = useMemo(() => {
+    if (singleDeleteContract) {
+      return [{ id: singleDeleteContract.id, label: `${singleDeleteContract.customer.name} — ${singleDeleteContract.status}` }]
+    }
+    return contracts
+      .filter(c => selectedIds.has(c.id))
+      .map(c => ({ id: c.id, label: `${c.customer.name} — ${c.status}` }))
+  }, [singleDeleteContract, selectedIds, contracts])
+
+  async function handleConfirmDelete() {
+    const ids = singleDeleteContract ? [singleDeleteContract.id] : Array.from(selectedIds)
+    const res = await fetch('/api/contracts/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.error ?? 'Delete failed')
+    }
+    const body = await res.json()
+    if (body.failed?.length) {
+      throw new Error(`${body.failed.length} of ${ids.length} contracts could not be deleted`)
+    }
+    setSingleDeleteContract(null)
+    setSelectedIds(new Set())
+    fetchContracts()
+  }
 
   function resetForm() {
     setForm({ customer_id: '', num_units: '', price_sgd: '', start_date: '', address: '', notes: '' })
@@ -555,18 +605,41 @@ export default function AdminContractsPage() {
           <p className="text-muted-foreground">No contracts found.</p>
         ) : (
           <>
+            <div className="flex items-center gap-3 mb-3">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible contracts" />
+                Select all
+              </label>
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={() => setDeleteModalOpen(true)}
+                  className="text-xs font-medium bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg"
+                >
+                  Delete {selectedIds.size} Selected
+                </button>
+              )}
+            </div>
+
             {/* Desktop: 2-col grid */}
             <div className="hidden sm:grid gap-4 sm:grid-cols-2">
               {filteredContracts.map((c) => (
-                <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} />
+                <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} selected={selectedIds.has(c.id)} onToggleSelect={() => toggleSelect(c.id)} onDeleteClick={() => setSingleDeleteContract(c)} />
               ))}
             </div>
             {/* Mobile: single column */}
             <div className="sm:hidden space-y-3">
               {filteredContracts.map((c) => (
-                <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} />
+                <ContractCard key={c.id} contract={c} isOverdue={c.isOverdue} selected={selectedIds.has(c.id)} onToggleSelect={() => toggleSelect(c.id)} onDeleteClick={() => setSingleDeleteContract(c)} />
               ))}
             </div>
+
+            <ConfirmDeleteModal
+              open={deleteModalOpen || !!singleDeleteContract}
+              onOpenChange={(open) => { if (!open) { setDeleteModalOpen(false); setSingleDeleteContract(null) } }}
+              title={singleDeleteContract ? 'Delete Contract' : `Delete ${selectedIds.size} Contracts`}
+              items={deleteModalItems}
+              onConfirm={handleConfirmDelete}
+            />
           </>
         )}
       </div>
