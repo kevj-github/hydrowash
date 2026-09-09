@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     .select('id, customer:profiles(name), amount_sgd, status')
     .in('id', ids)
 
-  const rows = (invoices ?? []) as {
+  const rows = (invoices ?? []) as unknown as {
     id: string
     customer: { name: string } | null
     amount_sgd: number
