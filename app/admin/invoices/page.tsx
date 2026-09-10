@@ -1,16 +1,18 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import InvoiceRow from '@/components/admin/InvoiceRow'
+import { ConfirmDeleteModal } from '@/components/admin/ConfirmDeleteModal'
+import { Checkbox } from '@/components/ui/checkbox'
 import { InvoiceWithCustomer, CreateInvoicePayload, PaymentMethod } from '@/lib/types'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -28,7 +30,13 @@ import {
 
 const PAYMENT_METHODS: PaymentMethod[] = ['Cash', 'PayNow', 'Bank Transfer', 'Other']
 
-function MobileInvoiceCard({ invoice, onPaid }: { invoice: InvoiceWithCustomer; onPaid: () => void }) {
+function MobileInvoiceCard({ invoice, onPaid, selected, onToggleSelect, onDeleteClick }: {
+  invoice: InvoiceWithCustomer
+  onPaid: () => void
+  selected: boolean
+  onToggleSelect: () => void
+  onDeleteClick: () => void
+}) {
   const [open, setOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
   const [submitting, setSubmitting] = useState(false)
@@ -53,10 +61,18 @@ function MobileInvoiceCard({ invoice, onPaid }: { invoice: InvoiceWithCustomer; 
   return (
     <div className="bg-white border border-border rounded-xl p-4 space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-primary">{invoice.customer?.name ?? '—'}</p>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-          invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-        }`}>{invoice.status}</span>
+        <div className="flex items-center gap-2">
+          <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select invoice ${invoice.description}`} />
+          <p className="text-sm font-semibold text-primary">{invoice.customer?.name ?? '—'}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+            invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+          }`}>{invoice.status}</span>
+          <button onClick={onDeleteClick} aria-label={`Delete invoice ${invoice.description}`} className="text-slate-400 hover:text-red-600 transition-colors">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
       <p className="text-xs text-muted-foreground">{invoice.customer?.phone}</p>
       <p className="text-xs text-muted-foreground">{invoice.description}</p>
@@ -125,6 +141,20 @@ function AdminInvoicesContent() {
   const preselectedContractId = searchParams.get('contract_id') ?? ''
 
   const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([])
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [singleDeleteInvoice, setSingleDeleteInvoice] = useState<InvoiceWithCustomer | null>(null)
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -247,6 +277,41 @@ function AdminInvoicesContent() {
     }
     return true
   })
+
+  const allVisibleSelected = filteredInvoices.length > 0 && filteredInvoices.every(i => selectedIds.has(i.id))
+
+  function toggleSelectAllVisible() {
+    setSelectedIds(prev => allVisibleSelected ? new Set() : new Set(filteredInvoices.map(i => i.id)))
+  }
+
+  const deleteModalItems = useMemo(() => {
+    if (singleDeleteInvoice) {
+      return [{ id: singleDeleteInvoice.id, label: `${singleDeleteInvoice.customer?.name ?? 'Unknown'} — S$${Number(singleDeleteInvoice.amount_sgd).toFixed(2)}` }]
+    }
+    return invoices
+      .filter(i => selectedIds.has(i.id))
+      .map(i => ({ id: i.id, label: `${i.customer?.name ?? 'Unknown'} — S$${Number(i.amount_sgd).toFixed(2)}` }))
+  }, [singleDeleteInvoice, selectedIds, invoices])
+
+  async function handleConfirmDelete() {
+    const ids = singleDeleteInvoice ? [singleDeleteInvoice.id] : Array.from(selectedIds)
+    const res = await fetch('/api/invoices/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.error ?? 'Delete failed')
+    }
+    const body = await res.json()
+    if (body.failed?.length) {
+      throw new Error(`${body.failed.length} of ${ids.length} invoices could not be deleted`)
+    }
+    setSingleDeleteInvoice(null)
+    setSelectedIds(new Set())
+    fetchInvoices()
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -514,11 +579,29 @@ function AdminInvoicesContent() {
         <p className="text-muted-foreground">No invoices found.</p>
       ) : (
         <>
+          <div className="flex items-center gap-3 mb-3">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible invoices" />
+              Select all
+            </label>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => setDeleteModalOpen(true)}
+                className="text-xs font-medium bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg"
+              >
+                Delete {selectedIds.size} Selected
+              </button>
+            )}
+          </div>
+
           {/* Desktop table */}
           <div className="hidden md:block bg-white border rounded-xl overflow-x-auto">
             <table className="w-full text-left">
               <thead className="border-b border-border">
                 <tr className="text-xs text-muted-foreground">
+                  <th className="py-2 px-3 w-8">
+                    <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible invoices" />
+                  </th>
                   <th className="py-2 px-3">Customer</th>
                   <th className="py-2 px-3">Description</th>
                   <th className="py-2 px-3">Amount</th>
@@ -536,6 +619,9 @@ function AdminInvoicesContent() {
                     onPaid={fetchInvoices}
                     showCustomer
                     className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/40'}
+                    selected={selectedIds.has(inv.id)}
+                    onToggleSelect={() => toggleSelect(inv.id)}
+                    onDeleteClick={() => setSingleDeleteInvoice(inv)}
                   />
                 ))}
               </tbody>
@@ -545,9 +631,17 @@ function AdminInvoicesContent() {
           {/* Mobile card list */}
           <div className="md:hidden space-y-3">
             {filteredInvoices.map(inv => (
-              <MobileInvoiceCard key={inv.id} invoice={inv} onPaid={fetchInvoices} />
+              <MobileInvoiceCard key={inv.id} invoice={inv} onPaid={fetchInvoices} selected={selectedIds.has(inv.id)} onToggleSelect={() => toggleSelect(inv.id)} onDeleteClick={() => setSingleDeleteInvoice(inv)} />
             ))}
           </div>
+
+          <ConfirmDeleteModal
+            open={deleteModalOpen || !!singleDeleteInvoice}
+            onOpenChange={(open) => { if (!open) { setDeleteModalOpen(false); setSingleDeleteInvoice(null) } }}
+            title={singleDeleteInvoice ? 'Delete Invoice' : `Delete ${selectedIds.size} Invoices`}
+            items={deleteModalItems}
+            onConfirm={handleConfirmDelete}
+          />
         </>
       )}
     </div>

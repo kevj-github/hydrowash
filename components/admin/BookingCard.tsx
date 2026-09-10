@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { JobCompletionDialog } from '@/components/admin/JobCompletionDialog'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Trash2 } from 'lucide-react'
 import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
 
@@ -14,6 +16,9 @@ interface Props {
   highlighted?: boolean
   onCardClick?: () => void
   contractVisitInfo?: { visitNo: number; totalVisits: number }
+  selected: boolean
+  onToggleSelect: () => void
+  onDeleteClick: () => void
 }
 
 const urgencyColor: Record<string, string> = {
@@ -37,7 +42,7 @@ const statusBorderStrip: Record<string, string> = {
   CANCELLED: 'border-l-slate-300',
 }
 
-export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contractVisitInfo }: Props) {
+export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contractVisitInfo, selected, onToggleSelect, onDeleteClick }: Props) {
   const [confirmedDate, setConfirmedDate] = useState(booking.confirmed_date ?? '')
   const [confirmedSlot, setConfirmedSlot] = useState<string>(booking.confirmed_slot ?? '')
   const [rejectionReason, setRejectionReason] = useState('')
@@ -72,11 +77,16 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contr
       onClick={() => onCardClick?.()}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div>
-          <p className="font-heading font-semibold text-primary text-sm">{booking.customer.name}</p>
-          <p className="text-xs text-slate-500">{booking.customer.phone}</p>
+        <div className="flex items-start gap-2">
+          <div onClick={e => e.stopPropagation()} className="pt-0.5">
+            <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select booking for ${booking.customer.name}`} />
+          </div>
+          <div>
+            <p className="font-heading font-semibold text-primary text-sm">{booking.customer.name}</p>
+            <p className="text-xs text-slate-500">{booking.customer.phone}</p>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-1 justify-end">
+        <div className="flex flex-wrap gap-1 justify-end items-start">
           {booking.contract_id && (
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
               Contract{contractVisitInfo ? ` · Visit ${contractVisitInfo.visitNo}/${contractVisitInfo.totalVisits}` : ''}
@@ -90,6 +100,13 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contr
               {booking.urgency}
             </span>
           )}
+          <button
+            onClick={e => { e.stopPropagation(); onDeleteClick() }}
+            aria-label={`Delete booking for ${booking.customer.name}`}
+            className="text-slate-400 hover:text-red-600 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 

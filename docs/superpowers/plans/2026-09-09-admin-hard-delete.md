@@ -2226,8 +2226,8 @@ test.describe('Admin hard delete', () => {
     await expect(page.getByRole('button', { name: /Delete \d+ Selected/ })).toBeVisible()
     await page.getByRole('button', { name: /Delete \d+ Selected/ }).click()
 
-    await expect(page.getByRole('button', { name: /Delete \d+ Items?/ })).toBeVisible()
-    await page.getByRole('button', { name: /Delete \d+ Items?/ }).click()
+    await expect(page.getByRole('button', { name: /Delete (\d+ )?Items?/ })).toBeVisible()
+    await page.getByRole('button', { name: /Delete (\d+ )?Items?/ }).click()
 
     await expect(page.getByRole('button', { name: /Delete \d+ Selected/ })).not.toBeVisible()
   })
@@ -2237,7 +2237,10 @@ test.describe('Admin hard delete', () => {
     const rowCountBefore = await page.locator('table tbody tr').count()
     if (rowCountBefore === 0) test.skip()
 
-    await page.getByRole('button', { name: /Delete invoice/ }).first().click()
+    // InvoiceRow (desktop table) and MobileInvoiceCard share the same
+    // aria-label; only one is visible per viewport, so scope to :visible
+    // rather than relying on DOM order.
+    await page.locator('button[aria-label^="Delete invoice"]:visible').first().click()
     await page.getByRole('button', { name: 'Delete Item' }).click()
 
     await expect(page.locator('table tbody tr')).toHaveCount(rowCountBefore - 1)

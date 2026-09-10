@@ -82,12 +82,13 @@ app/
   admin/layout.tsx             # Admin auth guard + nav
   admin/page.tsx               # Overview dashboard (stats + Phase 1B widgets)
   admin/bookings/page.tsx      # 4-tab: Maintenance (map) / Fault / Installation / All
-  admin/bookings/AdminBookingsClient.tsx  # Client: draggable resizer, per-tab filters, bidirectional map↔card sync, InfoWindow popup, All-tab customer search
-  admin/contracts/page.tsx     # Contracts list + create; client-side filters: name/phone search, start/expiry/next-service-due date ranges, status
-  admin/contracts/[id]/page.tsx   # Contract detail: service schedule + invoices
-  admin/invoices/page.tsx      # Invoices list + create; client-side filters: name/phone search, created/paid date ranges, status; Create dialog uses searchable customer combobox
+  admin/bookings/AdminBookingsClient.tsx  # Client: draggable resizer, per-tab filters, bidirectional map↔card sync, InfoWindow popup, All-tab customer search; multi-select + bulk/single hard-delete (Checkbox + ConfirmDeleteModal → POST /api/bookings/bulk-delete)
+  admin/contracts/page.tsx     # Contracts list + create; client-side filters: name/phone search, start/expiry/next-service-due date ranges, status; multi-select + bulk/single hard-delete → POST /api/contracts/bulk-delete
+  admin/contracts/[id]/page.tsx   # Contract detail: service schedule + invoices; "Delete Contract" button always hard-deletes (DELETE /api/contracts/[id])
+  admin/invoices/page.tsx      # Invoices list + create; client-side filters: name/phone search, created/paid date ranges, status; Create dialog uses searchable customer combobox; multi-select + bulk/single hard-delete (desktop table + MobileInvoiceCard) → POST /api/invoices/bulk-delete
   admin/schedule/[date]/page.tsx  # Route optimiser — date picker, job selection, map
-  admin/customers/page.tsx     # Customer list with search, booking counts, invoice totals, active contract badge
+  admin/customers/page.tsx     # Server Component: fetches customers + booking counts + paid invoice totals + active contract ids, delegates to AdminCustomersClient
+  admin/customers/AdminCustomersClient.tsx  # Client: search-filtered list, multi-select + bulk/single hard-delete with dependent-row-count warning → POST /api/customers/bulk-delete
   admin/customers/[id]/page.tsx  # Customer detail: profile card + bookings + contracts + invoices + total paid
   admin/agenda/page.tsx        # Week-grid view (?week=YYYY-MM-DD): 5 slot rows × 7 day cols; APPROVED/all toggle + week nav
   admin/settings/page.tsx      # Service types + depot settings + company info fields
@@ -99,11 +100,13 @@ app/
   api/bookings/[id]/work-order-pdf/route.ts  # GET: admin generates Work Order PDF on-the-fly
   api/bookings/[id]/send-work-order/route.ts # POST: admin sends Work Order PDF + PayNow QR to customer; creates UNPAID invoice
   api/bookings/bulk-approve/route.ts  # POST: bulk approve PENDING maintenance bookings with a confirmed_date
+  api/bookings/bulk-delete/route.ts   # POST: { ids: string[] } → hard-deletes bookings, logs admin_audit_log, returns { succeeded, failed }
   api/availability/route.ts    # GET ?month=YYYY-MM → { byDate: { [date]: { booked: TimeSlot[], blockedSlots: (TimeSlot|null)[] } } }
   api/admin/ac-catalog/route.ts   # GET/POST/PATCH ?kind=unit_types|brands — admin CRUD for ac_unit_types and ac_brands
   api/contracts/route.ts       # POST: create contract + auto-generate service dates; GET: list
   api/contracts/request/route.ts  # POST: customer self-signup (status=PENDING_REVIEW, no price; sends confirmation email)
-  api/contracts/[id]/route.ts  # PATCH: edit; DELETE: cancel or hard delete
+  api/contracts/[id]/route.ts  # PATCH: edit; DELETE: always hard-deletes (no more cancel-first step), logs admin_audit_log
+  api/contracts/bulk-delete/route.ts  # POST: { ids: string[] } → hard-deletes contracts, logs admin_audit_log, returns { succeeded, failed }
   api/contracts/[id]/set-price/route.ts  # PATCH: set price → AWAITING_PAYMENT + immediately generates PDF, uploads to Storage, emails customer (returns { contract, emailSent: boolean })
   api/contracts/[id]/send-contract-pdf/route.ts  # POST: generate contract PDF + PayNow QR; upload to storage; email to customer
   api/contracts/[id]/pdf/route.ts        # GET: admin preview — returns contract PDF blob on-the-fly
@@ -112,6 +115,8 @@ app/
   api/contracts/[id]/link-booking/route.ts  # PATCH: link booking to service date
   api/invoices/route.ts        # POST: create invoice; GET: list with filters
   api/invoices/[id]/pay/route.ts  # PATCH: mark invoice paid
+  api/invoices/bulk-delete/route.ts   # POST: { ids: string[] } → hard-deletes invoices, logs admin_audit_log, returns { succeeded, failed }
+  api/customers/bulk-delete/route.ts  # POST: { ids: string[] } → hard-deletes customer profiles (cascades bookings/contracts/invoices), logs admin_audit_log, returns { succeeded, failed }
   api/geocode/route.ts         # POST: geocode address → lat/lng
   api/geocode/reverse/route.ts # POST: { lat, lng } → { address, postalCode } (reverse geocode via Google)
   api/optimize/route.ts        # POST: run single-route VRP for selected booking IDs
@@ -125,19 +130,21 @@ components/
   ui/section-heading.tsx       # <SectionHeading label title subtitle align light> — shared section titles
   ui/service-card.tsx          # <ServiceCard icon title description> — Lucide icon card with hover
   ui/step-item.tsx             # <StepItem number label description done> — numbered step circle
+  ui/checkbox.tsx               # <Checkbox checked onCheckedChange aria-label> — shadcn/ui v4 primitive; used throughout admin for multi-select rows/cards
   booking/BookingWizard.tsx    # 3-step wizard: Service → Schedule & Location → Review
   booking/StepServiceDetails.tsx  # Step 0: service type, category fields, UnitLocationPicker for MAINTENANCE
   booking/StepScheduleLocation.tsx  # Step 1: SlotCalendar (date+slot) + address presets (Home/My Location/Other) + Places autocomplete; accepts `contractAddress` prop — when set, hides presets and shows locked address (auto-geocoded on mount)
   booking/StepReview.tsx       # Step 2: summary of all booking data before submit
   booking/SlotCalendar.tsx     # Month-grid calendar; up to 5 dates, 3 slots each; SGT-aware past-slot blocking
   booking/UnitLocationPicker.tsx  # N per-unit <Select> dropdowns (one per unit), driven by numUnits prop; reads ac_unit_locations from Supabase browser client
-  admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync; JobCompletionDialog replaces "Mark Complete"
+  admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync; JobCompletionDialog replaces "Mark Complete"; required `selected`/`onToggleSelect`/`onDeleteClick` props drive the checkbox + trash icon
   admin/BookingsMap.tsx        # Google Map markers; InfoWindow popup on pin click (customer name, service, address, status, dates); next/dynamic ssr:false
   admin/AdminBottomNav.tsx     # Mobile bottom nav bar for admin (5 primary tabs + More sheet with Agenda/Availability/Settings); Schedule removed from More sheet; shown on <md
   admin/AdminAgendaClient.tsx  # Client: mobile day-list view (selectedDay state) + desktop week-grid for agenda page
-  admin/ContractCard.tsx       # Contract list card with status/due/expiry badges; shows address if present
+  admin/ContractCard.tsx       # Contract list card with status/due/expiry badges; shows address if present; required `selected`/`onToggleSelect`/`onDeleteClick` props drive the checkbox + trash icon
   admin/ServiceDateRow.tsx     # One quarterly service visit row; displays formatDueMonth(due_month)
-  admin/InvoiceRow.tsx         # One invoice row with mark-paid dialog; shows "Contract linked" sub-text when contract_id is set
+  admin/InvoiceRow.tsx         # One invoice row with mark-paid dialog; shows "Contract linked" sub-text when contract_id is set; `selected`/`onToggleSelect`/`onDeleteClick` are optional — omitting them (as the contract detail page's invoices sub-table does) hides the checkbox column and delete button
+  admin/ConfirmDeleteModal.tsx # Generic delete-confirm dialog: props { open, onOpenChange, title, items: {id,label}[], warning?, onConfirm: () => Promise<void> } — lists items to delete, shows optional warning line, used by all four admin delete flows (bookings/contracts/invoices/customers)
   admin/RouteMap.tsx           # Google Map with numbered pins + polyline (next/dynamic, ssr:false)
   admin/JobCompletionDialog.tsx  # 3-step dialog: Step 1 (attended_by, AC details, checklist); Step 2 (pricing + additional charges); Step 3 (preview PDF + confirm & send)
   account/RescheduleDialog.tsx   # Customer reschedule dialog wrapping SlotCalendar; uses buttonVariants() on DialogTrigger
@@ -148,6 +155,7 @@ lib/
   supabase/client.ts           # Browser Supabase client — exports createClient()
   supabase/server.ts           # Server Supabase client — exports async createClient()
   supabase/admin.ts            # Service role client — exports createAdminClient(); used for auth.admin.getUserById()
+  admin/audit-log.ts           # logAdminDelete(supabaseAdmin, adminId, entityType, rows) — inserts one admin_audit_log row per delete (bulk or single) with entity_type, entity_ids[], and a { id, label }[] summary
   booking/slots.ts             # Pure functions: isDayFullyBlocked, isSlotBlocked, getSlotsForDate, resolveContractTierPrice
   utils/paynow.ts              # buildPayNowPayload() + crc16ccitt() — EMVCo SGQR format for Singapore PayNow
   (no tests for booking/slots.ts — the pure slot/pricing helpers are untested)
@@ -164,7 +172,7 @@ lib/
   types.ts                     # Shared TypeScript types — TimeSlot, PreferredDateSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings, AcUnitDetail, ChecklistItem, AdditionalCharge, JobCompletion
 
 middleware.ts                  # Auth routing (role-based redirects — admin and customer only) ⚠ Next.js 16 deprecated this filename in favour of proxy.ts — still works but will need renaming
-supabase/migrations/           # Migrations 001–031 all applied; see individual SQL files for schema history
+supabase/migrations/           # Migrations 001–035 all applied; see individual SQL files for schema history (035 adds admin_audit_log table + cascades bookings.customer_id delete)
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -268,6 +276,14 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 - List: search by name/phone; columns: customer_no, name, phone, booking count, total paid (PAID invoices), active contract badge, View link
 - Detail `/admin/customers/[id]`: profile card (email from auth, phone, address, member since, total paid), bookings table, contracts list with next due, invoices table
 
+**Admin hard delete (bookings/contracts/invoices/customers):**
+- Every admin list page (bookings, contracts, invoices, customers) has row/card checkboxes + a "Select all" toggle + a "Delete N Selected" bulk-action button, plus a per-row/card trash icon for single delete. Both paths open the same `ConfirmDeleteModal`, listing the item(s) to be deleted, and call the same `POST /api/{resource}/bulk-delete` route (`{ ids: string[] }` → `{ succeeded, failed }`) whether one id or many are passed.
+- All deletes are **hard deletes** — no soft-delete/cancel step. `DELETE /api/contracts/[id]` (single-contract delete from the contract detail page) was changed to always hard-delete too, instead of cancelling first.
+- Every delete (bulk or single, any resource) is recorded via `logAdminDelete()` (`lib/admin/audit-log.ts`) into `admin_audit_log` (migration 035): `admin_id`, `action: 'DELETE'`, `entity_type`, `entity_ids[]`, and a `{ id, label }[]` summary.
+- Deleting a customer cascades: migration 035 added `ON DELETE CASCADE` on `bookings.customer_id` (contracts/invoices already cascaded), so `AdminCustomersClient`'s delete modal fetches and shows a dependent-row-count warning (bookings/contracts/invoices) before the admin confirms.
+- `app/admin/customers/page.tsx` is a Server Component (fetches customers + booking counts + paid invoice totals + active contract ids) that delegates all interactivity — including selection state and the delete flow — to the client `AdminCustomersClient`, mirroring the existing `admin/bookings/page.tsx` → `AdminBookingsClient` split.
+- `InvoiceRow`'s `selected`/`onToggleSelect`/`onDeleteClick` props are optional (default: hidden) because it has a third consumer — the contract detail page's invoices sub-table — that intentionally has no bulk-select UI.
+
 **Admin agenda (`/admin/agenda`):**
 - Week-grid: SLOT_KEYS rows × 7 day columns; ?week=YYYY-MM-DD param (defaults to current Monday)
 - Each cell shows booking customer name chips (links to /admin/bookings)
@@ -294,7 +310,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 **Animation utilities:** `.animate-fade-up`, `.animate-fade-up-delay-1/2/3` in `globals.css`. Hero elements only.
 
 ## Feature completeness
-All features shipped as of 2026-06-05. See git log for change history.
+All features shipped as of 2026-09-09 (admin hard delete: bulk/single delete + audit log across bookings, contracts, invoices, customers). See git log for change history.
 
 ## Superpowers file conventions
 - Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
@@ -339,4 +355,4 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Post-login redirect — use `window.location.href`, not `router.push`:** After `supabase.auth.signInWithPassword`, `@supabase/ssr`'s `createBrowserClient` writes the session cookie asynchronously via `onAuthStateChange`. Calling `router.push` immediately races ahead before the cookie is committed, so the middleware's `supabase.auth.getUser()` sees no session and bounces the user back to login. Always use `window.location.href = path` for a hard redirect after any Supabase sign-in/sign-up.
 - **Security headers:** `next.config.ts` exports a `headers()` function adding `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy: same-origin`, and a scoped `Permissions-Policy` to all routes. Do not remove these.
 - **Footer contrast:** Footer uses `text-slate-300` (not `text-slate-400`/`text-slate-500`/`text-slate-600`) for all text on the `bg-primary` dark navy background to meet WCAG AA contrast requirements.
-- **Last updated:** 2026-06-16. All migrations 001–031 applied. Security: RLS role-escalation + booking self-approval (031), open-redirect on auth params, user-enumeration via check-email endpoint — all fixed. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Last updated:** 2026-09-09. All migrations 001–035 applied (032 installation service, 033/034 security hardening rounds 2 + function grants/search_path, 035 admin hard delete: `admin_audit_log` table + `bookings.customer_id` cascade delete). Security: RLS role-escalation + booking self-approval (031), open-redirect on auth params, user-enumeration via check-email endpoint — all fixed. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
