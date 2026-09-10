@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AccountContractsClient } from '@/app/account/AccountContractsClient'
 
 export default async function AccountContractsPage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/auth/login')
 
   const [contractsRes, invoicesRes, profileRes, settingsRes] = await Promise.all([

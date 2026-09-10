@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { SLOT_LABELS } from '@/lib/types'
 import type { BookingWithRelations, TimeSlot } from '@/lib/types'
@@ -29,7 +29,7 @@ export default async function AccountBookingsPage({
 }) {
   const { success } = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   const { data: bookings } = await supabase
     .from('bookings')

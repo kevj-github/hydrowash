@@ -1,11 +1,11 @@
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import AccountSettingsClient from './AccountSettingsClient'
 
 export default async function AccountSettingsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/auth/login?redirect=/account/settings')
 
   const { data: profile } = await supabase

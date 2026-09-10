@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Wind, Wrench, Zap, Package, ArrowRight, Cpu, MapPin, ShieldCheck, FileText } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/supabase/server'
 import { Section, SectionInner } from '@/components/ui/section'
 import { SectionHeading } from '@/components/ui/section-heading'
 import { ServiceCard } from '@/components/ui/service-card'
@@ -55,8 +55,7 @@ const whyFeatures = [
 
 
 export default async function HomePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   const bookHref = user ? '/book' : '/auth/login?redirect=/book'
 
   return (

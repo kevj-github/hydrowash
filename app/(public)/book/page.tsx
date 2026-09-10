@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { BookingWizard } from '@/components/booking/BookingWizard'
 import { SectionHeading } from '@/components/ui/section-heading'
 
@@ -9,7 +9,7 @@ export default async function BookPage({
 }) {
   const { repeat } = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   const [serviceTypesRes, profileRes] = await Promise.all([
     supabase.from('service_types').select('*').eq('active', true).order('category'),

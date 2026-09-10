@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { Wind } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { PublicHeader } from './PublicHeader'
 import { CustomerBottomNav } from '@/components/ui/CustomerBottomNav'
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   let isAdmin = false
   if (user) {
