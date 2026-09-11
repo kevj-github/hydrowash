@@ -32,8 +32,23 @@ interface Props {
     ac_model?: string
     notes?: string
     media_urls?: string[]
+    // Not rendered on this step, but cleared here when a contract is linked
+    // (see Link to Contract onValueChange below) so stale values prefilled
+    // from a past booking don't leak into a contract-linked booking's
+    // location, which must come from the contract's own address instead.
+    address?: string
+    postal_code?: string
+    lat?: number | null
+    lng?: number | null
+    unit_floor?: string
+    building_name?: string
+    access_notes?: string
   }
   onChange: (updates: Partial<Props['data']>) => void
+  /** Auto-select this contract once its ACTIVE contracts list loads (from a
+   *  quarterly-reminder email's "Book Now" deep link) — same effect as the
+   *  customer picking it from the Link to Contract dropdown themselves. */
+  preselectContractId?: string
 }
 
 const urgencyOptions = [
@@ -52,7 +67,7 @@ interface ContractOption {
   next_due_month: string | null
 }
 
-export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
+export function StepServiceDetails({ serviceTypes, data, onChange, preselectContractId }: Props) {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -93,6 +108,56 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
     loadContracts()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.category])
+
+  // Same as picking a contract from the "Link to Contract" dropdown, factored
+  // out so the preselect effect below (from a reminder email's deep link)
+  // can reuse it instead of duplicating the field-clearing logic.
+  function applyContract(c: ContractOption) {
+    // Only restrict the schedule step to the due month if that visit
+    // hasn't already passed — an overdue visit means any date forward is fine.
+    const currentYearMonth = new Date().toISOString().slice(0, 7)
+    const nextDueMonth = c.next_due_month && c.next_due_month >= currentYearMonth ? c.next_due_month : null
+    // Clear any address/unit-floor/building/access-notes left over from a
+    // previous booking's prefill — a contract-linked booking's location
+    // comes entirely from the contract's own address (StepScheduleLocation
+    // re-geocodes contract_address once these are reset), not from
+    // whatever the customer's last unrelated booking used.
+    const clearedLocation = {
+      address: '', postal_code: '', lat: null, lng: null,
+      unit_floor: '', building_name: '', access_notes: '',
+    }
+    if (c.unit_details.length > 0) {
+      onChange({
+        ...clearedLocation,
+        contract_id: c.id,
+        contract_address: c.address ?? '',
+        contract_unit_details: c.unit_details,
+        contract_next_due_month: nextDueMonth,
+        num_units: c.num_units,
+        unit_location_ids: c.unit_details.map(u => u.location_id ?? OTHERS_VALUE),
+        unit_location_others: c.unit_details.map(u => u.location_id ? '' : u.location_label),
+      })
+    } else {
+      // Legacy contract with no per-unit details recorded — lock nothing,
+      // just prefill the unit count and address.
+      onChange({
+        ...clearedLocation,
+        contract_id: c.id, contract_address: c.address ?? '',
+        contract_unit_details: undefined, contract_next_due_month: nextDueMonth,
+        num_units: c.num_units,
+      })
+    }
+  }
+
+  // Auto-select the contract named in the ?contract= deep link once it shows
+  // up in the loaded ACTIVE-contracts list. Runs once per booking (won't
+  // re-fire after the customer manually changes or clears the selection).
+  useEffect(() => {
+    if (!preselectContractId || data.contract_id) return
+    const c = contracts.find(ct => ct.id === preselectContractId)
+    if (c) applyContract(c)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectContractId, contracts])
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -209,29 +274,7 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
                     onChange({ contract_id: '', contract_address: '', contract_unit_details: undefined, contract_next_due_month: null, num_units: undefined, unit_location_ids: [], unit_location_others: [] })
                     return
                   }
-                  // Only restrict the schedule step to the due month if that visit
-                  // hasn't already passed — an overdue visit means any date forward is fine.
-                  const currentYearMonth = new Date().toISOString().slice(0, 7)
-                  const nextDueMonth = c.next_due_month && c.next_due_month >= currentYearMonth ? c.next_due_month : null
-                  if (c.unit_details.length > 0) {
-                    onChange({
-                      contract_id: c.id,
-                      contract_address: c.address ?? '',
-                      contract_unit_details: c.unit_details,
-                      contract_next_due_month: nextDueMonth,
-                      num_units: c.num_units,
-                      unit_location_ids: c.unit_details.map(u => u.location_id ?? OTHERS_VALUE),
-                      unit_location_others: c.unit_details.map(u => u.location_id ? '' : u.location_label),
-                    })
-                  } else {
-                    // Legacy contract with no per-unit details recorded — lock nothing,
-                    // just prefill the unit count and address.
-                    onChange({
-                      contract_id: c.id, contract_address: c.address ?? '',
-                      contract_unit_details: undefined, contract_next_due_month: nextDueMonth,
-                      num_units: c.num_units,
-                    })
-                  }
+                  applyContract(c)
                 }}
               >
                 <SelectTrigger>

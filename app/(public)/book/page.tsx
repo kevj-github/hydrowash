@@ -5,9 +5,9 @@ import { SectionHeading } from '@/components/ui/section-heading'
 export default async function BookPage({
   searchParams,
 }: {
-  searchParams: Promise<{ repeat?: string }>
+  searchParams: Promise<{ repeat?: string; contract?: string }>
 }) {
-  const { repeat } = await searchParams
+  const { repeat, contract } = await searchParams
   const supabase = await createClient()
   const user = await getAuthUser()
 
@@ -45,6 +45,7 @@ export default async function BookPage({
           serviceTypes={serviceTypesRes.data ?? []}
           profileAddress={profileAddress}
           repeatId={repeat}
+          preselectContractId={contract}
         />
       </div>
     </div>

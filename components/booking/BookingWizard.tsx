@@ -13,6 +13,10 @@ interface Props {
   serviceTypes: ServiceType[]
   profileAddress?: { address: string; postal_code: string; lat: number; lng: number; unit_floor?: string; building_name?: string } | null
   repeatId?: string
+  /** From a quarterly-reminder email's "Book Now" deep link (?contract=id) —
+   *  forces MAINTENANCE category so StepServiceDetails' contract picker loads,
+   *  then auto-selects this contract once it appears in that list. */
+  preselectContractId?: string
 }
 
 const STEPS = ['Service', 'Schedule & Location', 'Review']
@@ -59,9 +63,11 @@ const initial: BookingData = {
 }
 
 
-export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props) {
+export function BookingWizard({ serviceTypes, profileAddress, repeatId, preselectContractId }: Props) {
   const [step, setStep] = useState(0)
-  const [data, setData] = useState<BookingData>(initial)
+  const [data, setData] = useState<BookingData>(() =>
+    preselectContractId ? { ...initial, category: 'MAINTENANCE' } : initial
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [prefilled, setPrefilled] = useState(false)
@@ -91,10 +97,14 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
         if (!booking) { setPrefilled(true); return }
         if (cancelled) return
         const unitLocationIds = body.unit_location_ids ?? []
+        // A ?contract= deep link commits this booking to MAINTENANCE — don't
+        // let a prefilled service_type_id from a different-category past
+        // booking silently mismatch the locked category (the customer picks
+        // a specific MAINTENANCE service type themselves in that case).
         setData(prev => ({
           ...prev,
-          service_type_id: booking.service_type_id ?? '',
-          category: booking.category ?? '',
+          service_type_id: preselectContractId ? '' : (booking.service_type_id ?? ''),
+          category: preselectContractId ? 'MAINTENANCE' : (booking.category ?? ''),
           num_units: booking.num_units ?? undefined,
           unit_location_ids: unitLocationIds,
           unit_location_others: booking.unit_location_others ?? [],
@@ -220,7 +230,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
       <div className="bg-white rounded-2xl border border-border shadow-sm p-6 sm:p-8 mb-6">
         <h2 className="font-heading font-semibold text-lg text-primary mb-5">{STEPS[step]}</h2>
 
-        {step === 0 && <StepServiceDetails serviceTypes={serviceTypes} data={data} onChange={update} />}
+        {step === 0 && <StepServiceDetails serviceTypes={serviceTypes} data={data} onChange={update} preselectContractId={preselectContractId} />}
         {step === 1 && <StepScheduleLocation data={data} onChange={update} profileAddress={profileAddress} contractAddress={data.contract_address} contractAllowedMonth={data.contract_next_due_month} />}
         {step === 2 && <StepReview data={data} serviceTypes={serviceTypes} />}
       </div>

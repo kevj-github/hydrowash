@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendContractServiceDue, sendContractExpiring } from '@/lib/email/send'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hydrowash.sg'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.hydrowash.services'
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get('x-cron-secret')
@@ -64,7 +64,9 @@ export async function GET(req: NextRequest) {
                 customerName: contract.customer?.name ?? 'Customer',
                 numUnits: contract.num_units,
                 dueDate: formatDueMonth(sd.due_month),
-                bookUrl: `${APP_URL}/book`,
+                // Deep-link to the specific contract this reminder is for —
+                // a customer can have more than one contract.
+                bookUrl: `${APP_URL}/book?contract=${sd.contract_id}`,
               },
               email
             ).catch(() => null)

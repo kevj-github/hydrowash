@@ -1,5 +1,6 @@
 import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import type { ComponentProps } from 'react'
 import { AccountContractsClient } from '@/app/account/AccountContractsClient'
 
 export default async function AccountContractsPage() {
@@ -33,7 +34,7 @@ export default async function AccountContractsPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('invoices')
-      .select('id, amount_sgd, description, status, payment_method, paid_at, created_at, booking_id')
+      .select('id, amount_sgd, description, status, payment_method, paid_at, created_at, booking_id, booking:bookings(service_type:service_types(name))')
       .eq('customer_id', user.id)
       .order('created_at', { ascending: false }),
     supabase
@@ -52,7 +53,7 @@ export default async function AccountContractsPage() {
   return (
     <AccountContractsClient
       contracts={contractsRes.data ?? []}
-      invoices={invoicesRes.data ?? []}
+      invoices={(invoicesRes.data ?? []) as unknown as ComponentProps<typeof AccountContractsClient>['invoices']}
       profileAddress={profileRes.data?.address ?? null}
       profileUnitFloor={profileRes.data?.unit_floor ?? null}
       profileBuildingName={profileRes.data?.building_name ?? null}

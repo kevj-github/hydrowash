@@ -76,7 +76,7 @@ export default function ContractCard({ contract, isOverdue, selected, onToggleSe
             </div>
           </div>
           <div className="flex flex-wrap gap-1 justify-end items-start">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[contract.status]}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${statusColors[contract.status]}`}>
               {statusLabels[contract.status] ?? contract.status}
             </span>
             {dueBadge && (

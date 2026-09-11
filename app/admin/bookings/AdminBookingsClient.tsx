@@ -81,6 +81,11 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
   const isDragging = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Desktop map view toggle — off by default, since the map squeezes the
+  // card sidebar into a narrow, cluttered column. Off shows cards full-width
+  // in an evenly-spaced grid instead.
+  const [showMap, setShowMap] = useState(false)
+
   // Mobile map bottom sheet
   const [mapSheetOpen, setMapSheetOpen] = useState(false)
   // Keep only one card tree mounted (desktop OR mobile) so cards don't have
@@ -172,6 +177,12 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
 
   const allVisibleSelected = activeList.length > 0 && activeList.every(b => selectedIds.has(b.id))
 
+  // With the map hidden, cards get the full sidebar width back — lay them
+  // out as an evenly-spaced grid instead of a single cramped column.
+  const cardListClass = showMap
+    ? 'flex-1 overflow-y-auto space-y-3'
+    : 'flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 content-start'
+
   function toggleSelectAllVisible() {
     setSelectedIds(prev => {
       if (allVisibleSelected) return new Set()
@@ -251,6 +262,12 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
       />
       <div className="flex items-center justify-between mb-4">
         <h1 className="font-heading font-bold text-2xl text-primary">Bookings</h1>
+        {isDesktopLayout && (
+          <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+            <Checkbox checked={showMap} onCheckedChange={(c) => setShowMap(!!c)} aria-label="Show map view" />
+            Map view
+          </label>
+        )}
       </div>
 
       {/* Tabs */}
@@ -279,21 +296,26 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
         })}
       </div>
 
-      {/* Bulk-select action bar — shared across mobile/desktop layouts */}
-      <div className="flex items-center gap-3 mb-3 shrink-0">
-        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-          <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible bookings" />
-          Select all
-        </label>
-        {selectedIds.size > 0 && (
-          <button
-            onClick={() => setDeleteModalOpen(true)}
-            className="text-xs font-medium bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg"
-          >
-            Delete {selectedIds.size} Selected
-          </button>
-        )}
-      </div>
+      {/* Bulk-select action bar. On desktop with the map shown, this renders
+          inside the sidebar (right above the filters/cards it acts on)
+          instead of here — a full-width bar above the map read as unrelated
+          to the cards tucked in the narrow column beside it. */}
+      {(!isDesktopLayout || !showMap) && (
+        <div className="flex items-center gap-3 mb-3 shrink-0">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible bookings" />
+            Select all
+          </label>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              className="text-xs font-medium bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg"
+            >
+              Delete {selectedIds.size} Selected
+            </button>
+          )}
+        </div>
+      )}
 
       <ConfirmDeleteModal
         open={deleteModalOpen || !!singleDeleteBooking}
@@ -450,26 +472,50 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
       </div>
       )}
 
-      {/* ── Desktop: map + drag handle + sidebar ── */}
+      {/* ── Desktop: (optional) map + drag handle + sidebar ── */}
       {isDesktopLayout && (
       <div ref={containerRef} className="flex flex-1 min-h-0">
-        {/* Map */}
-        <div className="flex-1 rounded-xl overflow-hidden border border-border min-w-0">
-          <BookingsMap
-            bookings={mapBookings}
-            selected={selectedJobId ? new Set([selectedJobId]) : undefined}
-            onPinClick={(id) => setSelectedJobId(prev => prev === id ? null : id)}
-          />
-        </div>
+        {showMap && (
+          <>
+            {/* Map */}
+            <div className="flex-1 rounded-xl overflow-hidden border border-border min-w-0">
+              <BookingsMap
+                bookings={mapBookings}
+                selected={selectedJobId ? new Set([selectedJobId]) : undefined}
+                onPinClick={(id) => setSelectedJobId(prev => prev === id ? null : id)}
+              />
+            </div>
 
-        {/* Drag handle */}
+            {/* Drag handle */}
+            <div
+              onMouseDown={(e) => { isDragging.current = true; e.preventDefault() }}
+              className="w-1.5 mx-1 cursor-col-resize bg-slate-200 hover:bg-accent transition-colors shrink-0 rounded-full self-stretch"
+            />
+          </>
+        )}
+
+        {/* Sidebar — a fixed-width column beside the map, or the full-width
+            content area with cards in an evenly-spaced grid when the map is off */}
         <div
-          onMouseDown={(e) => { isDragging.current = true; e.preventDefault() }}
-          className="w-1.5 mx-1 cursor-col-resize bg-slate-200 hover:bg-accent transition-colors shrink-0 rounded-full self-stretch"
-        />
-
-        {/* Sidebar */}
-        <div style={{ width: sidebarWidth }} className="flex flex-col gap-3 overflow-hidden shrink-0">
+          style={showMap ? { width: sidebarWidth } : undefined}
+          className={showMap ? 'flex flex-col gap-3 overflow-hidden shrink-0' : 'flex-1 flex flex-col gap-3 overflow-hidden min-w-0'}
+        >
+          {showMap && (
+            <div className="flex items-center gap-3 shrink-0">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible bookings" />
+                Select all
+              </label>
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={() => setDeleteModalOpen(true)}
+                  className="text-xs font-medium bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg"
+                >
+                  Delete {selectedIds.size} Selected
+                </button>
+              )}
+            </div>
+          )}
 
           {/* ── MAINTENANCE sidebar ── */}
           {activeTab === 'MAINTENANCE' && (
@@ -508,7 +554,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ))}
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-3">
+              <div className={cardListClass}>
                 {maintenanceFiltered.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No maintenance bookings.</p>
                 ) : (
@@ -559,7 +605,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ))}
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-3">
+              <div className={cardListClass}>
                 {faultRepairFiltered.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No fault repair bookings.</p>
                 ) : (
@@ -610,7 +656,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ))}
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-3">
+              <div className={cardListClass}>
                 {installationFiltered.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No installation bookings.</p>
                 ) : (
@@ -650,7 +696,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
                   ))}
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-3">
+              <div className={cardListClass}>
                 {allFiltered.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No bookings here.</p>
                 ) : (

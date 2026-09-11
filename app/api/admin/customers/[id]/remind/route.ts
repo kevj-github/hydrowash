@@ -29,7 +29,8 @@ export async function POST(
     return NextResponse.json({ error: 'Customer has no email on file' }, { status: 422 })
   }
 
-  await sendBasicReminder({ customerName: customerProfile.name }, customerUser.email)
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.hydrowash.services'
+  await sendBasicReminder({ customerName: customerProfile.name, bookUrl: `${APP_URL}/book` }, customerUser.email)
 
   return NextResponse.json({ ok: true })
 }

@@ -9,10 +9,16 @@ const fmtDate = (d: string) =>
 
 export async function sendBookingReceived(booking: BookingWithRelations, email: string) {
   const { BookingReceived } = await import('./templates/BookingReceived')
+  // Nothing is confirmed yet at this stage — list every date the customer
+  // offered as a preference (not just the first) so the subject reflects
+  // what they actually chose, e.g. "26 Sep, 27 Sep".
+  const dates = booking.preferred_date_slots?.length
+    ? booking.preferred_date_slots.map(d => fmtDate(d.date)).join(', ')
+    : fmtDate(booking.booking_date)
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: `Your ${booking.service_type.name} booking (${fmtDate(booking.booking_date)}) has been received — HydroWash`,
+    subject: `Your ${booking.service_type.name} booking (${dates}) has been received — HydroWash`,
     react: BookingReceived({ booking }),
   })
 }
@@ -29,10 +35,14 @@ export async function sendBookingApproved(booking: BookingWithRelations, email: 
 
 export async function sendBookingRejected(booking: BookingWithRelations, email: string) {
   const { BookingRejected } = await import('./templates/BookingRejected')
+  // Also reused for the admin "cancel an approved booking" flow (with
+  // rejection_reason substituted for the cancel reason) — those bookings
+  // have a confirmed_date, which is what actually got cancelled, so prefer
+  // it over the customer's original preferred booking_date.
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: `Update on your ${booking.service_type.name} booking (${fmtDate(booking.booking_date)}) — HydroWash`,
+    subject: `Update on your ${booking.service_type.name} booking (${fmtDate(booking.confirmed_date ?? booking.booking_date)}) — HydroWash`,
     react: BookingRejected({ booking }),
   })
 }
@@ -124,10 +134,12 @@ export async function sendContractActivated(
   email: string
 ) {
   const { ContractActivated } = await import('./templates/ContractActivated')
+  // Include the start date so activations for different contracts (e.g. two
+  // properties for the same customer) don't collide/thread together in Gmail.
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Your maintenance contract is now active — HydroWash',
+    subject: `Your maintenance contract starting ${fmtDate(data.startDate)} is now active — HydroWash`,
     react: ContractActivated(data),
   })
 }
@@ -142,10 +154,12 @@ export async function sendContractRequestReceived(
   email: string
 ) {
   const { ContractRequestReceived } = await import('./templates/ContractRequestReceived')
+  // Differentiate by the requested starting month so multiple contract
+  // requests from the same customer don't collide/thread together in Gmail.
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Contract request received — HydroWash',
+    subject: `Contract request received — starting ${data.preferredMonth} — HydroWash`,
     react: ContractRequestReceived(data),
   })
 }
@@ -166,10 +180,12 @@ export async function sendContractPricing(
   pdfBuffer?: Buffer
 ) {
   const { ContractPricingEmail } = await import('./templates/ContractPricingEmail')
+  // Include the start date alongside the price — two requests with the same
+  // price (a common case, e.g. same unit count) would otherwise collide.
   return resend.emails.send({
     from: FROM,
     to: email,
-    subject: `Your HydroWash contract pricing — S$${data.priceSgd.toFixed(2)}/year`,
+    subject: `Your HydroWash contract pricing (starting ${fmtDate(data.startDate)}) — S$${data.priceSgd.toFixed(2)}/year`,
     react: ContractPricingEmail(data),
     attachments: pdfBuffer
       ? [{ filename: 'HydroWash-Contract.pdf', content: pdfBuffer }]
@@ -202,7 +218,7 @@ export async function sendWorkOrderReport(
   })
 }
 
-export async function sendBasicReminder(data: { customerName: string }, customerEmail: string) {
+export async function sendBasicReminder(data: { customerName: string; bookUrl: string }, customerEmail: string) {
   const { BasicReminder } = await import('./templates/BasicReminder')
   return resend.emails.send({
     from: FROM,
@@ -225,10 +241,13 @@ export async function sendPaymentReceived(
   customerEmail: string
 ) {
   const { PaymentReceived } = await import('./templates/PaymentReceived')
+  // Prefer the resolved service type over the raw invoice description (often
+  // just an internal "Work Order #N" label with no meaning to the customer).
+  const subjectLabel = data.serviceLabel ?? data.description
   return resend.emails.send({
     from: FROM,
     to: customerEmail,
-    subject: `Payment received — ${data.description} — S$${data.amountSgd.toFixed(2)} — HydroWash`,
+    subject: `Payment received — ${subjectLabel} — S$${data.amountSgd.toFixed(2)} — HydroWash`,
     react: PaymentReceived(data),
   })
 }

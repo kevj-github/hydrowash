@@ -29,3 +29,13 @@ export function formatDueMonth(due_month: string): string {
   const [year, month] = due_month.split('-')
   return new Date(Number(year), Number(month) - 1).toLocaleString('en-SG', { month: 'short', year: 'numeric' })
 }
+
+// Before a contract reaches ACTIVE, no contract_service_dates rows exist yet
+// (mark-paid/activate is what generates them) — but the contract PDF's
+// Schedule column still needs to show the customer the visit months they're
+// paying for while AWAITING_PAYMENT. Reuses the exact same generation logic
+// against the contract's start_date, so the "preview" shown here always
+// matches what actually gets persisted once the contract is activated.
+export function previewServiceDueMonths(startDate: string): string[] {
+  return generateServiceDates('__preview__', startDate).map(d => formatDueMonth(d.due_month))
+}

@@ -4,19 +4,35 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { SLOT_LABELS, SLOT_KEYS } from '@/lib/types'
 import type { TimeSlot, PreferredDateSlot } from '@/lib/types'
 
-// Returns Monday of the week containing the given date string
-function getMondayOf(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00')
-  const day = d.getDay() // 0=Sun
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
+// All date-string arithmetic below is done in UTC on purpose: building a Date
+// in the browser's local timezone and then calling toISOString() (UTC) to get
+// the string back is timezone-dependent — for SGT (UTC+8) users, local midnight
+// on the 1st of a month serializes to 16:00 UTC the previous day, silently
+// rolling the computed month/date back by one. Using Date.UTC / getUTC*/setUTC*
+// throughout keeps these pure Y-M-D calculations independent of the viewer's
+// local timezone.
+function ymdToUTCDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d))
+}
+
+function utcDateToYmd(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+// Returns Monday of the week containing the given date string
+function getMondayOf(dateStr: string): string {
+  const d = ymdToUTCDate(dateStr)
+  const day = d.getUTCDay() // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day
+  d.setUTCDate(d.getUTCDate() + diff)
+  return utcDateToYmd(d)
+}
+
 function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + 'T00:00:00')
-  d.setDate(d.getDate() + n)
-  return d.toISOString().slice(0, 10)
+  const d = ymdToUTCDate(dateStr)
+  d.setUTCDate(d.getUTCDate() + n)
+  return utcDateToYmd(d)
 }
 
 const SGT_OFFSET_MS = 8 * 60 * 60 * 1000
@@ -57,13 +73,18 @@ interface Props {
   allowedMonth?: string | null
 }
 
-function toYearMonth(d: Date): string {
-  return d.toISOString().slice(0, 7)
+function toYearMonth(year: number, month1based: number): string {
+  return `${year}-${String(month1based).padStart(2, '0')}`
+}
+
+function currentYearMonth(): string {
+  const d = new Date()
+  return toYearMonth(d.getFullYear(), d.getMonth() + 1)
 }
 
 export function SlotCalendar({ value, onChange, allowedMonth }: Props) {
   const todaySGT = getSGTDateStr()
-  const [month, setMonth] = useState(() => allowedMonth ?? toYearMonth(new Date()))
+  const [month, setMonth] = useState(() => allowedMonth ?? currentYearMonth())
   const [weekStart, setWeekStart] = useState(() => getMondayOf(getSGTDateStr()))
   const [availability, setAvailability] = useState<Record<string, DayAvail>>({})
   const [loading, setLoading] = useState(false)
@@ -144,12 +165,12 @@ export function SlotCalendar({ value, onChange, allowedMonth }: Props) {
   const monthName = firstDay.toLocaleString('en-SG', { month: 'long', year: 'numeric' })
 
   function prevMonth() {
-    const d = new Date(year, mon - 2, 1)
-    setMonth(toYearMonth(d))
+    const m = mon - 1
+    setMonth(m < 1 ? toYearMonth(year - 1, 12) : toYearMonth(year, m))
   }
   function nextMonth() {
-    const d = new Date(year, mon, 1)
-    setMonth(toYearMonth(d))
+    const m = mon + 1
+    setMonth(m > 12 ? toYearMonth(year + 1, 1) : toYearMonth(year, m))
   }
 
   const activeDateEntry = activeDate ? value.find(e => e.date === activeDate) : null
@@ -163,12 +184,12 @@ export function SlotCalendar({ value, onChange, allowedMonth }: Props) {
   function prevWeek() {
     const prev = addDays(weekStart, -7)
     setWeekStart(prev)
-    setMonth(toYearMonth(new Date(prev + 'T00:00:00')))
+    setMonth(prev.slice(0, 7))
   }
   function nextWeek() {
     const next = addDays(weekStart, 7)
     setWeekStart(next)
-    setMonth(toYearMonth(new Date(next + 'T00:00:00')))
+    setMonth(next.slice(0, 7))
   }
 
   function isOutsideAllowedMonth(date: string): boolean {

@@ -41,6 +41,11 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
   const [saving, setSaving] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  // Bumped after every successful save so the Preview link's URL always
+  // changes — belt-and-braces against the PDF being served from any cache
+  // (browser, proxy, or the OS-level PDF viewer some browsers open it in)
+  // that might not honor the route's Cache-Control: no-store header.
+  const [previewCacheBust, setPreviewCacheBust] = useState(0)
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([])
   const [unitTypes, setUnitTypes] = useState<{ id: string; name: string }[]>([])
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([])
@@ -194,6 +199,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
     })
     setSaving(false)
     if (res.ok) {
+      setPreviewCacheBust(v => v + 1)
       setStep(3)
     } else {
       const body = await res.json()
@@ -236,6 +242,12 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
     setChecklist(prev => prev.map((c, idx) => idx === i ? { ...c, checked: !c.checked } : c))
   }
 
+  const allChecklistChecked = checklist.length > 0 && checklist.every(c => c.checked)
+
+  function toggleSelectAllChecklist() {
+    setChecklist(prev => prev.map(c => ({ ...c, checked: !allChecklistChecked })))
+  }
+
   function addCharge() {
     setCharges(prev => [...prev, { description: '', amount_sgd: 0 }])
   }
@@ -257,7 +269,19 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
   })()
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setStep(1); setError('') } }}>
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o)
+      if (!o) {
+        setStep(1)
+        setError('')
+        // Force the next open to re-fetch job_completions from the server
+        // instead of reusing whatever was last loaded into this (persistent,
+        // never-unmounted) dialog instance — otherwise reopening to make a
+        // further edit shows stale data and can clobber a save made from
+        // elsewhere (e.g. the Agenda popup's own copy of this dialog).
+        loadedRef.current = false
+      }
+    }}>
       <DialogTrigger className={cn(buttonVariants({ size: 'sm' }), 'bg-accent hover:bg-accent/90 text-white')}>
         Complete Job
       </DialogTrigger>
@@ -419,7 +443,16 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
             {/* Checklist */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="mb-2 block">Checklist</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Checklist</Label>
+                  <button
+                    type="button"
+                    onClick={toggleSelectAllChecklist}
+                    className="text-xs font-medium text-accent hover:underline"
+                  >
+                    {allChecklistChecked ? 'Deselect all' : 'Select all'}
+                  </button>
+                </div>
                 {checklist.map((item, i) => (
                   <label key={i} className="flex items-center gap-2 text-sm mb-1 cursor-pointer">
                     <input type="checkbox" checked={item.checked} onChange={() => toggleChecklist(i)} />
@@ -524,7 +557,7 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">Preview the Work Order Report, then click &quot;Confirm &amp; Send&quot; to mark the job complete and email the customer.</p>
             <a
-              href={`/api/bookings/${booking.id}/work-order-pdf`}
+              href={`/api/bookings/${booking.id}/work-order-pdf?v=${previewCacheBust}`}
               target="_blank"
               rel="noopener noreferrer"
               className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}

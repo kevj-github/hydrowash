@@ -22,7 +22,7 @@ export async function POST(
 
   const { data: serviceDate } = await supabase
     .from('contract_service_dates')
-    .select('id, due_month, contracts!inner(customer_id, num_units, customer:profiles!contracts_customer_id_fkey(name))')
+    .select('id, contract_id, due_month, contracts!inner(customer_id, num_units, customer:profiles!contracts_customer_id_fkey(name))')
     .eq('id', id)
     .single()
 
@@ -40,13 +40,16 @@ export async function POST(
     return NextResponse.json({ error: 'Customer has no email on file' }, { status: 422 })
   }
 
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hydrowash.sg'
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.hydrowash.services'
+  // Deep-link straight to the contract that triggered this reminder — a
+  // customer can have more than one contract, so a bare /book link would
+  // leave them to figure out (or re-select) which one this visit is for.
   await sendContractServiceDue(
     {
       customerName: contract.customer?.name ?? 'Customer',
       numUnits: contract.num_units,
       dueDate: formatDueMonth(serviceDate.due_month),
-      bookUrl: `${APP_URL}/book`,
+      bookUrl: `${APP_URL}/book?contract=${serviceDate.contract_id}`,
     },
     customerUser.email
   )

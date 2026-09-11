@@ -1,4 +1,4 @@
-import { Body, Container, Head, Heading, Html, Link, Preview, Text } from '@react-email/components'
+import { Body, Button, Container, Head, Heading, Html, Preview, Text } from '@react-email/components'
 
 interface Props {
   customerName: string
@@ -19,10 +19,16 @@ export function ContractServiceDue({ customerName, numUnits, dueDate, bookUrl }:
           <Text>
             Your quarterly aircon service for <strong>{numUnits} unit{numUnits !== 1 ? 's' : ''}</strong> is due this month (<strong>{dueDate}</strong>).
           </Text>
-          <Text>
-            Please book your service slot at your earliest convenience:{' '}
-            <Link href={bookUrl} style={{ color: '#0369a1' }}>Book Now</Link>
-          </Text>
+          <Text>Please book your service slot at your earliest convenience.</Text>
+          <Button
+            href={bookUrl}
+            style={{
+              backgroundColor: '#0369a1', color: '#ffffff', fontSize: 16, fontWeight: 600,
+              padding: '14px 32px', borderRadius: 8, textAlign: 'center', display: 'block',
+            }}
+          >
+            Book Now
+          </Button>
           <Text>If you have any questions, please reply to this email.</Text>
           <Text style={{ color: '#64748b', fontSize: 12 }}>HydroWash · Singapore</Text>
         </Container>

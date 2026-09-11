@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateContractPdf } from '@/lib/pdf/generate'
-import { formatDueMonth } from '@/lib/contracts/service-dates'
+import { formatDueMonth, previewServiceDueMonths } from '@/lib/contracts/service-dates'
 import { contractUnitSummary } from '@/lib/contracts/units'
 
 export async function GET(
@@ -41,8 +41,10 @@ export async function GET(
   const adminClient = createAdminClient()
   const { data: { user: customerUser } } = await adminClient.auth.admin.getUserById(contract.customer_id)
 
-  const serviceDueMonths = (contract.contract_service_dates ?? [])
-    .map((sd: { due_month: string }) => formatDueMonth(sd.due_month))
+  const contractServiceDates = (contract.contract_service_dates ?? []) as { due_month: string }[]
+  const serviceDueMonths = contractServiceDates.length > 0
+    ? contractServiceDates.map(sd => formatDueMonth(sd.due_month))
+    : contract.start_date ? previewServiceDueMonths(contract.start_date) : []
 
   const today = new Date()
   const issuedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`

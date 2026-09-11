@@ -54,6 +54,17 @@ interface Invoice {
   paid_at: string | null
   created_at: string
   booking_id: string | null
+  booking?: { service_type: { name: string } | null } | null
+}
+
+// The invoice's own `description` is often just an internal label like
+// "Work Order #15" (set when an invoice is auto-created from a completed
+// job) — not meaningful to the customer. Prefer the linked booking's actual
+// service type name; fall back to the description for manual invoices that
+// were never linked to a booking (those tend to have a real human-written
+// description instead).
+function invoiceServiceLabel(inv: Invoice): string {
+  return inv.booking?.service_type?.name ?? inv.description
 }
 
 interface Props {
@@ -613,7 +624,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
             <table className="w-full text-sm text-left">
               <thead className="border-b border-border">
                 <tr className="text-xs text-muted-foreground">
-                  <th className="py-2.5 px-3 font-medium">Description</th>
+                  <th className="py-2.5 px-3 font-medium">Service Type</th>
                   <th className="py-2.5 px-3 font-medium">Amount</th>
                   <th className="py-2.5 px-3 font-medium">Status</th>
                   <th className="py-2.5 px-3 font-medium">Date</th>
@@ -624,7 +635,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
               <tbody>
                 {filteredInvoices.map((inv) => (
                   <tr key={inv.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
-                    <td className="py-2.5 px-3 max-w-xs truncate text-primary">{inv.description}</td>
+                    <td className="py-2.5 px-3 max-w-xs truncate text-primary">{invoiceServiceLabel(inv)}</td>
                     <td className="py-2.5 px-3 font-medium text-primary">S${Number(inv.amount_sgd).toFixed(2)}</td>
                     <td className="py-2.5 px-3">
                       {inv.status === 'PAID' ? (

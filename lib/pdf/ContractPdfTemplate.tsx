@@ -45,10 +45,6 @@ const s = StyleSheet.create({
   half: { flex: 1 },
   scopeItem: { fontSize: 7.5, lineHeight: 1.3 },
   scopeGroupHeading: { fontSize: 7.5, lineHeight: 1.3, marginTop: 4 },
-  signRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
-  signBlock: { width: '45%' },
-  signLine: { borderBottomWidth: 1, borderBottomColor: '#1e293b', marginBottom: 3 },
-  signLabel: { fontSize: 7.5, color: '#64748b' },
 })
 
 const SCOPE_ITEMS_LEFT = [
@@ -182,20 +178,6 @@ export function ContractPdfTemplate({
         <Text style={{ fontFamily: 'Helvetica-Bold', marginBottom: 8 }}>Follow us at our Instagram: {company.instagram}</Text>
 
         <Text style={{ marginBottom: 8 }}>Date: {issuedDate}</Text>
-        <Text style={{ fontFamily: 'Helvetica-Bold', marginBottom: 4 }}>ACCEPTED AND AGREED BY:</Text>
-
-        {/* Signature block */}
-        <View style={s.signRow}>
-          <View style={s.signBlock}>
-            <View style={[s.signLine, { marginBottom: 3 }]} />
-            <Text style={s.signLabel}>Signature and name</Text>
-          </View>
-          <View style={s.signBlock}>
-            <Text style={{ fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>{company.officerName}</Text>
-            <View style={s.signLine} />
-            <Text style={s.signLabel}>Authorised Issuing Officer</Text>
-          </View>
-        </View>
       </Page>
     </Document>
   )

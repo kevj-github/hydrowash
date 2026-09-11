@@ -1,10 +1,11 @@
-import { Body, Container, Head, Heading, Html, Preview, Text } from '@react-email/components'
+import { Body, Button, Container, Head, Heading, Html, Preview, Text } from '@react-email/components'
 
 interface Props {
   customerName: string
+  bookUrl: string
 }
 
-export function BasicReminder({ customerName }: Props) {
+export function BasicReminder({ customerName, bookUrl }: Props) {
   return (
     <Html>
       <Head />
@@ -17,9 +18,15 @@ export function BasicReminder({ customerName }: Props) {
             This is a quick reminder from HydroWash. If you&apos;re due for an aircon service, have an outstanding
             booking to schedule, or just have a question for us, we&apos;re here to help.
           </Text>
-          <Text>
-            You can book a service or check your account at any time from your HydroWash account.
-          </Text>
+          <Button
+            href={bookUrl}
+            style={{
+              backgroundColor: '#0369a1', color: '#ffffff', fontSize: 16, fontWeight: 600,
+              padding: '14px 32px', borderRadius: 8, textAlign: 'center', display: 'block',
+            }}
+          >
+            Book Now
+          </Button>
           <Text>Thank you for being a HydroWash customer.</Text>
           <Text style={{ color: '#64748b', fontSize: 12 }}>HydroWash · Singapore</Text>
         </Container>

@@ -36,6 +36,8 @@ type CustomerOption = {
   address_lat: number | null
   address_lng: number | null
   postal_code: string | null
+  unit_floor: string | null
+  building_name: string | null
 }
 
 export default function AdminContractsPage() {
@@ -89,6 +91,8 @@ export default function AdminContractsPage() {
     price_sgd: string
     start_date: string
     address: string
+    unit_floor: string
+    building_name: string
     notes: string
     unit_details: ContractUnitDetail[]
   }>({
@@ -97,6 +101,8 @@ export default function AdminContractsPage() {
     price_sgd: '',
     start_date: '',
     address: '',
+    unit_floor: '',
+    building_name: '',
     notes: '',
     unit_details: [],
   })
@@ -120,7 +126,7 @@ export default function AdminContractsPage() {
   async function fetchCustomers() {
     const { data } = await supabase
       .from('profiles')
-      .select('id, name, phone, address, address_lat, address_lng, postal_code')
+      .select('id, name, phone, address, address_lat, address_lng, postal_code, unit_floor, building_name')
       .eq('role', 'customer')
       .order('name')
     setCustomers((data ?? []) as CustomerOption[])
@@ -149,7 +155,18 @@ export default function AdminContractsPage() {
     if (!selectedCustomer?.address) return
     setPreset('home')
     setAddressConfirmed(true)
-    setForm(f => ({ ...f, address: selectedCustomer.address! }))
+    setForm(f => ({
+      ...f,
+      address: selectedCustomer.address!,
+      unit_floor: selectedCustomer.unit_floor ?? '',
+      building_name: selectedCustomer.building_name ?? '',
+    }))
+  }
+
+  function buildFullAddress(): string | undefined {
+    if (!form.address) return undefined
+    const prefix = [form.unit_floor.trim(), form.building_name.trim()].filter(Boolean).join(', ')
+    return prefix ? `${prefix}, ${form.address}` : form.address
   }
 
   function applyCurrentLocation() {
@@ -272,7 +289,7 @@ export default function AdminContractsPage() {
   }
 
   function resetForm() {
-    setForm({ customer_id: '', num_units: '', price_sgd: '', start_date: '', address: '', notes: '', unit_details: [] })
+    setForm({ customer_id: '', num_units: '', price_sgd: '', start_date: '', address: '', unit_floor: '', building_name: '', notes: '', unit_details: [] })
     setCustomerSearch('')
     setPreset('other')
     setAddressConfirmed(false)
@@ -288,7 +305,7 @@ export default function AdminContractsPage() {
       num_units: parseInt(form.num_units),
       price_sgd: parseFloat(form.price_sgd),
       start_date: form.start_date,
-      address: form.address || undefined,
+      address: buildFullAddress(),
       notes: form.notes || undefined,
       unit_details: form.unit_details,
     }
@@ -372,7 +389,7 @@ export default function AdminContractsPage() {
                               }`}
                               onMouseDown={(e) => {
                                 e.preventDefault()
-                                setForm(f => ({ ...f, customer_id: c.id, address: '' }))
+                                setForm(f => ({ ...f, customer_id: c.id, address: '', unit_floor: '', building_name: '' }))
                                 setPreset('other')
                                 setAddressConfirmed(false)
                                 setComboOpen(false)
@@ -392,7 +409,7 @@ export default function AdminContractsPage() {
                       type="button"
                       className="text-xs text-slate-400 hover:text-slate-600 mt-1 underline"
                       onClick={() => {
-                        setForm(f => ({ ...f, customer_id: '', address: '' }))
+                        setForm(f => ({ ...f, customer_id: '', address: '', unit_floor: '', building_name: '' }))
                         setPreset('other')
                         setAddressConfirmed(false)
                         setCustomerSearch('')
@@ -488,7 +505,7 @@ export default function AdminContractsPage() {
                       type="button"
                       onClick={() => {
                         setPreset('other')
-                        setForm(f => ({ ...f, address: '' }))
+                        setForm(f => ({ ...f, address: '', unit_floor: '', building_name: '' }))
                         setAddressConfirmed(false)
                       }}
                       className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border font-medium transition-colors ${
@@ -520,6 +537,27 @@ export default function AdminContractsPage() {
 
                   {(preset === 'home' || preset === 'current') && form.address && (
                     <p className="text-sm text-primary font-medium">{form.address}</p>
+                  )}
+
+                  {addressConfirmed && (
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-normal text-muted-foreground">Unit / Floor (optional)</Label>
+                        <Input
+                          value={form.unit_floor}
+                          onChange={e => setForm(f => ({ ...f, unit_floor: e.target.value }))}
+                          placeholder="e.g. #04-05"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs font-normal text-muted-foreground">Building Name (optional)</Label>
+                        <Input
+                          value={form.building_name}
+                          onChange={e => setForm(f => ({ ...f, building_name: e.target.value }))}
+                          placeholder="e.g. Watergate Condominium"
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
 

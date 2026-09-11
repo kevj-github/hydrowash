@@ -33,14 +33,41 @@ export function StepScheduleLocation({ data, onChange, profileAddress, contractA
   const onChangeRef = useRef(onChange)
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
 
-  const [preset, setPreset] = useState<LocationPreset>('other')
+  // Default the preset pill to match how `data.address` got here: if it's
+  // the customer's profile/home address (prefilled from a past booking, or
+  // freshly applied below when there's no past booking), select "Home"; if
+  // it's some other prefilled address, select "Other" (never leave the
+  // pills on "Other" by default when the customer actually has a home
+  // address on file — see PRODUCT feedback on booking-memory defaults).
+  const [preset, setPreset] = useState<LocationPreset>(() => {
+    if (contractAddress) return 'other'
+    if (data.address && profileAddress && data.address === profileAddress.address) return 'home'
+    if (data.address) return 'other'
+    if (profileAddress) return 'home'
+    return 'other'
+  })
   const [geoLoading, setGeoLoading] = useState(false)
   const [contractGeoLoading, setContractGeoLoading] = useState(false)
+
+  // No past booking to prefill from, but the customer has a saved home
+  // address — apply it automatically instead of leaving location blank
+  // under the (already-selected) "Home" pill.
+  useEffect(() => {
+    if (contractAddress) return
+    if (data.address) return
+    if (!profileAddress) return
+    applyHome()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Auto-geocode contract address when it changes
   useEffect(() => {
     if (!contractAddress) return
-    if (data.lat !== null) return // already geocoded
+    // Only skip if lat/lng were already resolved for *this* contract address —
+    // data.lat can be non-null from an unrelated past booking's prefill (or a
+    // previously-linked contract), which must not be mistaken for "already
+    // geocoded" and left in place instead of the linked contract's location.
+    if (data.lat !== null && data.address === contractAddress) return
     setContractGeoLoading(true)
     fetch('/api/geocode', {
       method: 'POST',
@@ -233,7 +260,11 @@ export function StepScheduleLocation({ data, onChange, profileAddress, contractA
           </>
         )}
 
-        {data.lat && (
+        {/* Unit/floor, building, and access notes are already part of the
+            contract's own address string once locked to a contract — showing
+            them as separate editable fields here would suggest they still
+            need filling in, so they're hidden in that case. */}
+        {data.lat && !contractAddress && (
           <>
             <div className="space-y-1.5">
               <Label>Unit / Floor <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
