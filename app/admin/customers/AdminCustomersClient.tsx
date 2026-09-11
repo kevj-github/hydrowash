@@ -4,16 +4,20 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { ConfirmDeleteModal } from '@/components/admin/ConfirmDeleteModal'
 import { CustomerNoEditor } from '@/components/admin/CustomerNoEditor'
 import { RemindButton } from '@/components/admin/RemindButton'
 import { Trash2 } from 'lucide-react'
+import { regionForPostalCode, REGION_LABELS, type CustomerRegion } from '@/lib/customers/regions'
 
 interface CustomerRow {
   id: string
   name: string
   phone: string
   customer_no: number | null
+  address: string | null
+  postal_code: string | null
 }
 
 interface Props {
@@ -21,11 +25,31 @@ interface Props {
   bookingCounts: Record<string, number>
   invoiceTotals: Record<string, number>
   activeContractIds: string[]
+  lastCompletedService: Record<string, string>
 }
 
-export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, activeContractIds }: Props) {
+const REGION_FILTERS: (CustomerRegion | 'ALL')[] = ['ALL', 'CENTRAL', 'EAST', 'NORTH', 'NORTH_EAST', 'WEST', 'UNCLASSIFIED']
+
+function fmtLastService(dateStr?: string): string {
+  if (!dateStr) return '—'
+  return new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+}
+
+export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, activeContractIds, lastCompletedService }: Props) {
   const supabase = createClient()
   const activeContracts = useMemo(() => new Set(activeContractIds), [activeContractIds])
+
+  const [search, setSearch] = useState('')
+  const [regionFilter, setRegionFilter] = useState<CustomerRegion | 'ALL'>('ALL')
+
+  const filteredCustomers = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return customers.filter(c => {
+      if (q && !c.name.toLowerCase().includes(q) && !c.phone.toLowerCase().includes(q)) return false
+      if (regionFilter !== 'ALL' && regionForPostalCode(c.postal_code) !== regionFilter) return false
+      return true
+    })
+  }, [customers, search, regionFilter])
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -41,10 +65,10 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
     })
   }
 
-  const allVisibleSelected = customers.length > 0 && customers.every(c => selectedIds.has(c.id))
+  const allVisibleSelected = filteredCustomers.length > 0 && filteredCustomers.every(c => selectedIds.has(c.id))
 
   function toggleSelectAllVisible() {
-    setSelectedIds(prev => allVisibleSelected ? new Set() : new Set(customers.map(c => c.id)))
+    setSelectedIds(prev => allVisibleSelected ? new Set() : new Set(filteredCustomers.map(c => c.id)))
   }
 
   const deleteModalItems = useMemo(() => {
@@ -110,6 +134,28 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
 
   return (
     <>
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <Input
+          placeholder="Search by name or phone…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="h-8 text-sm max-w-xs"
+        />
+        <div className="flex gap-1 flex-wrap">
+          {REGION_FILTERS.map(r => (
+            <button
+              key={r}
+              onClick={() => setRegionFilter(r)}
+              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
+                regionFilter === r ? 'bg-accent text-white border-accent' : 'border-border text-muted-foreground hover:bg-muted/40'
+              }`}
+            >
+              {r === 'ALL' ? 'All Locations' : REGION_LABELS[r]}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center gap-3 mb-3">
         <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
           <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAllVisible} aria-label="Select all visible customers" />
@@ -138,12 +184,16 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
               <th className="text-left px-4 py-3">Phone</th>
               <th className="text-right px-4 py-3">Bookings</th>
               <th className="text-right px-4 py-3">Total Paid</th>
+              <th className="text-left px-4 py-3">Last Service</th>
               <th className="text-center px-4 py-3">Contract</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {customers.map(c => (
+            {filteredCustomers.length === 0 && (
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No customers match the selected filters.</td></tr>
+            )}
+            {filteredCustomers.map(c => (
               <tr key={c.id} className="hover:bg-accent/5 transition-colors">
                 <td className="px-4 py-3">
                   <Checkbox checked={selectedIds.has(c.id)} onCheckedChange={() => toggleSelect(c.id)} aria-label={`Select ${c.name}`} />
@@ -165,6 +215,9 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
                 <td className="px-4 py-3 text-right">{bookingCounts[c.id] ?? 0}</td>
                 <td className="px-4 py-3 text-right">
                   {invoiceTotals[c.id] ? `S$${invoiceTotals[c.id].toFixed(2)}` : '—'}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {fmtLastService(lastCompletedService[c.id])}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {activeContracts.has(c.id) ? (
@@ -190,7 +243,10 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
 
       {/* Mobile card list */}
       <div className="md:hidden space-y-3">
-        {customers.map(c => (
+        {filteredCustomers.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">No customers match the selected filters.</p>
+        )}
+        {filteredCustomers.map(c => (
           <div key={c.id} className="bg-white border border-border rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -212,9 +268,10 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
               <span>{bookingCounts[c.id] ?? 0} bookings</span>
               <span>Total {invoiceTotals[c.id] ? `S$${invoiceTotals[c.id].toFixed(2)}` : '—'}</span>
+              <span>Last service {fmtLastService(lastCompletedService[c.id])}</span>
             </div>
             <div className="flex items-center justify-between">
               <Link href={`/admin/customers/${c.id}`} className="text-xs text-accent font-medium">View →</Link>

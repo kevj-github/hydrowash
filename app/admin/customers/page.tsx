@@ -1,29 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
-import { Search } from 'lucide-react'
 import { AdminCustomersClient } from './AdminCustomersClient'
 
-export default async function AdminCustomersPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>
-}) {
-  const { q } = await searchParams
+export default async function AdminCustomersPage() {
   const supabase = await createClient()
 
-  let query = supabase
+  // Search and location filtering both happen client-side now (real-time,
+  // no Enter/submit needed) — fetch the full customer list once.
+  const { data: customers } = await supabase
     .from('profiles')
-    .select('id, name, phone, customer_no, created_at')
+    .select('id, name, phone, customer_no, created_at, address, postal_code')
     .eq('role', 'customer')
     .order('name', { ascending: true })
 
-  if (q) {
-    query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
-  }
-
-  const { data: customers } = await query
-
   const ids = (customers ?? []).map(c => c.id)
-  const [bookingCountsRes, invoiceTotalsRes, contractsRes] = await Promise.all([
+  const [bookingCountsRes, invoiceTotalsRes, contractsRes, completedBookingsRes] = await Promise.all([
     ids.length
       ? supabase.from('bookings').select('customer_id').in('customer_id', ids)
       : Promise.resolve({ data: [] }),
@@ -32,6 +22,9 @@ export default async function AdminCustomersPage({
       : Promise.resolve({ data: [] }),
     ids.length
       ? supabase.from('contracts').select('customer_id, status').in('customer_id', ids)
+      : Promise.resolve({ data: [] }),
+    ids.length
+      ? supabase.from('bookings').select('customer_id, confirmed_date, booking_date').in('customer_id', ids).eq('status', 'COMPLETED')
       : Promise.resolve({ data: [] }),
   ])
 
@@ -49,6 +42,16 @@ export default async function AdminCustomersPage({
     .filter(c => c.status === 'ACTIVE')
     .map(c => c.customer_id)
 
+  // Most recent COMPLETED booking date per customer — prefer confirmed_date
+  // (the date the job actually happened) over booking_date, same fallback
+  // used throughout the app (e.g. cancellation/reschedule cutoff checks).
+  const lastCompletedService = (completedBookingsRes.data ?? []).reduce<Record<string, string>>((acc, b) => {
+    const effectiveDate = b.confirmed_date ?? b.booking_date
+    if (!effectiveDate) return acc
+    if (!acc[b.customer_id] || effectiveDate > acc[b.customer_id]) acc[b.customer_id] = effectiveDate
+    return acc
+  }, {})
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       <div className="flex items-center justify-between mb-6">
@@ -56,23 +59,12 @@ export default async function AdminCustomersPage({
         <span className="text-sm text-muted-foreground">{customers?.length ?? 0} customers</span>
       </div>
 
-      <form method="GET" className="mb-6">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search by name or phone…"
-            className="w-full pl-9 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-          />
-        </div>
-      </form>
-
       <AdminCustomersClient
         customers={customers ?? []}
         bookingCounts={bookingCounts}
         invoiceTotals={invoiceTotals}
         activeContractIds={activeContractIds}
+        lastCompletedService={lastCompletedService}
       />
     </div>
   )

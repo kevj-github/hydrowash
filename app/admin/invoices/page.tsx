@@ -40,6 +40,21 @@ function MobileInvoiceCard({ invoice, onPaid, selected, onToggleSelect, onDelete
   const [open, setOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
   const [submitting, setSubmitting] = useState(false)
+  const [reminding, setReminding] = useState(false)
+  const [reminded, setReminded] = useState(false)
+
+  async function handleRemind() {
+    setReminding(true)
+    const res = await fetch(`/api/invoices/${invoice.id}/remind`, { method: 'POST' })
+    setReminding(false)
+    if (res.ok) {
+      setReminded(true)
+      setTimeout(() => setReminded(false), 3000)
+    } else {
+      const err = await res.json()
+      alert(`Error: ${err.error}`)
+    }
+  }
 
   async function handleMarkPaid() {
     setSubmitting(true)
@@ -96,6 +111,17 @@ function MobileInvoiceCard({ invoice, onPaid, selected, onToggleSelect, onDelete
           >
             View PDF
           </a>
+        )}
+        {invoice.status === 'UNPAID' && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRemind}
+            disabled={reminding}
+            className="text-xs text-amber-700 border-amber-300 hover:bg-amber-50 flex-1"
+          >
+            {reminding ? 'Sending…' : reminded ? 'Sent ✓' : 'Remind'}
+          </Button>
         )}
         {invoice.status === 'UNPAID' && (
           <Dialog open={open} onOpenChange={setOpen}>

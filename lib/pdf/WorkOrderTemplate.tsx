@@ -208,15 +208,15 @@ export function WorkOrderTemplate({
               {additionalCharges.length > 0 && (
                 <View style={{ marginBottom: 8 }}>
                   <Text style={s.sectionLabel}>ADDITIONAL CHARGES</Text>
-                  <Text style={s.chargeRow}>
+                  <View style={s.chargeRow}>
                     <Text>Base price</Text>
                     <Text>S${basePriceSgd.toFixed(2)}</Text>
-                  </Text>
+                  </View>
                   {additionalCharges.map((c, i) => (
-                    <Text key={i} style={s.chargeRow}>
+                    <View key={i} style={s.chargeRow}>
                       <Text>{c.description}</Text>
                       <Text>S${c.amount_sgd.toFixed(2)}</Text>
-                    </Text>
+                    </View>
                   ))}
                 </View>
               )}

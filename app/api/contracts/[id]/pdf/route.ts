@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { generateContractPdf } from '@/lib/pdf/generate'
 import { formatDueMonth, previewServiceDueMonths } from '@/lib/contracts/service-dates'
 import { contractUnitSummary } from '@/lib/contracts/units'
+import { buildContractPdfFilename } from '@/lib/utils/pdf-filename'
 
 export async function GET(
   _req: NextRequest,
@@ -68,10 +69,12 @@ export async function GET(
     },
   })
 
+  const pdfFilename = buildContractPdfFilename({ customerName: contract.customer?.name, startDate: contract.start_date })
+
   return new Response(new Uint8Array(buf), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'inline; filename="contract.pdf"',
+      'Content-Disposition': `inline; filename="${pdfFilename}"`,
     },
   })
 }

@@ -7,13 +7,19 @@ const FROM = 'HydroWash <noreply@hydrowash.services>'
 const fmtDate = (d: string) =>
   new Date(d + 'T00:00:00Z').toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 
+// "26 Sep", "26 Sep or 27 Sep", "26 Sep, 27 Sep or 28 Sep" — nothing is
+// confirmed yet at booking-received time, so these are alternatives, not a
+// list of dates all being booked; "or" reads correctly, a comma doesn't.
+const joinOr = (items: string[]) =>
+  items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} or ${items[items.length - 1]}`
+
 export async function sendBookingReceived(booking: BookingWithRelations, email: string) {
   const { BookingReceived } = await import('./templates/BookingReceived')
   // Nothing is confirmed yet at this stage — list every date the customer
   // offered as a preference (not just the first) so the subject reflects
   // what they actually chose, e.g. "26 Sep, 27 Sep".
   const dates = booking.preferred_date_slots?.length
-    ? booking.preferred_date_slots.map(d => fmtDate(d.date)).join(', ')
+    ? joinOr(booking.preferred_date_slots.map(d => fmtDate(d.date)))
     : fmtDate(booking.booking_date)
   return resend.emails.send({
     from: FROM,
@@ -180,6 +186,11 @@ export async function sendContractPricing(
   pdfBuffer?: Buffer
 ) {
   const { ContractPricingEmail } = await import('./templates/ContractPricingEmail')
+  const { buildContractPdfFilename } = await import('@/lib/utils/pdf-filename')
+  // Same filename the admin preview route (GET /api/contracts/[id]/pdf)
+  // computes from the same customerName/startDate, so "View PDF" and the
+  // emailed attachment always agree.
+  const pdfFilename = buildContractPdfFilename({ customerName: data.customerName, startDate: data.startDate })
   // Include the start date alongside the price — two requests with the same
   // price (a common case, e.g. same unit count) would otherwise collide.
   return resend.emails.send({
@@ -188,7 +199,7 @@ export async function sendContractPricing(
     subject: `Your HydroWash contract pricing (starting ${fmtDate(data.startDate)}) — S$${data.priceSgd.toFixed(2)}/year`,
     react: ContractPricingEmail(data),
     attachments: pdfBuffer
-      ? [{ filename: 'HydroWash-Contract.pdf', content: pdfBuffer }]
+      ? [{ filename: pdfFilename, content: pdfBuffer }]
       : [],
   })
 }
@@ -220,10 +231,13 @@ export async function sendWorkOrderReport(
 
 export async function sendBasicReminder(data: { customerName: string; bookUrl: string }, customerEmail: string) {
   const { BasicReminder } = await import('./templates/BasicReminder')
+  // Admin can send this ad-hoc, more than once — include the send date so
+  // repeated reminders don't collide/thread together in Gmail.
+  const todayLabel = new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
   return resend.emails.send({
     from: FROM,
     to: customerEmail,
-    subject: `A friendly reminder from HydroWash`,
+    subject: `A friendly reminder from HydroWash (${todayLabel})`,
     react: BasicReminder(data),
   })
 }
@@ -249,5 +263,30 @@ export async function sendPaymentReceived(
     to: customerEmail,
     subject: `Payment received — ${subjectLabel} — S$${data.amountSgd.toFixed(2)} — HydroWash`,
     react: PaymentReceived(data),
+  })
+}
+
+export async function sendPaymentReminder(
+  data: {
+    customerName: string
+    amountSgd: number
+    serviceLabel?: string
+    serviceDate?: string
+    paynowQrDataUrl?: string
+    paynowMobile?: string
+    referenceId?: string
+  },
+  customerEmail: string
+) {
+  const { PaymentReminder } = await import('./templates/PaymentReminder')
+  const subjectLabel = data.serviceLabel ?? 'your invoice'
+  // Admin can send this ad-hoc, possibly more than once for the same
+  // invoice — include today's date so repeated reminders don't collide.
+  const todayLabel = new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
+  return resend.emails.send({
+    from: FROM,
+    to: customerEmail,
+    subject: `Payment reminder — ${subjectLabel} — S$${data.amountSgd.toFixed(2)} (${todayLabel}) — HydroWash`,
+    react: PaymentReminder(data),
   })
 }

@@ -27,3 +27,12 @@ export function buildServiceReportPdfFilename(input: {
   const bookingDate = toIsoDate(input.bookingDate)
   return `hydrowash-${customer}-${bookingType}-${bookingDate}.pdf`
 }
+
+export function buildContractPdfFilename(input: {
+  customerName?: string | null
+  startDate?: string | null
+}): string {
+  const customer = slugPart(input.customerName ?? '')
+  const startDate = toIsoDate(input.startDate)
+  return `hydrowash-contract-${customer}-${startDate}.pdf`
+}

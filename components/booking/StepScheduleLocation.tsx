@@ -39,9 +39,16 @@ export function StepScheduleLocation({ data, onChange, profileAddress, contractA
   // it's some other prefilled address, select "Other" (never leave the
   // pills on "Other" by default when the customer actually has a home
   // address on file — see PRODUCT feedback on booking-memory defaults).
+  //
+  // A past booking's `address` is stored composed as "unit_floor, building,
+  // street" (see BookingWizard.handleSubmit), so it never strictly equals
+  // the plain `profileAddress.address` even when it *was* the home address —
+  // compare postal_code (never composed with anything) first, and fall back
+  // to a suffix check on the composed string.
   const [preset, setPreset] = useState<LocationPreset>(() => {
     if (contractAddress) return 'other'
-    if (data.address && profileAddress && data.address === profileAddress.address) return 'home'
+    if (data.postal_code && profileAddress?.postal_code && data.postal_code === profileAddress.postal_code) return 'home'
+    if (data.address && profileAddress?.address && data.address.endsWith(profileAddress.address)) return 'home'
     if (data.address) return 'other'
     if (profileAddress) return 'home'
     return 'other'

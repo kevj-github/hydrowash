@@ -260,9 +260,13 @@ export function StepServiceDetails({ serviceTypes, data, onChange, preselectCont
 
       {selected?.category === 'MAINTENANCE' && (() => {
         const contractLocked = (data.contract_unit_details?.length ?? 0) > 0
+        // Contracts cover routine general cleaning only — chemical wash/overhaul
+        // etc. are billed separately and aren't part of the quarterly schedule,
+        // so only offer the linking dropdown for the general-service type.
+        const isGeneralService = /general/i.test(selected?.name ?? '')
         return (
         <div className="space-y-4">
-          {contracts.length > 0 && (
+          {contracts.length > 0 && isGeneralService && (
             <div className="space-y-1.5">
               <Label>Link to Contract <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
               <p className="text-xs text-muted-foreground">Select your maintenance contract if this booking is part of a scheduled service.</p>

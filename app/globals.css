@@ -180,6 +180,16 @@ gmp-place-autocomplete,
 .hw-place-autocomplete {
   display: block;
   width: 100%;
+  /* The widget's Material tokens above cover the colors it exposes, but any
+     token we don't set falls back to Google's own internal default, which is
+     defined with the CSS light-dark() function and therefore follows the
+     visitor's OS/browser color-scheme preference — not this (light-only)
+     site's theme. On a phone set to dark mode that produced a near-black box
+     with white text, clashing with every other (always-light) input on the
+     page. Pinning color-scheme to light forces every light-dark() fallback
+     inside the widget to resolve to its light branch regardless of the
+     visitor's system preference. */
+  color-scheme: light;
   --gmp-mat-color-surface: var(--background);
   --gmp-mat-color-on-surface: var(--foreground);
   --gmp-mat-color-on-surface-variant: var(--muted-foreground);
