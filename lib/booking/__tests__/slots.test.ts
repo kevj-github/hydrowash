@@ -4,6 +4,7 @@ import {
   isSlotBlocked,
   getSlotsForDate,
   resolveContractTierPrice,
+  slotTimeRange,
 } from '../slots'
 import { SLOT_KEYS } from '@/lib/types'
 import type { TimeSlot, ContractPricingTier } from '@/lib/types'
@@ -143,5 +144,20 @@ describe('resolveContractTierPrice', () => {
     const perUnit: ContractPricingTier[] = [{ min_units: 1, max_units: null, price_sgd: 120 }]
     expect(resolveContractTierPrice(perUnit, 1)).toBe(120)
     expect(resolveContractTierPrice(perUnit, 4)).toBe(480)
+  })
+})
+
+describe('slotTimeRange', () => {
+  it('derives start/end clock times from the slot key', () => {
+    expect(slotTimeRange('S10_12')).toEqual({ start: '10:00', end: '12:00' })
+    expect(slotTimeRange('S19_21')).toEqual({ start: '19:00', end: '21:00' })
+  })
+
+  it('covers every canonical slot key', () => {
+    for (const slot of SLOT_KEYS) {
+      const { start, end } = slotTimeRange(slot)
+      expect(start).toMatch(/^\d{2}:00$/)
+      expect(end).toMatch(/^\d{2}:00$/)
+    }
   })
 })

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Wind } from 'lucide-react'
 
@@ -76,9 +76,8 @@ function ResetPasswordForm() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-sm font-medium text-primary">New Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="At least 8 characters"
@@ -88,9 +87,8 @@ function ResetPasswordForm() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm" className="text-sm font-medium text-primary">Confirm Password</Label>
-              <Input
+              <PasswordInput
                 id="confirm"
-                type="password"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
                 placeholder="Repeat your password"

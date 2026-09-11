@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { SLOT_LABELS } from '@/lib/types'
 import type { TimeSlot } from '@/lib/types'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
+import { CustomerNoEditor } from '@/components/admin/CustomerNoEditor'
 
 const statusColor: Record<string, string> = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -77,7 +78,10 @@ export default async function AdminCustomerDetailPage({
             <p className="text-muted-foreground">{authUser?.email ?? '—'}</p>
             <p className="text-muted-foreground">{profile.phone}</p>
             {profile.address && <p className="text-muted-foreground">{profile.address}</p>}
-            <p className="text-xs text-muted-foreground">Member since {new Date(profile.created_at).toLocaleDateString('en-SG')} · #{profile.customer_no ?? '—'}</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              Member since {new Date(profile.created_at).toLocaleDateString('en-SG')} ·
+              <CustomerNoEditor customerId={id} customerNo={profile.customer_no} compact />
+            </p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-xs text-muted-foreground mb-0.5">Total paid</p>

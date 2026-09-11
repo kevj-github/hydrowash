@@ -6,7 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import ContractCard from '@/components/admin/ContractCard'
 import { ConfirmDeleteModal } from '@/components/admin/ConfirmDeleteModal'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ContractWithCustomer, ContractServiceDate, CreateContractPayload } from '@/lib/types'
+import { ContractWithCustomer, ContractServiceDate, CreateContractPayload, ContractUnitDetail } from '@/lib/types'
+import { ContractUnitDetailsPicker } from '@/components/contracts/ContractUnitDetailsPicker'
+import { isUnitDetailsComplete } from '@/lib/contracts/units'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -88,6 +90,7 @@ export default function AdminContractsPage() {
     start_date: string
     address: string
     notes: string
+    unit_details: ContractUnitDetail[]
   }>({
     customer_id: '',
     num_units: '',
@@ -95,6 +98,7 @@ export default function AdminContractsPage() {
     start_date: '',
     address: '',
     notes: '',
+    unit_details: [],
   })
 
   // Keep ref in sync so autocomplete listener always sees latest setter
@@ -268,7 +272,7 @@ export default function AdminContractsPage() {
   }
 
   function resetForm() {
-    setForm({ customer_id: '', num_units: '', price_sgd: '', start_date: '', address: '', notes: '' })
+    setForm({ customer_id: '', num_units: '', price_sgd: '', start_date: '', address: '', notes: '', unit_details: [] })
     setCustomerSearch('')
     setPreset('other')
     setAddressConfirmed(false)
@@ -286,6 +290,7 @@ export default function AdminContractsPage() {
       start_date: form.start_date,
       address: form.address || undefined,
       notes: form.notes || undefined,
+      unit_details: form.unit_details,
     }
 
     const res = await fetch('/api/contracts', {
@@ -331,7 +336,7 @@ export default function AdminContractsPage() {
             <DialogTrigger className={cn(buttonVariants(), 'bg-accent text-white hover:bg-accent/90')}>
               + New Contract
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Contract</DialogTitle>
               </DialogHeader>
@@ -405,7 +410,10 @@ export default function AdminContractsPage() {
                       type="number"
                       min={1}
                       value={form.num_units}
-                      onChange={(e) => setForm((f) => ({ ...f, num_units: e.target.value }))}
+                      onChange={(e) => {
+                        const num_units = e.target.value
+                        setForm((f) => ({ ...f, num_units, unit_details: parseInt(num_units) === f.unit_details.length ? f.unit_details : [] }))
+                      }}
                       required
                       placeholder="e.g. 4"
                     />
@@ -423,6 +431,18 @@ export default function AdminContractsPage() {
                     />
                   </div>
                 </div>
+
+                {parseInt(form.num_units) > 0 && (
+                  <div>
+                    <Label>AC Unit Details</Label>
+                    <ContractUnitDetailsPicker
+                      numUnits={parseInt(form.num_units) || 0}
+                      value={form.unit_details}
+                      onChange={u => setForm(f => ({ ...f, unit_details: u }))}
+                      className="mt-1"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <Label>Start Date</Label>
@@ -515,7 +535,7 @@ export default function AdminContractsPage() {
 
                 <Button
                   type="submit"
-                  disabled={submitting || !form.customer_id}
+                  disabled={submitting || !form.customer_id || !isUnitDetailsComplete(form.unit_details, parseInt(form.num_units) || 0)}
                   className="w-full bg-accent text-white hover:bg-accent/90"
                 >
                   {submitting ? 'Saving…' : 'Create Contract'}

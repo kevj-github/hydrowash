@@ -16,11 +16,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { ContractPricingTier } from '@/lib/types'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
 import { FileText, FileX, Home, MapPin, Pencil } from 'lucide-react'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
+import { ContractUnitDetailsPicker } from '@/components/contracts/ContractUnitDetailsPicker'
+import { isUnitDetailsComplete } from '@/lib/contracts/units'
+import type { ContractUnitDetail } from '@/lib/types'
 
 interface ServiceDate {
   id: string
@@ -60,7 +62,6 @@ interface Props {
   profileAddress: string | null
   profileUnitFloor: string | null
   profileBuildingName: string | null
-  pricingTiers: ContractPricingTier[]
   paynowMobile: string | null
   activeContracts: number
 }
@@ -81,19 +82,7 @@ const CONTRACT_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelled',
 }
 
-function getPricingHint(tiers: ContractPricingTier[], numUnits: number): string | null {
-  if (!tiers.length || !numUnits) return null
-  const tier = tiers.find(t =>
-    numUnits >= t.min_units && (t.max_units === null || numUnits <= t.max_units)
-  )
-  if (!tier) return null
-  if (tier.max_units === null) {
-    return `Estimated S$${(tier.price_sgd * numUnits).toFixed(2)}/year (S$${tier.price_sgd.toFixed(2)}/unit)`
-  }
-  return `Estimated S$${tier.price_sgd.toFixed(2)}/year for ${numUnits} unit${numUnits !== 1 ? 's' : ''}`
-}
-
-export function AccountContractsClient({ contracts, invoices, profileAddress, profileUnitFloor, profileBuildingName, pricingTiers, paynowMobile, activeContracts }: Props) {
+export function AccountContractsClient({ contracts, invoices, profileAddress, profileUnitFloor, profileBuildingName, paynowMobile, activeContracts }: Props) {
   const [contractStatus, setContractStatus] = useState('ALL')
   const [invoiceStatus, setInvoiceStatus] = useState('ALL')
   const [invDateFrom, setInvDateFrom] = useState('')
@@ -106,7 +95,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [form, setForm] = useState({ num_units: '', preferred_month: '', notes: '' })
+  const [form, setForm] = useState<{ num_units: string; preferred_month: string; notes: string; unit_details: ContractUnitDetail[] }>({ num_units: '', preferred_month: '', notes: '', unit_details: [] })
 
   // Address picker state
   type Preset = 'home' | 'current' | 'other'
@@ -151,7 +140,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
   }
 
   function resetDialog() {
-    setForm({ num_units: '', preferred_month: '', notes: '' })
+    setForm({ num_units: '', preferred_month: '', notes: '', unit_details: [] })
     setPreset(hasHome ? 'home' : 'other')
     setAddressText(profileAddress ?? '')
     setAddressConfirmed(hasHome)
@@ -186,9 +175,6 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
 
   const hasInvFilters = invoiceStatus !== 'ALL' || invDateFrom || invDateTo
 
-  const numUnitsInt = parseInt(form.num_units) || 0
-  const pricingHint = getPricingHint(pricingTiers, numUnitsInt)
-
   async function handleRequest(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -201,6 +187,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
         address: buildFullAddress(),
         preferred_month: form.preferred_month,
         notes: form.notes || undefined,
+        unit_details: form.unit_details,
       }),
     })
 
@@ -261,22 +248,6 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
             <span><strong className="text-primary">1-year coverage</strong> — your contract covers all 4 scheduled general cleaning visits. Additional repairs or chemical washes are billed separately.</span>
           </li>
         </ul>
-        {pricingTiers.length > 0 && (
-          <div className="pt-2 border-t border-accent/20">
-            <p className="text-xs font-medium text-primary mb-1.5">Estimated pricing</p>
-            <div className="flex flex-wrap gap-2">
-              {pricingTiers.map((tier, i) => (
-                <span key={i} className="text-xs bg-white border border-accent/20 rounded-full px-3 py-1 text-accent">
-                  {tier.max_units === null
-                    ? `${tier.min_units}+ units — S$${tier.price_sgd.toFixed(2)}/unit/year`
-                    : tier.min_units === tier.max_units
-                    ? `${tier.min_units} unit${tier.min_units !== 1 ? 's' : ''} — S$${tier.price_sgd.toFixed(2)}/year`
-                    : `${tier.min_units}–${tier.max_units} units — S$${tier.price_sgd.toFixed(2)}/year`}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Contracts section */}
@@ -329,15 +300,27 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
                         min={1}
                         max={20}
                         value={form.num_units}
-                        onChange={e => setForm(f => ({ ...f, num_units: e.target.value }))}
+                        onChange={e => {
+                          const num_units = e.target.value
+                          setForm(f => ({ ...f, num_units, unit_details: parseInt(num_units) === f.unit_details.length ? f.unit_details : [] }))
+                        }}
                         required
                         placeholder="e.g. 4"
                         className="mt-1"
                       />
-                      {pricingHint && (
-                        <p className="text-xs text-accent mt-1">{pricingHint}</p>
-                      )}
                     </div>
+
+                    {parseInt(form.num_units) > 0 && (
+                      <div>
+                        <Label>AC Unit Details</Label>
+                        <p className="text-xs text-muted-foreground mb-1.5">Tell us where each unit is and what type it is, so we can quote accurately. Brand is optional.</p>
+                        <ContractUnitDetailsPicker
+                          numUnits={parseInt(form.num_units) || 0}
+                          value={form.unit_details}
+                          onChange={u => setForm(f => ({ ...f, unit_details: u }))}
+                        />
+                      </div>
+                    )}
 
                     {/* Service address picker */}
                     <div className="space-y-2">
@@ -445,7 +428,7 @@ export function AccountContractsClient({ contracts, invoices, profileAddress, pr
 
                     <Button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || !isUnitDetailsComplete(form.unit_details, parseInt(form.num_units) || 0)}
                       className="w-full bg-accent text-white hover:bg-accent/90"
                     >
                       {submitting ? 'Submitting…' : 'Submit Request'}

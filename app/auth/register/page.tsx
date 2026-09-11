@@ -7,6 +7,7 @@ import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Wind } from 'lucide-react'
 import Link from 'next/link'
@@ -44,6 +45,10 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!addressData) {
+      setError('Home address is required — please select an address from the dropdown suggestions.')
+      return
+    }
     setLoading(true)
     setError('')
 
@@ -51,7 +56,16 @@ export default function RegisterPage() {
       email: form.email,
       password: form.password,
       options: {
-        data: { name: form.name, phone: form.phone },
+        data: {
+          name: form.name,
+          phone: form.phone,
+          address: addressData.address,
+          address_lat: addressData.lat,
+          address_lng: addressData.lng,
+          postal_code: addressData.postal_code,
+          unit_floor: unitFloor || null,
+          building_name: buildingName || null,
+        },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
     })
@@ -71,16 +85,6 @@ export default function RegisterPage() {
     if (!data.session) {
       setVerifyEmail(form.email)
     } else {
-      if (addressData) {
-        await supabase.from('profiles').update({
-          address: addressData.address,
-          address_lat: addressData.lat,
-          address_lng: addressData.lng,
-          postal_code: addressData.postal_code,
-          unit_floor: unitFloor || null,
-          building_name: buildingName || null,
-        }).eq('id', data.user.id)
-      }
       router.push('/')
     }
     setLoading(false)
@@ -176,36 +180,49 @@ export default function RegisterPage() {
                 <Label htmlFor={field.key} className="text-sm font-medium text-primary">
                   {field.label}
                 </Label>
-                <Input
-                  id={field.key}
-                  type={field.type}
-                  value={form[field.key]}
-                  onChange={set(field.key)}
-                  placeholder={field.placeholder}
-                  required
-                  autoComplete={field.autoComplete}
-                  className="h-11"
-                />
+                {field.type === 'password' ? (
+                  <PasswordInput
+                    id={field.key}
+                    value={form[field.key]}
+                    onChange={set(field.key)}
+                    placeholder={field.placeholder}
+                    required
+                    autoComplete={field.autoComplete}
+                    className="h-11"
+                  />
+                ) : (
+                  <Input
+                    id={field.key}
+                    type={field.type}
+                    value={form[field.key]}
+                    onChange={set(field.key)}
+                    placeholder={field.placeholder}
+                    required
+                    autoComplete={field.autoComplete}
+                    className="h-11"
+                  />
+                )}
               </div>
             ))}
 
-            {/* Optional address fields */}
             <div className="space-y-1.5">
-              <Label htmlFor="address" className="text-sm font-medium text-primary">
-                Home Address{' '}
-                <span className="text-muted-foreground font-normal text-xs">
-                  — add it now, or you&apos;ll be asked before your first booking
-                </span>
-              </Label>
+              <div className="space-y-0.5">
+                <Label htmlFor="address" className="text-sm font-medium text-primary">
+                  Home Address <span className="text-destructive">*</span>
+                </Label>
+                <p className="text-xs text-muted-foreground">Required before you can book a service</p>
+              </div>
               <AddressAutocomplete
                 id="address"
                 placeholder="Start typing your address…"
                 onResolved={setAddressData}
               />
               {addressData ? (
-                <p className="text-xs text-green-700">✓ Address confirmed</p>
+                <p className="text-xs text-green-700">
+                  ✓ Address confirmed{addressData.postal_code ? `: Singapore ${addressData.postal_code}` : ''}
+                </p>
               ) : (
-                <p className="text-xs text-muted-foreground">Select an address from the dropdown.</p>
+                <p className="text-xs text-slate-400">Select an address from the dropdown suggestions.</p>
               )}
             </div>
 

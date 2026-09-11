@@ -26,9 +26,10 @@ interface Props {
   onChange: (updates: Partial<StepData>) => void
   profileAddress?: { address: string; postal_code: string; lat: number; lng: number; unit_floor?: string; building_name?: string } | null
   contractAddress?: string
+  contractAllowedMonth?: string | null
 }
 
-export function StepScheduleLocation({ data, onChange, profileAddress, contractAddress }: Props) {
+export function StepScheduleLocation({ data, onChange, profileAddress, contractAddress, contractAllowedMonth }: Props) {
   const onChangeRef = useRef(onChange)
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
 
@@ -101,12 +102,18 @@ export function StepScheduleLocation({ data, onChange, profileAddress, contractA
     <div className="space-y-6">
       {/* Slot calendar */}
       <div>
-        <p className="text-sm font-medium text-primary mb-3">
+        <p className="text-sm font-medium text-primary mb-1">
           Pick your preferred dates &amp; time slots <span className="text-red-500">*</span>
+        </p>
+        <p className="text-xs text-muted-foreground mb-3">
+          Choose up to 3 dates in total, with a time slot for each (e.g. 3 dates with 1 slot each, or fewer dates
+          with multiple slots). We&apos;ll confirm one of your chosen date and slot combinations — offering a few
+          options increases the chance we can book your first choice.
         </p>
         <SlotCalendar
           value={data.preferred_date_slots ?? []}
           onChange={(entries) => onChange({ preferred_date_slots: entries })}
+          allowedMonth={contractAllowedMonth}
         />
         {data.preferred_date_slots?.some(e => e.slots.length > 0) && (
           <p className="text-xs text-green-700 mt-2">

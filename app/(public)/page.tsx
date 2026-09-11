@@ -42,7 +42,7 @@ const services = [
 
 const steps = [
   { label: 'Choose your service', description: 'Select the type of job' },
-  { label: 'Offer up to 5 dates & times', description: 'Pick as many options as suit you' },
+  { label: 'Offer up to 3 dates & times', description: 'Pick as many options as suit you' },
   { label: 'We lock in one slot', description: 'Confirmed, no back-and-forth' },
 ]
 
@@ -50,7 +50,7 @@ const whyFeatures = [
   { icon: Zap,         label: 'Fast response for urgent faults', desc: 'Flexible date & time options, confirmed quickly by our team.' },
   { icon: Cpu,         label: 'All makes & models',          desc: 'Mitsubishi, Daikin, Panasonic, Samsung, and more.' },
   { icon: ShieldCheck, label: 'Transparent pricing',         desc: 'Fixed rates, no hidden fees, ever.' },
-  { icon: FileText,    label: '1-year maintenance contracts', desc: 'Quarterly servicing, fully managed for you.' },
+  { icon: FileText,    label: 'Annual maintenance contracts', desc: 'Quarterly servicing, fully managed for you.' },
 ]
 
 

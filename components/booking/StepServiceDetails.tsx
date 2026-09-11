@@ -4,9 +4,11 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
+import { Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { UnitLocationPicker } from './UnitLocationPicker'
-import type { ServiceType } from '@/lib/types'
+import { UnitLocationPicker, OTHERS_VALUE } from './UnitLocationPicker'
+import { ContractUnitDetailsPicker } from '@/components/contracts/ContractUnitDetailsPicker'
+import type { ServiceType, ContractUnitDetail } from '@/lib/types'
 
 const MAX_FILES = 5
 const MAX_MB = 20
@@ -22,6 +24,8 @@ interface Props {
     unit_location_others?: string[]
     contract_id?: string
     contract_address?: string
+    contract_unit_details?: ContractUnitDetail[]
+    contract_next_due_month?: string | null
     fault_description?: string
     urgency?: string
     ac_brand?: string
@@ -44,6 +48,8 @@ interface ContractOption {
   num_units: number
   start_date: string
   end_date: string
+  unit_details: ContractUnitDetail[]
+  next_due_month: string | null
 }
 
 export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
@@ -73,12 +79,15 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
       if (!user) return
       const { data: rows } = await supabase
         .from('contracts')
-        .select('id, address, num_units, start_date, end_date, contract_service_dates!inner(id)')
+        .select('id, address, num_units, start_date, end_date, unit_details, contract_service_dates!inner(id, due_month)')
         .eq('customer_id', user.id)
         .eq('status', 'ACTIVE')
         .filter('contract_service_dates.booking_id', 'is', null)
       setContracts(
-        (rows ?? []).map(({ contract_service_dates: _, ...c }) => c as ContractOption)
+        (rows ?? []).map(({ contract_service_dates, ...c }) => {
+          const dueMonths = (contract_service_dates ?? []).map((sd: { due_month: string }) => sd.due_month).sort()
+          return { ...c, next_due_month: dueMonths[0] ?? null } as ContractOption
+        })
       )
     }
     loadContracts()
@@ -151,7 +160,11 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
           value={data.service_type_id}
           onValueChange={id => {
             const s = serviceTypes.find(t => t.id === (id ?? ''))
-            onChange({ service_type_id: id ?? '', category: s?.category ?? '', contract_id: '' })
+            onChange({
+              service_type_id: id ?? '', category: s?.category ?? '',
+              contract_id: '', contract_address: '', contract_unit_details: undefined, contract_next_due_month: null,
+              num_units: undefined, unit_location_ids: [], unit_location_others: [],
+            })
           }}
         >
           <SelectTrigger>
@@ -180,36 +193,10 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
         </Select>
       </div>
 
-      {selected?.category === 'MAINTENANCE' && (
+      {selected?.category === 'MAINTENANCE' && (() => {
+        const contractLocked = (data.contract_unit_details?.length ?? 0) > 0
+        return (
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Number of Units <span className="text-red-500">*</span></Label>
-            <Input
-              type="number" min={1} max={20}
-              value={data.num_units ?? ''}
-              onChange={e => {
-                const raw = e.target.value
-                if (raw === '') { onChange({ num_units: undefined }); return }
-                // Clamp: max is otherwise only an HTML hint, and every extra unit
-                // renders another room dropdown.
-                onChange({ num_units: Math.min(20, Math.max(1, Math.floor(Number(raw)))) })
-              }}
-              placeholder="e.g. 3"
-            />
-            <p className="text-xs text-muted-foreground">Up to 20 units per booking.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Unit Locations <span className="text-red-500">*</span></Label>
-            <p className="text-xs text-muted-foreground">Select the room for each AC unit to be serviced.</p>
-            <UnitLocationPicker
-              numUnits={data.num_units ?? 0}
-              value={data.unit_location_ids ?? []}
-              otherTexts={data.unit_location_others ?? []}
-              onChange={ids => onChange({ unit_location_ids: ids })}
-              onOtherTexts={texts => onChange({ unit_location_others: texts })}
-            />
-          </div>
-
           {contracts.length > 0 && (
             <div className="space-y-1.5">
               <Label>Link to Contract <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
@@ -217,8 +204,34 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
               <Select
                 value={data.contract_id ?? ''}
                 onValueChange={v => {
-                  const selected = contracts.find(c => c.id === (v ?? ''))
-                  onChange({ contract_id: v ?? '', contract_address: selected?.address ?? '' })
+                  const c = contracts.find(c => c.id === (v ?? ''))
+                  if (!c) {
+                    onChange({ contract_id: '', contract_address: '', contract_unit_details: undefined, contract_next_due_month: null, num_units: undefined, unit_location_ids: [], unit_location_others: [] })
+                    return
+                  }
+                  // Only restrict the schedule step to the due month if that visit
+                  // hasn't already passed — an overdue visit means any date forward is fine.
+                  const currentYearMonth = new Date().toISOString().slice(0, 7)
+                  const nextDueMonth = c.next_due_month && c.next_due_month >= currentYearMonth ? c.next_due_month : null
+                  if (c.unit_details.length > 0) {
+                    onChange({
+                      contract_id: c.id,
+                      contract_address: c.address ?? '',
+                      contract_unit_details: c.unit_details,
+                      contract_next_due_month: nextDueMonth,
+                      num_units: c.num_units,
+                      unit_location_ids: c.unit_details.map(u => u.location_id ?? OTHERS_VALUE),
+                      unit_location_others: c.unit_details.map(u => u.location_id ? '' : u.location_label),
+                    })
+                  } else {
+                    // Legacy contract with no per-unit details recorded — lock nothing,
+                    // just prefill the unit count and address.
+                    onChange({
+                      contract_id: c.id, contract_address: c.address ?? '',
+                      contract_unit_details: undefined, contract_next_due_month: nextDueMonth,
+                      num_units: c.num_units,
+                    })
+                  }
                 }}
               >
                 <SelectTrigger>
@@ -242,8 +255,57 @@ export function StepServiceDetails({ serviceTypes, data, onChange }: Props) {
               </Select>
             </div>
           )}
+
+          <div className="space-y-1.5">
+            <Label>Number of Units <span className="text-red-500">*</span></Label>
+            {contractLocked ? (
+              <div className="flex items-center gap-1.5 bg-muted rounded-lg px-3 py-2 text-sm text-primary">
+                <Lock size={12} className="text-muted-foreground" />
+                {data.num_units} unit{data.num_units !== 1 ? 's' : ''}
+                <span className="text-xs text-muted-foreground font-normal">— set by your contract</span>
+              </div>
+            ) : (
+              <>
+                <Input
+                  type="number" min={1} max={20}
+                  value={data.num_units ?? ''}
+                  onChange={e => {
+                    const raw = e.target.value
+                    if (raw === '') { onChange({ num_units: undefined }); return }
+                    // Clamp: max is otherwise only an HTML hint, and every extra unit
+                    // renders another room dropdown.
+                    onChange({ num_units: Math.min(20, Math.max(1, Math.floor(Number(raw)))) })
+                  }}
+                  placeholder="e.g. 3"
+                />
+                <p className="text-xs text-muted-foreground">Up to 20 units per booking.</p>
+              </>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label>Unit Locations <span className="text-red-500">*</span></Label>
+            {contractLocked ? (
+              <ContractUnitDetailsPicker
+                readOnly
+                numUnits={data.contract_unit_details!.length}
+                value={data.contract_unit_details!}
+              />
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">Select the room for each AC unit to be serviced.</p>
+                <UnitLocationPicker
+                  numUnits={data.num_units ?? 0}
+                  value={data.unit_location_ids ?? []}
+                  otherTexts={data.unit_location_others ?? []}
+                  onChange={ids => onChange({ unit_location_ids: ids })}
+                  onOtherTexts={texts => onChange({ unit_location_others: texts })}
+                />
+              </>
+            )}
+          </div>
         </div>
-      )}
+        )
+      })()}
 
       {selected?.category === 'FAULT_REPAIR' && (
         <>

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { SLOT_KEYS } from '@/lib/types'
+import type { BookingWithRelations } from '@/lib/types'
 import { AdminAgendaClient } from '@/components/admin/AdminAgendaClient'
 
 function getMondayOf(dateStr: string): Date {
@@ -41,7 +42,7 @@ export default async function AdminAgendaPage({
 
   let query = supabase
     .from('bookings')
-    .select('id, confirmed_date, confirmed_slot, status, customer:profiles!bookings_customer_id_fkey(name), service_type:service_types(name)')
+    .select('*, customer:profiles!bookings_customer_id_fkey(name,phone), service_type:service_types(name,duration_minutes,price_sgd)')
     .gte('confirmed_date', weekStartStr)
     .lte('confirmed_date', weekEndStr)
     .not('confirmed_date', 'is', null)
@@ -56,7 +57,7 @@ export default async function AdminAgendaPage({
   const { data: bookings } = await query
 
   // Build grid: slot → date → bookings[]
-  type BookingRow = { id: string; confirmed_date: string; confirmed_slot: string; status: string; customer: { name: string } | null; service_type: { name: string } | null }
+  type BookingRow = BookingWithRelations
   const grid: Record<string, Record<string, BookingRow[]>> = {}
   for (const slot of SLOT_KEYS) {
     grid[slot] = {}

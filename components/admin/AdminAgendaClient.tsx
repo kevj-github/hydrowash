@@ -2,19 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { SLOT_KEYS, SLOT_LABELS } from '@/lib/types'
-import type { TimeSlot } from '@/lib/types'
+import type { TimeSlot, BookingWithRelations } from '@/lib/types'
+import { AgendaJobPopup } from './AgendaJobPopup'
 
-type BookingRow = {
-  id: string
-  confirmed_date: string
-  confirmed_slot: string
-  status: string
-  customer: { name: string } | null
-  service_type: { name: string } | null
-}
+type BookingRow = BookingWithRelations
 
 interface Props {
   days: string[]
@@ -31,6 +24,7 @@ export function AdminAgendaClient({ days, grid, todayStr, weekStartStr, status, 
   const [selectedDay, setSelectedDay] = useState<string>(
     days.includes(todayStr) ? todayStr : (days[0] ?? todayStr)
   )
+  const [popupBooking, setPopupBooking] = useState<BookingRow | null>(null)
 
   const dayIdx = days.indexOf(selectedDay)
 
@@ -119,14 +113,15 @@ export function AdminAgendaClient({ days, grid, todayStr, weekStartStr, status, 
                 ) : (
                   <div className="space-y-1">
                     {cellBookings.map(b => (
-                      <Link
+                      <button
                         key={b.id}
-                        href="/admin/bookings"
-                        className="block text-xs bg-accent/10 text-accent rounded-md px-2 py-1 font-medium truncate"
+                        type="button"
+                        onClick={() => setPopupBooking(b)}
+                        className="block w-full text-left text-xs bg-accent/10 text-accent rounded-md px-2 py-1 font-medium truncate cursor-pointer hover:bg-accent/20 transition-colors"
                         title={`${b.customer?.name} · ${b.service_type?.name}`}
                       >
                         {b.customer?.name ?? 'Customer'}
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -172,14 +167,15 @@ export function AdminAgendaClient({ days, grid, todayStr, weekStartStr, status, 
                       ) : (
                         <div className="space-y-1">
                           {cellBookings.map(b => (
-                            <Link
+                            <button
                               key={b.id}
-                              href="/admin/bookings"
-                              className="block text-xs bg-accent/10 text-accent rounded-md px-2 py-0.5 font-medium hover:bg-accent/20 transition-colors truncate"
+                              type="button"
+                              onClick={() => setPopupBooking(b)}
+                              className="block w-full text-left text-xs bg-accent/10 text-accent rounded-md px-2 py-0.5 font-medium hover:bg-accent/20 transition-colors truncate cursor-pointer"
                               title={`${b.customer?.name} · ${b.service_type?.name}`}
                             >
                               {b.customer?.name ?? 'Customer'}
-                            </Link>
+                            </button>
                           ))}
                         </div>
                       )}
@@ -191,6 +187,14 @@ export function AdminAgendaClient({ days, grid, todayStr, weekStartStr, status, 
           </tbody>
         </table>
       </div>
+
+      {popupBooking && (
+        <AgendaJobPopup
+          booking={popupBooking}
+          onClose={() => setPopupBooking(null)}
+          onUpdated={() => { setPopupBooking(null); router.refresh() }}
+        />
+      )}
     </>
   )
 }

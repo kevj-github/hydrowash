@@ -201,3 +201,34 @@ export async function sendWorkOrderReport(
     attachments: [{ filename: data.pdfFilename, content: pdfBuffer }],
   })
 }
+
+export async function sendBasicReminder(data: { customerName: string }, customerEmail: string) {
+  const { BasicReminder } = await import('./templates/BasicReminder')
+  return resend.emails.send({
+    from: FROM,
+    to: customerEmail,
+    subject: `A friendly reminder from HydroWash`,
+    react: BasicReminder(data),
+  })
+}
+
+export async function sendPaymentReceived(
+  data: {
+    customerName: string
+    description: string
+    amountSgd: number
+    paymentMethod: string
+    paidDate: string
+    serviceLabel?: string
+    serviceDate?: string
+  },
+  customerEmail: string
+) {
+  const { PaymentReceived } = await import('./templates/PaymentReceived')
+  return resend.emails.send({
+    from: FROM,
+    to: customerEmail,
+    subject: `Payment received — ${data.description} — S$${data.amountSgd.toFixed(2)} — HydroWash`,
+    react: PaymentReceived(data),
+  })
+}

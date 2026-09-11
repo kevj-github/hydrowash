@@ -30,6 +30,14 @@ export function getSlotsForDate(
   }))
 }
 
+export function slotTimeRange(slot: TimeSlot): { start: string; end: string } {
+  const [startHour, endHour] = slot.slice(1).split('_').map(Number)
+  return {
+    start: `${String(startHour).padStart(2, '0')}:00`,
+    end: `${String(endHour).padStart(2, '0')}:00`,
+  }
+}
+
 export function resolveContractTierPrice(
   tiers: ContractPricingTier[],
   numUnits: number

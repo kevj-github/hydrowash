@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDeleteModal } from '@/components/admin/ConfirmDeleteModal'
+import { CustomerNoEditor } from '@/components/admin/CustomerNoEditor'
+import { RemindButton } from '@/components/admin/RemindButton'
 import { Trash2 } from 'lucide-react'
 
 interface CustomerRow {
@@ -146,7 +148,9 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
                 <td className="px-4 py-3">
                   <Checkbox checked={selectedIds.has(c.id)} onCheckedChange={() => toggleSelect(c.id)} aria-label={`Select ${c.name}`} />
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">{c.customer_no ?? '—'}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  <CustomerNoEditor customerId={c.id} customerNo={c.customer_no} compact />
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-accent/10 text-accent font-semibold text-sm flex items-center justify-center shrink-0">
@@ -169,6 +173,7 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3">
+                    <RemindButton url={`/api/admin/customers/${c.id}/remind`} />
                     <Link href={`/admin/customers/${c.id}`} className="text-accent hover:underline text-xs font-medium">
                       View →
                     </Link>
@@ -211,7 +216,10 @@ export function AdminCustomersClient({ customers, bookingCounts, invoiceTotals, 
               <span>{bookingCounts[c.id] ?? 0} bookings</span>
               <span>Total {invoiceTotals[c.id] ? `S$${invoiceTotals[c.id].toFixed(2)}` : '—'}</span>
             </div>
-            <Link href={`/admin/customers/${c.id}`} className="block text-xs text-accent font-medium">View →</Link>
+            <div className="flex items-center justify-between">
+              <Link href={`/admin/customers/${c.id}`} className="text-xs text-accent font-medium">View →</Link>
+              <RemindButton url={`/api/admin/customers/${c.id}/remind`} />
+            </div>
           </div>
         ))}
       </div>

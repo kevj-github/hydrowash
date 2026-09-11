@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import Link from 'next/link'
+import { ContractUnitDetailsPicker } from '@/components/contracts/ContractUnitDetailsPicker'
 
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -496,6 +497,12 @@ export default function ContractDetailPage() {
             </>
           )}
         </div>
+        {contract.unit_details?.length > 0 && (
+          <div className="pt-3 mt-3 border-t border-border">
+            <p className="text-gray-500 mb-2">AC Unit Details</p>
+            <ContractUnitDetailsPicker readOnly numUnits={contract.unit_details.length} value={contract.unit_details} />
+          </div>
+        )}
       </section>
 
       {serviceDates.length > 0 && (

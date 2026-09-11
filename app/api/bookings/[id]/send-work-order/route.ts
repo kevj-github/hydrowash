@@ -93,6 +93,9 @@ export async function POST(
     additionalCharges: jc.additional_charges ?? [],
     basePriceSgd: parseFloat(jc.base_price_sgd) || 0,
     totalSgd,
+    invoiceStatus: 'UNPAID',
+    paymentMethod: null,
+    paidAt: null,
     company: {
       address: settings?.company_address ?? '404B Fernvale Lane, S792404',
       phone: settings?.company_phone ?? '(+65) 8811 1105',

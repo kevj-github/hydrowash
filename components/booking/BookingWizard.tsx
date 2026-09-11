@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { StepServiceDetails } from './StepServiceDetails'
 import { StepScheduleLocation } from './StepScheduleLocation'
 import { StepReview } from './StepReview'
-import type { ServiceType, PreferredDateSlot } from '@/lib/types'
+import type { ServiceType, PreferredDateSlot, ContractUnitDetail } from '@/lib/types'
 
 interface Props {
   serviceTypes: ServiceType[]
@@ -25,6 +25,8 @@ type BookingData = {
   unit_location_others: string[]
   contract_id?: string
   contract_address?: string
+  contract_unit_details?: ContractUnitDetail[]
+  contract_next_due_month?: string | null
   address: string
   postal_code: string
   lat: number | null
@@ -69,16 +71,25 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
     setData(prev => ({ ...prev, ...updates }))
   }
 
+  // Prefills from a specific past booking (?repeat=id, still supported for a
+  // possible future "Book Again" link) or — when no repeatId is given — from
+  // the customer's own most recent booking, so returning customers don't
+  // have to re-type unit counts/locations/address every time. Deliberately
+  // does NOT prefill contract_id even if the source booking was contract-linked
+  // (the customer must re-choose linking explicitly), and always clears
+  // preferred_date_slots (schedule is chosen fresh every time).
   useEffect(() => {
-    if (!repeatId || prefilled) return
+    if (prefilled) return
     let cancelled = false
-    async function loadRepeat() {
+    async function loadPrefill() {
       try {
-        const res = await fetch(`/api/bookings/${repeatId}`)
-        if (!res.ok) return
+        const url = repeatId ? `/api/bookings/${repeatId}` : '/api/bookings/last'
+        const res = await fetch(url)
+        if (!res.ok) { setPrefilled(true); return }
         const body = await res.json()
-        if (cancelled) return
         const booking = body.booking
+        if (!booking) { setPrefilled(true); return }
+        if (cancelled) return
         const unitLocationIds = body.unit_location_ids ?? []
         setData(prev => ({
           ...prev,
@@ -86,6 +97,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
           category: booking.category ?? '',
           num_units: booking.num_units ?? undefined,
           unit_location_ids: unitLocationIds,
+          unit_location_others: booking.unit_location_others ?? [],
           address: booking.address ?? '',
           postal_code: booking.postal_code ?? '',
           lat: booking.lat ?? null,
@@ -93,15 +105,17 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
           unit_floor: booking.unit_floor ?? '',
           building_name: booking.building_name ?? '',
           access_notes: booking.access_notes ?? '',
+          ac_brand: booking.ac_brand ?? undefined,
+          ac_model: booking.ac_model ?? undefined,
           preferred_date_slots: [],
         }))
         setStep(0)
         setPrefilled(true)
       } catch {
-        // ignore prefill errors
+        setPrefilled(true)
       }
     }
-    loadRepeat()
+    loadPrefill()
     return () => { cancelled = true }
   }, [repeatId, prefilled])
 
@@ -207,7 +221,7 @@ export function BookingWizard({ serviceTypes, profileAddress, repeatId }: Props)
         <h2 className="font-heading font-semibold text-lg text-primary mb-5">{STEPS[step]}</h2>
 
         {step === 0 && <StepServiceDetails serviceTypes={serviceTypes} data={data} onChange={update} />}
-        {step === 1 && <StepScheduleLocation data={data} onChange={update} profileAddress={profileAddress} contractAddress={data.contract_address} />}
+        {step === 1 && <StepScheduleLocation data={data} onChange={update} profileAddress={profileAddress} contractAddress={data.contract_address} contractAllowedMonth={data.contract_next_due_month} />}
         {step === 2 && <StepReview data={data} serviceTypes={serviceTypes} />}
       </div>
 

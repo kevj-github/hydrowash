@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
   if (!preferred_date_slots?.length) {
     return NextResponse.json({ error: 'At least one date preference is required' }, { status: 400 })
   }
-  if (preferred_date_slots.length > 5) {
-    return NextResponse.json({ error: 'Maximum 5 date preferences allowed' }, { status: 400 })
+  if (preferred_date_slots.length > 3) {
+    return NextResponse.json({ error: 'Maximum 3 date preferences allowed' }, { status: 400 })
   }
 
   const sanitisedEntries = preferred_date_slots
@@ -144,13 +144,18 @@ export async function POST(request: NextRequest) {
   if (contract_id) {
     const { data: ownedContract } = await supabase
       .from('contracts')
-      .select('id')
+      .select('id, num_units')
       .eq('id', contract_id)
       .eq('customer_id', user.id)
       .maybeSingle()
 
     if (!ownedContract) {
       return NextResponse.json({ error: 'Contract not found' }, { status: 404 })
+    }
+    // The wizard locks num_units to the contract's value once linked — a
+    // mismatch here means the request was tampered with client-side.
+    if (body.num_units != null && body.num_units !== ownedContract.num_units) {
+      return NextResponse.json({ error: 'num_units does not match the linked contract' }, { status: 422 })
     }
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,15 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { toAcUnitDetails } from '@/lib/contracts/units'
+import { buildJobDescription, buildJobRendered } from '@/lib/jobs/descriptions'
+import { slotTimeRange } from '@/lib/booking/slots'
 import type { BookingWithRelations, AcUnitDetail, ChecklistItem, AdditionalCharge } from '@/lib/types'
+
+const TIME_RE = /^\d{2}:\d{2}$/
+function toTimeInputValue(v: string | null | undefined): string {
+  return v && TIME_RE.test(v) ? v : ''
+}
 
 const DEFAULT_CHECKLIST: ChecklistItem[] = [
   { item: 'Air Filter Cleaned', checked: false },
@@ -36,11 +44,14 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([])
   const [unitTypes, setUnitTypes] = useState<{ id: string; name: string }[]>([])
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([])
+  const [staff, setStaff] = useState<{ id: string; label: string; is_default: boolean }[]>([])
+  const loadedRef = useRef(false)
 
   // Step 1 fields
   const [attendedBy, setAttendedBy] = useState('')
   const [timeArrived, setTimeArrived] = useState('')
   const [timeCompleted, setTimeCompleted] = useState('')
+  const [timeWarning, setTimeWarning] = useState<{ arrived: string | null; completed: string | null }>({ arrived: null, completed: null })
   const [acDetails, setAcDetails] = useState<AcUnitDetail[]>(() =>
     Array.from({ length: booking.num_units ?? 1 }, (_, i) => ({
       no: i + 1, brand: '', model: '', serial_no: '', location: '',
@@ -55,11 +66,102 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
   const [basePrice, setBasePrice] = useState('')
   const [charges, setCharges] = useState<AdditionalCharge[]>([])
 
+  function regenerateJobText() {
+    const input = {
+      serviceTypeName: booking.service_type?.name ?? '',
+      category: booking.category,
+      units: acDetails,
+      numUnits: booking.num_units ?? acDetails.length,
+      faultDescription: booking.fault_description,
+    }
+    setJobDescription(buildJobDescription(input))
+    setJobRendered(buildJobRendered(input))
+  }
+
   useEffect(() => {
-    supabase.from('ac_brands').select('id, label').order('display_order').then(({ data }) => { if (data) setBrands(data.map(b => ({ id: b.id, name: b.label }))) })
-    supabase.from('ac_unit_types').select('id, label').order('display_order').then(({ data }) => { if (data) setUnitTypes(data.map(t => ({ id: t.id, name: t.label }))) })
-    supabase.from('ac_unit_locations').select('id, label').order('display_order').then(({ data }) => { if (data) setLocations(data.map(l => ({ id: l.id, name: l.label }))) })
-  }, [])
+    if (!open || loadedRef.current) return
+    loadedRef.current = true
+
+    async function load() {
+      const [brandsRes, typesRes, locsRes, staffRes, jcRes] = await Promise.all([
+        supabase.from('ac_brands').select('id, label').order('display_order'),
+        supabase.from('ac_unit_types').select('id, label').order('display_order'),
+        supabase.from('ac_unit_locations').select('id, label').order('display_order'),
+        supabase.from('staff_members').select('id, label, is_default').eq('is_active', true).order('display_order'),
+        supabase.from('job_completions').select('*').eq('booking_id', booking.id).maybeSingle(),
+      ])
+      if (brandsRes.data) setBrands(brandsRes.data.map(b => ({ id: b.id, name: b.label })))
+      if (typesRes.data) setUnitTypes(typesRes.data.map(t => ({ id: t.id, name: t.label })))
+      if (locsRes.data) setLocations(locsRes.data.map(l => ({ id: l.id, name: l.label })))
+      const staffList = staffRes.data ?? []
+      setStaff(staffList)
+
+      const jc = jcRes.data
+      if (jc) {
+        // A completion already exists — hydrate from it and stop. Regenerating
+        // defaults here would silently overwrite the admin's saved edits.
+        setAttendedBy(jc.attended_by ?? '')
+        setTimeArrived(toTimeInputValue(jc.time_arrived))
+        setTimeCompleted(toTimeInputValue(jc.time_completed))
+        setTimeWarning({
+          arrived: jc.time_arrived && !TIME_RE.test(jc.time_arrived) ? jc.time_arrived : null,
+          completed: jc.time_completed && !TIME_RE.test(jc.time_completed) ? jc.time_completed : null,
+        })
+        setAcDetails(jc.ac_details?.length ? jc.ac_details : acDetails)
+        setChecklist(jc.checklist?.length ? jc.checklist : DEFAULT_CHECKLIST)
+        setJobDescription(jc.job_description ?? '')
+        setJobRendered(jc.job_rendered ?? '')
+        setRemarks(jc.remarks ?? '')
+        setBasePrice(jc.base_price_sgd != null ? String(jc.base_price_sgd) : '')
+        setCharges(jc.additional_charges ?? [])
+        return
+      }
+
+      // No completion yet — build sensible defaults.
+      let units: AcUnitDetail[] = acDetails
+      if (booking.contract_id) {
+        const { data: contract } = await supabase
+          .from('contracts').select('unit_details').eq('id', booking.contract_id).single()
+        if (contract?.unit_details?.length) units = toAcUnitDetails(contract.unit_details)
+      }
+      if (units.every(u => !u.location)) {
+        const { data: bul } = await supabase
+          .from('booking_unit_locations')
+          .select('ac_unit_locations(label)')
+          .eq('booking_id', booking.id)
+        const labels = (bul ?? [])
+          .map((r) => (r as unknown as { ac_unit_locations: { label: string } | null }).ac_unit_locations?.label)
+          .filter((l): l is string => !!l)
+        const allLabels = [...labels, ...(booking.unit_location_others ?? [])]
+        if (allLabels.length) {
+          units = Array.from({ length: booking.num_units ?? allLabels.length }, (_, i) => ({
+            no: i + 1, brand: '', model: '', serial_no: '', location: allLabels[i] ?? '',
+          }))
+        }
+      }
+      setAcDetails(units)
+
+      setAttendedBy(staffList.find(s => s.is_default)?.label ?? '')
+
+      if (booking.confirmed_slot) {
+        const { start, end } = slotTimeRange(booking.confirmed_slot)
+        setTimeArrived(start)
+        setTimeCompleted(end)
+      }
+
+      const textInput = {
+        serviceTypeName: booking.service_type?.name ?? '',
+        category: booking.category,
+        units,
+        numUnits: booking.num_units ?? units.length,
+        faultDescription: booking.fault_description,
+      }
+      setJobDescription(buildJobDescription(textInput))
+      setJobRendered(buildJobRendered(textInput))
+    }
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   function totalSgd() {
     const base = parseFloat(basePrice) || 0
@@ -177,15 +279,42 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="jc-attended-by">Attended By</Label>
-                <Input id="jc-attended-by" value={attendedBy} onChange={e => setAttendedBy(e.target.value)} placeholder="e.g. Gilbert" />
+                {(() => {
+                  const staffLabels = staff.map(s => s.label)
+                  const attendedIsOther = !!attendedBy && !staffLabels.includes(attendedBy)
+                  return (
+                    <>
+                      <select
+                        id="jc-attended-by"
+                        aria-label="Attended by"
+                        className="w-full h-9 border border-border rounded-md px-2 text-sm bg-transparent"
+                        value={attendedIsOther ? '__other__' : attendedBy}
+                        onChange={e => setAttendedBy(e.target.value === '__other__' ? '' : e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {staff.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                        <option value="__other__">Others</option>
+                      </select>
+                      {attendedIsOther && (
+                        <Input className="h-8 text-sm" value={attendedBy} onChange={e => setAttendedBy(e.target.value)} placeholder="Enter name…" autoFocus />
+                      )}
+                    </>
+                  )
+                })()}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="jc-time-arrived">Time Arrived</Label>
-                <Input id="jc-time-arrived" value={timeArrived} onChange={e => setTimeArrived(e.target.value)} placeholder="14:00" />
+                <Input id="jc-time-arrived" type="time" step={60} value={timeArrived} onChange={e => setTimeArrived(e.target.value)} />
+                {timeWarning.arrived && (
+                  <p className="text-[11px] text-amber-700">Previous value &quot;{timeWarning.arrived}&quot; wasn&apos;t a valid time — please re-enter.</p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="jc-time-completed">Time Completed</Label>
-                <Input id="jc-time-completed" value={timeCompleted} onChange={e => setTimeCompleted(e.target.value)} placeholder="16:00" />
+                <Input id="jc-time-completed" type="time" step={60} value={timeCompleted} onChange={e => setTimeCompleted(e.target.value)} />
+                {timeWarning.completed && (
+                  <p className="text-[11px] text-amber-700">Previous value &quot;{timeWarning.completed}&quot; wasn&apos;t a valid time — please re-enter.</p>
+                )}
               </div>
             </div>
 
@@ -300,7 +429,10 @@ export function JobCompletionDialog({ booking, onSuccess }: Props) {
               </div>
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <Label htmlFor="jc-job-description">Job Description</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="jc-job-description">Job Description</Label>
+                    <button type="button" className="text-xs text-accent hover:underline cursor-pointer" onClick={regenerateJobText}>Regenerate</button>
+                  </div>
                   <Textarea id="jc-job-description" rows={2} value={jobDescription} onChange={e => setJobDescription(e.target.value)} />
                 </div>
                 <div className="space-y-1">

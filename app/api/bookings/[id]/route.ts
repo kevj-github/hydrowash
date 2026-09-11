@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookingApproved, sendBookingRejected } from '@/lib/email/send'
 import { NextRequest, NextResponse } from 'next/server'
+import type { BookingWithRelations } from '@/lib/types'
 
 export async function GET(
   _request: NextRequest,
@@ -47,7 +48,7 @@ export async function PATCH(
 
   const { id } = await params
   const body = await request.json()
-  const { action, confirmed_date, confirmed_slot, rejection_reason } = body
+  const { action, confirmed_date, confirmed_slot, rejection_reason, cancel_reason } = body
 
   const updates: Record<string, string | null> = {}
   if (action === 'approve') {
@@ -57,6 +58,15 @@ export async function PATCH(
   } else if (action === 'reject') {
     updates.status = 'REJECTED'
     if (rejection_reason) updates.rejection_reason = rejection_reason
+  } else if (action === 'cancel') {
+    const { data: current } = await supabase.from('bookings').select('status').eq('id', id).single()
+    if (current?.status !== 'APPROVED') {
+      return NextResponse.json({ error: 'Only an approved booking can be cancelled this way' }, { status: 409 })
+    }
+    updates.status = 'CANCELLED'
+    updates.cancelled_at = new Date().toISOString()
+    updates.cancelled_by = user.id
+    updates.cancelled_reason = cancel_reason ?? null
   } else {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
@@ -88,8 +98,8 @@ export async function PATCH(
         .update({ booking_id: booking.id })
         .eq('id', nextCsd.id)
     }
-  } else if (action === 'reject' && booking.contract_id) {
-    // Clear any existing slot link on rejection (safety — shouldn't be set under normal flow).
+  } else if ((action === 'reject' || action === 'cancel') && booking.contract_id) {
+    // Free the linked service date slot on rejection/cancellation.
     await adminClient
       .from('contract_service_dates')
       .update({ booking_id: null })
@@ -108,6 +118,14 @@ export async function PATCH(
     } else if (action === 'reject') {
       await sendBookingRejected(booking, email).catch(err =>
         console.error(`[bookings PATCH] Failed to send rejected email to ${email}:`, err)
+      )
+    } else if (action === 'cancel') {
+      const cancelledBooking: BookingWithRelations = {
+        ...booking,
+        rejection_reason: cancel_reason ?? 'This booking has been cancelled by our team. Please contact us if you have any questions.',
+      }
+      await sendBookingRejected(cancelledBooking, email).catch(err =>
+        console.error(`[bookings PATCH] Failed to send cancellation email to ${email}:`, err)
       )
     }
   }

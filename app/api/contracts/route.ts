@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { CreateContractPayload } from '@/lib/types'
 import { generateServiceDates } from '@/lib/contracts/service-dates'
+import { sanitizeUnitDetails, isUnitDetailsComplete, normalizeUnitDetails } from '@/lib/contracts/units'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -20,11 +21,20 @@ export async function POST(req: NextRequest) {
   }
 
   const body: CreateContractPayload = await req.json()
-  const { customer_id, num_units, price_sgd, start_date, address, notes } = body
+  const { customer_id, num_units, price_sgd, start_date, address, notes, unit_details } = body
 
   if (!customer_id || !num_units || !price_sgd || !start_date) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
+
+  const normalizedUnitDetails = normalizeUnitDetails(unit_details, num_units)
+  const hasUnitDetails = (unit_details?.length ?? 0) > 0
+  if (hasUnitDetails && !isUnitDetailsComplete(normalizedUnitDetails, num_units)) {
+    return NextResponse.json({ error: 'unit_details must have one complete entry per unit' }, { status: 400 })
+  }
+  const sanitizedUnitDetails = hasUnitDetails
+    ? await sanitizeUnitDetails(supabase, unit_details, num_units)
+    : []
 
   const startDateObj = new Date(`${start_date}T00:00:00Z`)
   const endDateObj = new Date(`${start_date}T00:00:00Z`)
@@ -41,6 +51,7 @@ export async function POST(req: NextRequest) {
       end_date,
       address: address ?? null,
       notes: notes ?? null,
+      unit_details: sanitizedUnitDetails,
       status: 'ACTIVE',
     })
     .select()

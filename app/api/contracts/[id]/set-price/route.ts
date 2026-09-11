@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateContractPdf } from '@/lib/pdf/generate'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
+import { contractUnitSummary } from '@/lib/contracts/units'
 import { sendContractPricing } from '@/lib/email/send'
 import { buildPayNowPayload } from '@/lib/utils/paynow'
 import QRCode from 'qrcode'
@@ -100,6 +101,7 @@ export async function PATCH(
       address: contract.address ?? '',
       numUnits: contract.num_units,
       unitType: 'Wall Mounted Unit',
+      unitSummary: contractUnitSummary(contract.unit_details ?? [], contract.num_units),
       totalAmountSgd: priceNum,
       serviceDueMonths,
       issuedDate,

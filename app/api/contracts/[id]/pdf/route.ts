@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateContractPdf } from '@/lib/pdf/generate'
 import { formatDueMonth } from '@/lib/contracts/service-dates'
+import { contractUnitSummary } from '@/lib/contracts/units'
 
 export async function GET(
   _req: NextRequest,
@@ -52,6 +53,7 @@ export async function GET(
     address: contract.address ?? '',
     numUnits: contract.num_units,
     unitType: 'Wall Mounted Unit',
+    unitSummary: contractUnitSummary(contract.unit_details ?? [], contract.num_units),
     totalAmountSgd: contract.price_sgd ? parseFloat(contract.price_sgd) : 0,
     serviceDueMonths,
     issuedDate,

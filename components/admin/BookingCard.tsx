@@ -47,11 +47,13 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contr
   const [confirmedSlot, setConfirmedSlot] = useState<string>(booking.confirmed_slot ?? '')
   const [rejectionReason, setRejectionReason] = useState('')
   const [showReject, setShowReject] = useState(false)
-  const [loading, setLoading] = useState<'approve' | 'reject' | null>(null)
+  const [showCancel, setShowCancel] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [loading, setLoading] = useState<'approve' | 'reject' | 'cancel' | null>(null)
 
   const preferredDateSlots = booking.preferred_date_slots ?? []
 
-  async function act(action: 'approve' | 'reject') {
+  async function act(action: 'approve' | 'reject' | 'cancel') {
     setLoading(action)
     try {
       await fetch(`/api/bookings/${booking.id}`, {
@@ -62,11 +64,13 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contr
           confirmed_date: confirmedDate || undefined,
           confirmed_slot: confirmedSlot || undefined,
           rejection_reason: rejectionReason || undefined,
+          cancel_reason: cancelReason || undefined,
         }),
       })
     } finally {
       setLoading(null)
       setShowReject(false)
+      setShowCancel(false)
       onUpdate()
     }
   }
@@ -212,8 +216,39 @@ export function BookingCard({ booking, onUpdate, highlighted, onCardClick, contr
       )}
 
       {booking.status === 'APPROVED' && (
-        <div onClick={e => e.stopPropagation()}>
-          <JobCompletionDialog booking={booking} onSuccess={onUpdate} />
+        <div className="space-y-2" onClick={e => e.stopPropagation()}>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <JobCompletionDialog booking={booking} onSuccess={onUpdate} />
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs border-red-300 text-red-600 hover:bg-red-50"
+              onClick={() => setShowCancel(v => !v)}
+              disabled={!!loading}
+            >
+              Cancel
+            </Button>
+          </div>
+          {showCancel && (
+            <div className="space-y-1.5">
+              <Input
+                placeholder="Reason (optional)"
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                className="text-xs h-7"
+              />
+              <Button
+                size="sm"
+                className="w-full bg-red-600 hover:bg-red-700 text-white text-xs"
+                onClick={() => act('cancel')}
+                disabled={!!loading}
+              >
+                {loading === 'cancel' ? '…' : 'Confirm Cancellation'}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

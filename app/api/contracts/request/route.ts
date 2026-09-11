@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendContractRequestReceived } from '@/lib/email/send'
+import { sanitizeUnitDetails, isUnitDetailsComplete, normalizeUnitDetails } from '@/lib/contracts/units'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { num_units, address, preferred_month, notes } = body
+  const { num_units, address, preferred_month, notes, unit_details } = body
 
   if (!num_units || !preferred_month) {
     return NextResponse.json({ error: 'num_units and preferred_month are required' }, { status: 400 })
@@ -30,6 +31,15 @@ export async function POST(req: NextRequest) {
   if (!/^\d{4}-\d{2}$/.test(preferred_month)) {
     return NextResponse.json({ error: 'preferred_month must be YYYY-MM' }, { status: 400 })
   }
+
+  const normalizedUnitDetails = normalizeUnitDetails(unit_details, num_units)
+  const hasUnitDetails = (unit_details?.length ?? 0) > 0
+  if (hasUnitDetails && !isUnitDetailsComplete(normalizedUnitDetails, num_units)) {
+    return NextResponse.json({ error: 'unit_details must have one complete entry per unit' }, { status: 400 })
+  }
+  const sanitizedUnitDetails = hasUnitDetails
+    ? await sanitizeUnitDetails(supabase, unit_details, num_units)
+    : []
 
   // preferred_month is YYYY-MM — start_date is first day of that month
   const start_date = `${preferred_month}-01`
@@ -47,6 +57,7 @@ export async function POST(req: NextRequest) {
       end_date,
       address: address || null,
       notes: notes || null,
+      unit_details: sanitizedUnitDetails,
       status: 'PENDING_REVIEW',
     })
     .select()

@@ -8,7 +8,7 @@ web
 
 ## Users
 
-- **Customers** — homeowners in Singapore who need aircon servicing: routine maintenance/cleaning (`MAINTENANCE`), a fault fixed (`FAULT_REPAIR`, e.g. water leaks, no cooling), or a new unit installed (`INSTALLATION`). They book online, choosing up to 5 preferred dates with up to 3 time slots each, track bookings/contracts/invoices, and can reschedule or cancel (24h SGT cutoff).
+- **Customers** — homeowners in Singapore who need aircon servicing: routine maintenance/cleaning (`MAINTENANCE`), a fault fixed (`FAULT_REPAIR`, e.g. water leaks, no cooling), or a new unit installed (`INSTALLATION`). They book online, choosing up to 3 preferred dates with up to 3 time slots total, track bookings/contracts/invoices, and can reschedule or cancel (24h SGT cutoff).
 - **Admin (owner/operator)** — runs the business day to day: approves/rejects bookings, resolves date/slot conflicts, runs the route optimiser for job scheduling, manages 1-year maintenance contracts and quarterly service reminders, tracks invoices manually, and completes jobs (checklist + AC details + pricing → work order PDF + PayNow QR to customer).
 - **Field technicians** — carry out the jobs in the field. They do not currently have system logins; they work off admin-issued work orders. Multiple staff/technician logins are a planned future capability, not yet built — do not assume technician-facing UI exists.
 
@@ -18,7 +18,7 @@ HydroWash is the online booking and operations platform for a real, currently op
 
 ## Positioning
 
-A neighboring generic "book a service" template could not truthfully copy: the multi-date/multi-slot preference model (customer offers up to 5 dates × 3 slots, admin resolves conflicts and confirms one), the geographic clustering + nearest-neighbour route optimiser for the admin's field day, and the built-in 1-year maintenance contract lifecycle (quarterly auto-generated service dates, reminders, PayNow-based invoicing/PDF generation) — these are operational mechanisms specific to running a real home-services business, not just a booking form.
+A neighboring generic "book a service" template could not truthfully copy: the multi-date/multi-slot preference model (customer offers up to 3 dates × slots, admin resolves conflicts and confirms one), the geographic clustering + nearest-neighbour route optimiser for the admin's field day, and the built-in 1-year maintenance contract lifecycle (quarterly auto-generated service dates, reminders, PayNow-based invoicing/PDF generation) — these are operational mechanisms specific to running a real home-services business, not just a booking form.
 
 ## Operating Context
 

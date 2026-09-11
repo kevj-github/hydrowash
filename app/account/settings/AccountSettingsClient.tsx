@@ -6,6 +6,7 @@ import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 
@@ -221,9 +222,8 @@ export default function AccountSettingsClient({ profile }: Props) {
       <form onSubmit={handleChangePassword} className="space-y-5 bg-white rounded-2xl border border-border p-6 shadow-sm">
         <div className="space-y-1.5">
           <Label htmlFor="new_password" className="text-sm font-medium text-primary">New Password</Label>
-          <Input
+          <PasswordInput
             id="new_password"
-            type="password"
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
             placeholder="At least 8 characters"
@@ -233,9 +233,8 @@ export default function AccountSettingsClient({ profile }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="confirm_password" className="text-sm font-medium text-primary">Confirm Password</Label>
-          <Input
+          <PasswordInput
             id="confirm_password"
-            type="password"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
             placeholder="Repeat your password"

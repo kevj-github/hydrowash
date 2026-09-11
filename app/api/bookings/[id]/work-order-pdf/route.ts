@@ -41,6 +41,12 @@ export async function GET(
     .select('company_address, company_phone, company_email')
     .single()
 
+  const { data: invoice } = await supabase
+    .from('invoices')
+    .select('status, payment_method, paid_at')
+    .eq('booking_id', id)
+    .maybeSingle()
+
   const adminClient = createAdminClient()
   const { data: { user: customerUser } } = await adminClient.auth.admin.getUserById(booking.customer_id)
 
@@ -66,6 +72,10 @@ export async function GET(
 
   const date = new Date(jc.completed_at)
   const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+  const paidAtDate = invoice?.paid_at ? new Date(invoice.paid_at) : null
+  const paidAtStr = paidAtDate
+    ? `${String(paidAtDate.getDate()).padStart(2, '0')}/${String(paidAtDate.getMonth() + 1).padStart(2, '0')}/${paidAtDate.getFullYear()}`
+    : null
 
   const props: WorkOrderProps = {
     customerName: booking.customer?.name ?? customerUser?.email ?? 'Customer',
@@ -87,6 +97,9 @@ export async function GET(
     additionalCharges: jc.additional_charges ?? [],
     basePriceSgd: parseFloat(jc.base_price_sgd) || 0,
     totalSgd: parseFloat(jc.total_sgd) || 0,
+    invoiceStatus: invoice?.status === 'PAID' ? 'PAID' : 'UNPAID',
+    paymentMethod: invoice?.payment_method ?? null,
+    paidAt: paidAtStr,
     company: {
       address: settings?.company_address ?? '404B Fernvale Lane, S792404',
       phone: settings?.company_phone ?? '(+65) 8811 1105',
@@ -105,6 +118,7 @@ export async function GET(
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${pdfFilename}"`,
+      'Cache-Control': 'no-store, must-revalidate',
     },
   })
 }

@@ -17,6 +17,25 @@ export interface AcUnitDetail {
   location: string
 }
 
+export interface ContractUnitDetail {
+  no: number
+  location_id: string | null
+  location_label: string
+  unit_type_id: string | null
+  unit_type_label: string
+  brand_id: string | null
+  brand_label: string
+}
+
+export interface StaffMember {
+  id: string
+  label: string
+  is_default: boolean
+  display_order: number
+  is_active: boolean
+  created_at: string
+}
+
 export interface ChecklistItem {
   item: string
   checked: boolean
@@ -164,6 +183,7 @@ export interface Contract {
   notes: string | null
   status: ContractStatus
   expiry_reminder_sent: boolean
+  unit_details: ContractUnitDetail[]
   created_at: string
 }
 
@@ -231,6 +251,7 @@ export interface CreateContractPayload {
   start_date: string
   address?: string
   notes?: string
+  unit_details?: ContractUnitDetail[]
 }
 
 export interface LinkBookingPayload {

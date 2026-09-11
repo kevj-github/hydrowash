@@ -27,7 +27,7 @@ function fullDateLabel(date: string): string {
 }
 
 const MAX_TOTAL_SLOTS = 3
-const MAX_DATES = 5
+const MAX_DATES = 3
 
 const SLOT_START_HOUR: Record<TimeSlot, number> = {
   S10_12: 10,
@@ -53,15 +53,17 @@ interface DayAvail {
 interface Props {
   value: PreferredDateSlot[]
   onChange: (entries: PreferredDateSlot[]) => void
+  /** Restrict selectable dates to this YYYY-MM (e.g. a contract's next due month). */
+  allowedMonth?: string | null
 }
 
 function toYearMonth(d: Date): string {
   return d.toISOString().slice(0, 7)
 }
 
-export function SlotCalendar({ value, onChange }: Props) {
+export function SlotCalendar({ value, onChange, allowedMonth }: Props) {
   const todaySGT = getSGTDateStr()
-  const [month, setMonth] = useState(() => toYearMonth(new Date()))
+  const [month, setMonth] = useState(() => allowedMonth ?? toYearMonth(new Date()))
   const [weekStart, setWeekStart] = useState(() => getMondayOf(getSGTDateStr()))
   const [availability, setAvailability] = useState<Record<string, DayAvail>>({})
   const [loading, setLoading] = useState(false)
@@ -169,8 +171,21 @@ export function SlotCalendar({ value, onChange }: Props) {
     setMonth(toYearMonth(new Date(next + 'T00:00:00')))
   }
 
+  function isOutsideAllowedMonth(date: string): boolean {
+    return !!allowedMonth && date.slice(0, 7) !== allowedMonth
+  }
+
+  const allowedMonthLabel = allowedMonth
+    ? new Date(`${allowedMonth}-01T00:00:00`).toLocaleDateString('en-SG', { month: 'long', year: 'numeric' })
+    : null
+
   return (
     <div className="space-y-4">
+      {allowedMonth && (
+        <p className="text-xs text-accent bg-accent/5 border border-accent/20 rounded-lg px-3 py-2">
+          This booking is linked to your contract — you can only choose a date in <strong>{allowedMonthLabel}</strong>, your next scheduled visit month.
+        </p>
+      )}
       {/* ── Mobile week strip (< md) ── */}
       <div className="md:hidden space-y-3">
         <div className="flex items-center justify-between">
@@ -190,7 +205,7 @@ export function SlotCalendar({ value, onChange }: Props) {
             const isActiveMobile = date === activeDate
             const isToday = date === todaySGT
             const atMax = !isSelected && (value.length >= MAX_DATES || totalSlots >= MAX_TOTAL_SLOTS)
-            const disabled = isPast || fullyBlocked || atMax
+            const disabled = isPast || fullyBlocked || atMax || isOutsideAllowedMonth(date)
             const dow = new Date(date + 'T00:00:00').toLocaleString('en-SG', { weekday: 'narrow' })
             const dayNum = date.slice(8)
             return (
@@ -254,7 +269,7 @@ export function SlotCalendar({ value, onChange }: Props) {
           // Adding a date is pointless once the total-slot budget is spent —
           // the day would open with every slot already disabled.
           const atMax = !isSelected && (value.length >= MAX_DATES || totalSlots >= MAX_TOTAL_SLOTS)
-          const disabled = isPast || fullyBlocked || atMax
+          const disabled = isPast || fullyBlocked || atMax || isOutsideAllowedMonth(d.date)
           return (
             <button
               key={d.date}

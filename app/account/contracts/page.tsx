@@ -43,7 +43,7 @@ export default async function AccountContractsPage() {
       .single(),
     supabase
       .from('app_settings')
-      .select('contract_pricing_tiers, paynow_mobile')
+      .select('paynow_mobile')
       .single(),
   ])
 
@@ -56,7 +56,6 @@ export default async function AccountContractsPage() {
       profileAddress={profileRes.data?.address ?? null}
       profileUnitFloor={profileRes.data?.unit_floor ?? null}
       profileBuildingName={profileRes.data?.building_name ?? null}
-      pricingTiers={settingsRes.data?.contract_pricing_tiers ?? []}
       paynowMobile={settingsRes.data?.paynow_mobile ?? null}
       activeContracts={activeContracts}
     />

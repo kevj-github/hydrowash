@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { SLOT_LABELS } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
-import type { ServiceType, PreferredDateSlot } from '@/lib/types'
+import type { ServiceType, PreferredDateSlot, ContractUnitDetail } from '@/lib/types'
 
 const CATEGORY_LABELS: Record<string, string> = {
   MAINTENANCE: 'General maintenance',
@@ -22,6 +22,8 @@ interface BookingData {
   num_units?: number
   unit_location_ids?: string[]
   unit_location_others?: string[]
+  contract_id?: string
+  contract_unit_details?: ContractUnitDetail[]
   fault_description?: string
   urgency?: string
   ac_brand?: string
@@ -97,8 +99,21 @@ export function StepReview({ data, serviceTypes }: Props) {
               : 'Quoted after on-site inspection'}
           />
         )}
+        {data.contract_id && <Row label="Contract" value="Linked — details below from your contract" />}
         {data.num_units && <Row label="Units" value={data.num_units} />}
-        {allRooms.length > 0 && <Row label="Rooms" value={allRooms.join(', ')} />}
+        {data.contract_unit_details && data.contract_unit_details.length > 0 ? (
+          <div className="py-2 space-y-1">
+            {data.contract_unit_details.map(u => (
+              <p key={u.no} className="text-sm text-slate-700">
+                Unit {u.no} — {u.location_label}
+                {u.unit_type_label ? ` · ${u.unit_type_label}` : ''}
+                {u.brand_label ? ` · ${u.brand_label}` : ''}
+              </p>
+            ))}
+          </div>
+        ) : (
+          allRooms.length > 0 && <Row label="Rooms" value={allRooms.join(', ')} />
+        )}
         {data.fault_description && <Row label="Fault" value={data.fault_description} />}
         {data.urgency && <Row label="Urgency" value={data.urgency} />}
         {data.ac_brand && <Row label="Brand" value={data.ac_brand} />}

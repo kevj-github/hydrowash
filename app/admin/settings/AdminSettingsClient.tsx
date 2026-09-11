@@ -5,24 +5,30 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import type { AppSettings, ServiceType, AcBrand, AcUnitType, AcUnitLocation } from '@/lib/types'
+import type { AppSettings, ServiceType, AcBrand, AcUnitType, AcUnitLocation, StaffMember } from '@/lib/types'
 
-type CatalogItem = { id: string; label: string; display_order: number; is_active: boolean }
+type CatalogItem = { id: string; label: string; display_order: number; is_active: boolean; is_default?: boolean }
+type CatalogTableName = 'ac_brands' | 'ac_unit_types' | 'ac_unit_locations' | 'staff_members'
 
-const TABLE_KIND: Record<'ac_brands' | 'ac_unit_types' | 'ac_unit_locations', string> = {
+const TABLE_KIND: Record<CatalogTableName, string> = {
   ac_brands: 'brands',
   ac_unit_types: 'unit_types',
   ac_unit_locations: 'locations',
+  staff_members: 'staff',
 }
 
 function CatalogSection({
   title,
   tableName,
   initialItems,
+  showDefault = false,
+  caption,
 }: {
   title: string
-  tableName: 'ac_brands' | 'ac_unit_types' | 'ac_unit_locations'
+  tableName: CatalogTableName
   initialItems: CatalogItem[]
+  showDefault?: boolean
+  caption?: string
 }) {
   const kind = TABLE_KIND[tableName]
   const [items, setItems] = useState(initialItems)
@@ -83,6 +89,21 @@ function CatalogSection({
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: !i.is_active } : i))
   }
 
+  async function setDefault(id: string) {
+    const res = await fetch(`/api/admin/ac-catalog?kind=${kind}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, is_default: true }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      flash('Error: ' + (json.error ?? 'could not set default'), true)
+      return
+    }
+    setItems(prev => prev.map(i => ({ ...i, is_default: i.id === id })))
+    flash('Default updated.')
+  }
+
   async function deleteItem(id: string) {
     const res = await fetch(`/api/admin/ac-catalog?kind=${kind}&id=${id}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -104,6 +125,7 @@ function CatalogSection({
           {showForm ? 'Cancel' : '+ Add'}
         </Button>
       </div>
+      {caption && <p className="text-xs text-muted-foreground mb-3">{caption}</p>}
       {msg && <p className="text-sm text-green-700 mb-3">{msg}</p>}
       {err && <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mb-3">{err}</p>}
 
@@ -142,6 +164,17 @@ function CatalogSection({
                   {item.label}
                 </span>
                 <div className="flex gap-1.5 shrink-0">
+                  {showDefault && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDefault(item.id)}
+                      disabled={item.is_default}
+                      className={`text-xs h-7 ${item.is_default ? 'bg-accent text-white border-accent hover:bg-accent' : ''}`}
+                    >
+                      {item.is_default ? 'Default' : 'Set default'}
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => { setEditingId(item.id); setEditLabel(item.label) }} className="text-xs h-7">Edit</Button>
                   <Button size="sm" variant="outline" onClick={() => toggleActive(item)} className="text-xs h-7">
                     {item.is_active ? 'Deactivate' : 'Activate'}
@@ -171,6 +204,7 @@ interface Props {
   initialBrands: AcBrand[]
   initialUnitTypes: AcUnitType[]
   initialLocations: AcUnitLocation[]
+  initialStaff: StaffMember[]
 }
 
 const CATEGORIES = [
@@ -195,7 +229,7 @@ interface ServiceTypeForm {
 
 const emptyForm: ServiceTypeForm = { name: '', category: 'MAINTENANCE', description: '', duration_minutes: '', price_sgd: '' }
 
-export function AdminSettingsClient({ initialSettings, initialServiceTypes, initialBrands, initialUnitTypes, initialLocations }: Props) {
+export function AdminSettingsClient({ initialSettings, initialServiceTypes, initialBrands, initialUnitTypes, initialLocations, initialStaff }: Props) {
   const [settings, setSettings] = useState(initialSettings ?? {
     depot_address: '', depot_lat: 0, depot_lng: 0, company_name: 'HydroWash', contact_email: '',
     company_address: '404B Fernvale Lane, S792404', company_phone: '(+65) 8811 1105',
@@ -517,6 +551,13 @@ export function AdminSettingsClient({ initialSettings, initialServiceTypes, init
       <CatalogSection title="AC Brands" tableName="ac_brands" initialItems={initialBrands} />
       <CatalogSection title="AC Unit Types (Model)" tableName="ac_unit_types" initialItems={initialUnitTypes} />
       <CatalogSection title="Unit Locations" tableName="ac_unit_locations" initialItems={initialLocations} />
+      <CatalogSection
+        title="Attended By (Technicians)"
+        tableName="staff_members"
+        initialItems={initialStaff}
+        showDefault
+        caption="The default technician is pre-filled on every job completion. Admin can still change it per job."
+      />
     </div>
   )
 }
