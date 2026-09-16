@@ -40,7 +40,19 @@ export function MobileNav({ isLoggedIn, isAdmin }: MobileNavProps) {
       </button>
 
       {open && (
-        <div className="absolute top-16 left-0 right-0 bg-primary border-t border-white/10 shadow-lg z-50 px-4 py-4 flex flex-col gap-1">
+        // Dims and blocks the page behind the menu (including the hero's own
+        // Book Now/Sign In buttons and the fixed bottom nav bar, which would
+        // otherwise stay visible and tappable underneath, duplicating these
+        // same actions). Sits above the bottom nav's z-50 so it also covers that.
+        <div
+          className="fixed inset-x-0 top-16 bottom-0 bg-black/40 z-[55]"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {open && (
+        <div className="absolute top-16 left-0 right-0 bg-primary border-t border-white/10 shadow-lg z-[60] px-4 py-4 flex flex-col gap-1">
           {isLoggedIn ? (
             <>
               {isAdmin && (

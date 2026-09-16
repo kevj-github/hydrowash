@@ -271,7 +271,7 @@ export function AdminBookingsClient({ initialBookings, initialVisitMap = {} }: P
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border mb-4 shrink-0">
+      <div className="flex gap-1 border-b border-border mb-4 shrink-0 overflow-x-auto">
         {TABS.map(tab => {
           const src = tab.id === 'MAINTENANCE' ? maintenance : tab.id === 'FAULT_REPAIR' ? faultRepair : tab.id === 'INSTALLATION' ? installation : bookings
           const pending = pendingCount(src)

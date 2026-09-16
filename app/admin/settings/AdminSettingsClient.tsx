@@ -159,7 +159,7 @@ function CatalogSection({
                 <Button variant="outline" onClick={() => setEditingId(null)} className="text-xs h-8">Cancel</Button>
               </div>
             ) : (
-              <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center justify-between flex-wrap gap-y-2 px-4 py-2">
                 <span className={`text-sm font-medium ${item.is_active ? 'text-primary' : 'text-muted-foreground line-through'}`}>
                   {item.label}
                 </span>
