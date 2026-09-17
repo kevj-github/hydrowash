@@ -26,9 +26,10 @@ whenever we go through a new area.
       they differ, what each catches, how to run them
 - [x] Hard-delete + audit-log pattern — why no soft-deletes, how
       `admin_audit_log` records every delete
-- [x] Core TS/JS fundamentals that came up along the way — see Glossary
-      (object shorthand, reference types, type assertions, `enum` vs union
-      types, IIFEs)
+- [x] Core TS/JS fundamentals that came up along the way — general, not
+      hydrowash-specific, so they live in `~/.claude/learning-notes.md`
+      instead (object shorthand, reference types, type assertions, `enum` vs
+      union types, IIFEs)
 
 **Touched, not walked through deliberately** — seen only as a side effect of
 fixing e2e tests, not explained start-to-finish yet:
@@ -116,64 +117,11 @@ picking a `confirmed_date`/`confirmed_slot` → customer sees it reflected in
 
 ## Glossary
 
-Terms explained so far this session — skip these if they come up again.
+Hydrowash-specific terms only — things that wouldn't mean the same thing (or
+anything at all) in a different codebase. General programming/testing/tooling
+concepts that came up along the way (Playwright, Jest, mocks, type
+assertions, `enum` vs union types, etc.) live in `~/.claude/learning-notes.md`
+instead, since they're portable and apply to any project, not just this one.
 
-- **`.spec.ts`** — a test-file naming convention ("specification"), used by
-  most JS/TS test frameworks (Jest, Playwright, Jasmine, Mocha), not specific
-  to any one of them. The test runner's config decides which `.spec.ts` files
-  it owns.
-- **Playwright** — a browser automation library. Drives a real Chromium/
-  Firefox/WebKit browser: click, type, read the page. Used here for e2e
-  ("end-to-end") tests — testing the whole app the way a real user would.
-- **Jest** — a Node-based test runner. No real browser; runs your actual
-  functions/route handlers directly, fast, used for unit + integration tests.
-- **Unit test** — tests one small piece of logic in isolation (e.g. a pricing
-  function). **e2e test** — tests the full flow through the real UI/server/DB.
-- **Assertion** — the actual check in a test, e.g. `expect(x).toBe(y)`.
-  Everything before it just sets up the scenario; this line is what can fail.
-- **Mock** (`jest.fn()`, `jest.mock()`) — a fake stand-in for a real
-  dependency (e.g. a fake Supabase client instead of a real database call),
-  so a test can isolate just the function/route being tested and check *how*
-  it used its dependency without needing the real thing to exist.
-- **`jsdom` vs `node`** (Jest test environment) — `jsdom` is a fake browser
-  DOM, used when testing UI-adjacent code; `node` is plain JS/TS execution,
-  faster, used for pure logic with no DOM involved. This project's tests opt
-  into `node` per-file via a `/** @jest-environment node */` docblock.
-- **RLS (Row Level Security)** — Postgres feature: access-control rules
-  attached directly to a table, enforced by the database on every query,
-  based on who's logged in — not something the application code has to
-  remember to check.
-- **Object shorthand** (`{ from }`) — shorthand for `{ from: from }`; wraps an
-  existing variable as a property on a *new* object. The wrapper (e.g.
-  `client`) and the value inside it (`from`) are not the same thing — `client
-  !== from`, even though `client.from === from`.
-- **Reference type** — objects and functions are stored/passed by reference
-  in JS: two variables can point at the exact same underlying thing without
-  being copies of each other (like two labels on the same physical object).
-  Plain values (numbers, strings, booleans) are copied instead.
-- **Type assertion** (`as X`) — tells TypeScript's compiler "treat this value
-  as type `X`," for the type-checker only. Has zero effect on the actual
-  value at runtime — it cannot convert or change anything.
-- **`as unknown as X`** — a double-cast escape hatch. `unknown` accepts any
-  value and converts to any type, so routing a cast through it bypasses
-  TypeScript's normal "these types don't overlap enough" safety check. Seen
-  in this project's Jest mocks (`lib/admin/__tests__/audit-log.test.ts`) to
-  force a small fake object to be accepted as a much larger real type —
-  intentionally risky: only safe if the fake actually covers everything the
-  real code path uses.
-- **Type erasure** — TypeScript's annotations, interfaces, generics, and
-  assertions all disappear once compiled; the code that actually runs is
-  plain JavaScript with no runtime trace of types. `enum` is the one
-  exception (see below) — this project avoids it for that reason.
-- **Union type** (`A | B`) — a type that can be one of several listed types.
-  A **string union** (e.g. `TimeSlot` in `lib/types.ts`) restricts a value to
-  one of a fixed list of exact string literals — same practical effect as an
-  enum, but fully erased at compile time (no runtime object), which is why
-  this project uses it instead of `enum`.
-- **`enum`** — TypeScript's one type-system feature that isn't erased; it
-  compiles to a real JavaScript object (built via an IIFE, see below) that
-  exists at runtime, unlike everything else in the type system. Not used in
-  this project.
-- **IIFE** (Immediately Invoked Function Expression) — a function defined and
-  called in the same expression (`(function(){...})()`), used to create an
-  isolated scope. This is the mechanism compiled `enum` code is built from.
+*(Nothing hydrowash-specific has come up yet beyond what's already covered in
+Key patterns & why above — this section fills in as we go.)*
