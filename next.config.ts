@@ -10,7 +10,7 @@ import type { NextConfig } from "next";
 // on where injected script could send data (connect-src), a ban on plugins and framing
 // (object-src / frame-ancestors), and protection of the document base URL and form
 // targets. Tightening to a nonce-based policy is a follow-up that needs browser
-// testing against the Maps loader. See docs/security/2026-08-31-remediation.md.
+// testing against the Maps loader. See docs/archive/security/2026-08-31-remediation.md.
 //
 // Hosts, verified against the codebase:
 //   maps.googleapis.com  Maps JS API + Places (client) — script, connect

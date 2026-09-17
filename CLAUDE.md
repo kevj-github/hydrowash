@@ -118,6 +118,11 @@ app/
   api/invoices/[id]/pay/route.ts  # PATCH: mark invoice paid
   api/invoices/bulk-delete/route.ts   # POST: { ids: string[] } → hard-deletes invoices, logs admin_audit_log, returns { succeeded, failed }
   api/customers/bulk-delete/route.ts  # POST: { ids: string[] } → hard-deletes customer profiles (cascades bookings/contracts/invoices), logs admin_audit_log, returns { succeeded, failed }
+  api/profile/route.ts         # PATCH: customer updates own profile (name, phone, address, address_lat/lng, postal_code, unit_floor, building_name)
+  api/admin/service-types/route.ts  # POST admin: create a service type (name, category, description)
+  api/admin/settings/route.ts  # PATCH admin: update app_settings (depot location, company info, paynow_mobile)
+  api/availability/block/route.ts  # POST admin: replace all blocked_slots for a date — { date, blockEntireDay, slots: TimeSlot[], reason? }
+  api/invoices/[id]/remind/route.ts  # POST admin: send an ad-hoc PaymentReminder email (+ PayNow QR) for one UNPAID invoice; powers RemindButton
   api/geocode/route.ts         # POST: geocode address → lat/lng
   api/geocode/reverse/route.ts # POST: { lat, lng } → { address, postalCode } (reverse geocode via Google)
   api/optimize/route.ts        # POST: run single-route VRP for selected booking IDs
@@ -134,6 +139,7 @@ components/
   ui/service-card.tsx          # <ServiceCard icon title description> — Lucide icon card with hover
   ui/step-item.tsx             # <StepItem number label description done> — numbered step circle
   ui/checkbox.tsx               # <Checkbox checked onCheckedChange aria-label> — shadcn/ui v4 primitive; used throughout admin for multi-select rows/cards
+  ui/address-autocomplete.tsx  # Google Places autocomplete input + reverse-geocode resolution → { address, postal_code, lat, lng }; used by StepScheduleLocation, register, account settings, admin contracts, account contracts
   booking/BookingWizard.tsx    # 3-step wizard: Service → Schedule & Location → Review
   booking/StepServiceDetails.tsx  # Step 0: service type, category fields, UnitLocationPicker for MAINTENANCE
   booking/StepScheduleLocation.tsx  # Step 1: SlotCalendar (date+slot) + address presets (Home/My Location/Other) + Places autocomplete; accepts `contractAddress` prop — when set, hides presets and shows locked address (auto-geocoded on mount)
@@ -145,6 +151,8 @@ components/
   admin/BookingCard.tsx        # Status badge, preferred_slots chips, confirmed_date + confirmed_slot picker; highlighted prop for map-pin selection; onCardClick prop for card→map sync; JobCompletionDialog replaces "Mark Complete"; required `selected`/`onToggleSelect`/`onDeleteClick` props drive the checkbox + trash icon
   admin/BookingsMap.tsx        # Google Map markers; InfoWindow popup on pin click (customer name, service, address, status, dates); next/dynamic ssr:false
   admin/AdminBottomNav.tsx     # Mobile bottom nav bar for admin (5 primary tabs + More sheet with Agenda/Availability/Settings); Schedule removed from More sheet; shown on <md
+  admin/AdminNav.tsx           # Desktop sidebar nav for admin — same routes as AdminBottomNav
+  admin/RemindButton.tsx       # Generic "Remind" button (idle/sending/sent/error states) posting to a given url; used for invoice payment reminders and customer check-in reminders
   admin/AdminAgendaClient.tsx  # Client: mobile day-list view (selectedDay state) + desktop week-grid for agenda page; clicking a job chip opens AgendaJobPopup instead of navigating away
   admin/AgendaJobPopup.tsx     # Job detail popup opened from the Agenda grid — status/service/date-slot/address/units/notes, plus (APPROVED only) embedded JobCompletionDialog + a Cancel flow (PATCH /api/bookings/[id] action:'cancel')
   admin/ContractCard.tsx       # Contract list card with status/due/expiry badges; shows address if present; required `selected`/`onToggleSelect`/`onDeleteClick` props drive the checkbox + trash icon
@@ -164,13 +172,16 @@ lib/
   admin/audit-log.ts           # logAdminDelete(supabaseAdmin, adminId, entityType, rows) — inserts one admin_audit_log row per delete (bulk or single) with entity_type, entity_ids[], and a { id, label }[] summary
   booking/slots.ts             # Pure functions: isDayFullyBlocked, isSlotBlocked, getSlotsForDate, resolveContractTierPrice
   utils/paynow.ts              # buildPayNowPayload() + crc16ccitt() — EMVCo SGQR format for Singapore PayNow
+  utils/pdf-filename.ts        # Builds slugified PDF filenames (e.g. contract/work-order downloads) from customer name + date
+  hooks/useMapsLoaded.ts       # Readiness hook for the Google Maps JS API under loading=async — waits on importLibrary(), not just namespace presence; requirePlaces gate for Places-only consumers
+  testing/supabase-route-mock.ts  # Test-only helpers mocking the session-scoped (lib/supabase/server.ts) and service-role (lib/supabase/admin.ts) Supabase client shapes used by admin API routes
   (no tests for booking/slots.ts — the pure slot/pricing helpers are untested)
   vrp/optimizer.ts             # Single-route nearest-neighbour VRP; uses timeSlot (not preferredSlot); DAY_START=10*60; SLOT_WINDOWS keyed by TimeSlot
   vrp/__tests__/optimizer.test.ts
   maps/geocode.ts              # Google Geocoding API wrapper (forward geocode)
   maps/distance-matrix.ts      # Google Distance Matrix API wrapper
   email/send.ts                # Send functions via Resend (includes sendBookingRescheduled, sendBookingCancelled, sendContractPricing, sendWorkOrderReport)
-  email/templates/             # React Email templates: BookingReceived, BookingApproved, BookingRejected, BookingRescheduled, BookingCancelled, DayBeforeReminder, ScheduleConfirmed, ContractRequestReceived, ContractPricingEmail, ContractActivated, ContractExpiring, ContractServiceDue, WorkOrderEmail, PaymentReceived, BasicReminder, EmailConfirmation, PasswordReset
+  email/templates/             # React Email templates: BookingReceived, BookingApproved, BookingRejected, BookingRescheduled, BookingCancelled, DayBeforeReminder, ScheduleConfirmed, ContractRequestReceived, ContractPricingEmail, ContractActivated, ContractExpiring, ContractServiceDue, WorkOrderEmail, PaymentReceived, PaymentReminder, BasicReminder, EmailConfirmation, PasswordReset
   pdf/ContractPdfTemplate.tsx  # React-PDF single-page contract document (navy/blue brand, tight spacing); props: customerName, contactNo, address, numUnits, totalAmountSgd, serviceDueMonths[], company{}
   pdf/WorkOrderTemplate.tsx    # React-PDF single-page work order/invoice report — bordered table sections, no signature/confirm block; props: WorkOrderProps (customer, AC details, checklist as Done/Not done labels, job desc/rendered/remarks, charges, invoiceStatus/paymentMethod/paidAt sourced live from the invoices table — never hardcoded)
   pdf/generate.ts              # generateContractPdf(props) + generateWorkOrderPdf(props) → Promise<Buffer>
@@ -180,7 +191,7 @@ lib/
   types.ts                     # Shared TypeScript types — TimeSlot, PreferredDateSlot, SLOT_LABELS, SLOT_KEYS, AcUnitLocation, AcUnitType, AcBrand, BlockedSlot, ContractPricingTier, RouteStop, BookingWithRelations, AppSettings, AcUnitDetail, ChecklistItem, AdditionalCharge, JobCompletion, ContractUnitDetail, StaffMember
 
 middleware.ts                  # Auth routing (role-based redirects — admin and customer only) ⚠ Next.js 16 deprecated this filename in favour of proxy.ts — still works but will need renaming
-supabase/migrations/           # Migrations 001–039 all applied; see individual SQL files for schema history (035 adds admin_audit_log table + cascades bookings.customer_id delete; 037 signup address metadata; 038 contracts.unit_details; 039 staff_members table)
+supabase/migrations/           # Migrations 001–042 all applied; see individual SQL files for schema history (035 adds admin_audit_log table + cascades bookings.customer_id delete; 037 signup address metadata; 038 contracts.unit_details; 039 staff_members table; 040 region-coded customer numbering; 041 pins resolve_customer_region() search_path per Supabase linter; 042 adds bookings.unit_floor/building_name/access_notes)
 jest.config.ts
 jest.setup.ts
 vercel.json                    # Cron config (reminders daily + contracts daily)
@@ -192,7 +203,7 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 |---|---|
 | `profiles` | Extends `auth.users`; holds `name`, `phone`, `role` |
 | `service_types` | Admin-configured list of services; `category` enum drives booking form options |
-| `bookings` | Core table — `booking_date date NOT NULL`, `time_slot text NOT NULL` (first preferred slot, backward compat), `preferred_slots text[] NOT NULL DEFAULT '{}'` (up to 3 choices), `preferred_date_slots jsonb` (up to 3 date+slot entries), `confirmed_slot text`; `unit_location_others text[]` (free-text labels for units that chose "Others"); `contract_id uuid` (optional link to customer's contract); unique index on `(confirmed_date, confirmed_slot) WHERE status = 'APPROVED'` |
+| `bookings` | Core table — `booking_date date NOT NULL`, `time_slot text NOT NULL` (first preferred slot, backward compat), `preferred_slots text[] NOT NULL DEFAULT '{}'` (up to 3 choices), `preferred_date_slots jsonb` (up to 3 date+slot entries), `confirmed_slot text`; `unit_location_others text[]` (free-text labels for units that chose "Others"); `contract_id uuid` (optional link to customer's contract); `unit_floor text`, `building_name text`, `access_notes text` (migration 042 — kept as their own columns, not just folded into the composed address string, so "book again" prefill can recall them); unique index on `(confirmed_date, confirmed_slot) WHERE status = 'APPROVED'` |
 | `app_settings` | Singleton — depot location, company info, `paynow_mobile`, `contract_pricing_tiers jsonb` |
 | `contracts` | 1-year maintenance contracts; `status` = PENDING_REVIEW/AWAITING_PAYMENT/ACTIVE/EXPIRED/CANCELLED; optional `address` text column; `unit_details jsonb` (`ContractUnitDetail[]`, default `'[]'`) — per-unit location/type/brand with denormalized label snapshots; CHECK enforces length is 0 or exactly `num_units` |
 | `contract_service_dates` | 4 auto-generated quarterly visit dates per contract; `due_month text` (YYYY-MM, month-only); `second_reminder_sent bool`; `booking_id` links to the booking when scheduled |
@@ -303,7 +314,7 @@ vercel.json                    # Cron config (reminders daily + contracts daily)
 **Admin cancel of an approved booking:** distinct from the customer self-cancel route (`/api/bookings/[id]/cancel`, which has a 24h cutoff). `PATCH /api/bookings/[id]` with `action:'cancel'` is admin-only, only valid from APPROVED, no cutoff — available from `BookingCard.tsx` (bookings list, all tabs) and `AgendaJobPopup.tsx`. Frees any linked `contract_service_dates` slot and emails the customer (reuses `sendBookingRejected`'s copy/template with the cancel reason substituted for `rejection_reason`).
 
 ## Design system
-Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-system/pages/[page-name].md`.
+Brand rules: `design-system/hydrowash/MASTER.md`. No per-page override docs exist yet — apply the master rules everywhere.
 
 **Token layer:** wired in `app/globals.css` `:root`. Always use Tailwind semantic tokens — never hardcode hex.
 
@@ -323,12 +334,7 @@ Brand rules: `design-system/hydrowash/MASTER.md`. Per-page overrides: `design-sy
 **Animation utilities:** `.animate-fade-up`, `.animate-fade-up-delay-1/2/3` in `globals.css`. Hero elements only.
 
 ## Feature completeness
-All features shipped as of 2026-09-09 (admin hard delete: bulk/single delete + audit log across bookings, contracts, invoices, customers). See git log for change history.
-
-## Superpowers file conventions
-- Specs: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
-- Plans: `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`
-- Cross-session state: `docs/superpowers/NEXT-SESSION.md` (check this at session start)
+Admin hard delete (bulk/single delete + audit log across bookings, contracts, invoices, customers) shipped 2026-09-09. Since then: payment reminder emails (`PaymentReminder` template + `RemindButton` + `POST /api/invoices/[id]/remind`), and booking `unit_floor`/`building_name`/`access_notes` as their own columns (migration 042) so "book again" prefill can recall them. This section is a rough waypoint, not a live log — see `git log` for the authoritative change history.
 
 ## Jest config
 Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP tests use `/** @jest-environment node */` docblock. Default testEnvironment is `jsdom`.
@@ -369,4 +375,4 @@ Use `setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']` (not `setupFiles`). VRP te
 - **Security headers:** `next.config.ts` exports a `headers()` function adding `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy: same-origin`, and a scoped `Permissions-Policy` to all routes. Do not remove these.
 - **Footer contrast:** Footer uses `text-slate-300` (not `text-slate-400`/`text-slate-500`/`text-slate-600`) for all text on the `bg-primary` dark navy background to meet WCAG AA contrast requirements.
 - **Customer numbering:** `profiles.customer_no` is now region-coded, not a flat sequence. `resolve_customer_region(postal_code)` (SQL) / `regionForPostalCode()` (`lib/customers/regions.ts`, keep in sync) maps the postal code's 2-digit sector to one of Singapore's 5 URA planning regions via the standard 28 postal districts (best-effort — a couple of districts straddle two regions). Bands: Central 1000s, East 2000s, North 3000s, North-East 4000s, West 5000s, Unclassified 9000s (no/unmapped postal code). Assigned atomically per-region via `customer_no_counters`, only for `role='customer'`, only when `customer_no IS NULL` — admin edits are never overwritten. Existing customers keep their pre-migration flat numbers (no retroactive renumbering — those numbers may already be on sent invoices). Admin edits it via `CustomerNoEditor` (list row + customer detail page) → `PATCH /api/admin/customers/[id]/customer-no`, which does a preventive conflict check (returns the conflicting customer without writing) before a second `confirm:true` call commits; a partial unique index on `customer_no` is the backstop against races.
-- **Last updated:** 2026-09-11 (evening). All migrations 001–040 applied (037 signup address metadata fix, 038 `contracts.unit_details` per-unit AC details, 039 `staff_members` admin-managed "attended by" options with a single default enforced by a partial unique index, 040 region-coded customer numbering) (032 installation service, 033/034 security hardening rounds 2 + function grants/search_path, 035 admin hard delete: `admin_audit_log` table + `bookings.customer_id` cascade delete, 036 fixes contract/invoice hard-delete: `trg_enforce_customer_booking_update` now also exempts `auth.role() = 'service_role'`, not just an admin session — it was blocking the `ON DELETE SET NULL` cascade from `bookings.contract_id`/`invoices.contract_id` whenever a contract with a linked booking was deleted). Security: RLS role-escalation + booking self-approval (031), open-redirect on auth params, user-enumeration via check-email endpoint — all fixed. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present.
+- **Last updated:** 2026-09-18. All migrations 001–042 applied (037 signup address metadata fix, 038 `contracts.unit_details` per-unit AC details, 039 `staff_members` admin-managed "attended by" options with a single default enforced by a partial unique index, 040 region-coded customer numbering, 041 pins `resolve_customer_region()` search_path per Supabase linter, 042 adds `bookings.unit_floor`/`building_name`/`access_notes`) (032 installation service, 033/034 security hardening rounds 2 + function grants/search_path, 035 admin hard delete: `admin_audit_log` table + `bookings.customer_id` cascade delete, 036 fixes contract/invoice hard-delete: `trg_enforce_customer_booking_update` now also exempts `auth.role() = 'service_role'`, not just an admin session — it was blocking the `ON DELETE SET NULL` cascade from `bookings.contract_id`/`invoices.contract_id` whenever a contract with a linked booking was deleted). Security: RLS role-escalation + booking self-approval (031), open-redirect on auth params, user-enumeration via check-email endpoint — all fixed. Supabase Storage bucket `documents` (private) created. Packages: `@react-pdf/renderer`, `qrcode.react`, `qrcode` (no `svix` — not used here, despite being a `package.json` dependency). Dev environment on VPS at `/root/project/hydrowash` with `.env.local` present. Repo docs cleaned up 2026-09-18: AI planning notes and static preview mockups removed from the tree; security/UX audit records moved to `docs/archive/`; see `README.md` for external-facing setup docs.

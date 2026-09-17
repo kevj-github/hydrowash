@@ -124,7 +124,7 @@ export function RouteMap({ polyline, route, apiKey }: Props) {
       route.forEach(stop => {
         // Built as DOM nodes, never an HTML string: customerName, address and notes
         // are customer-controlled (profile name and booking fields), and InfoWindow
-        // parses a string `content` as HTML. See docs/security/2026-08-31-security-audit.md.
+        // parses a string `content` as HTML. See docs/archive/security/2026-08-31-security-audit.md.
         const infoWindow = new window.google.maps.InfoWindow({
           content: buildStopInfoContent(stop),
         })
