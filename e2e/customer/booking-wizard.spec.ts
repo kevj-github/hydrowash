@@ -14,10 +14,16 @@ async function fillStep0(page: import('@playwright/test').Page) {
     await page.waitForTimeout(500)
   }
 
-  // Select unit location (2nd select trigger)
-  const triggers = page.locator('[data-slot="select-trigger"]')
-  if (await triggers.count() >= 2) {
-    await triggers.nth(1).click()
+  // Select unit location — scoped by its "Select room…" placeholder rather
+  // than trigger index, since an optional "Link to Contract" dropdown can
+  // render between Service Type and Number of Units for customers with an
+  // active contract, shifting index-based selection off by one.
+  const unitLocationTrigger = page
+    .locator('[data-slot="select-trigger"]')
+    .filter({ hasText: 'Select room' })
+    .first()
+  if (await unitLocationTrigger.count() > 0) {
+    await unitLocationTrigger.click()
     await page.waitForTimeout(400)
     const item = page.locator('[data-slot="select-item"]:visible').first()
     if (await item.count() > 0) await item.click()

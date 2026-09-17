@@ -32,8 +32,11 @@ test.describe('Admin bookings', () => {
 
   test('all tab renders', async ({ page }, testInfo) => {
     await page.goto('/admin/bookings')
-    // Tab "All" is the 4th tab button in the tab bar
-    await page.locator('button').filter({ hasText: /^All$/ }).first().click()
+    // Tab "All" is the 4th tab button in the tab bar. Anchored + case-sensitive
+    // so it doesn't match "Installation" (contains "all") or the uppercase
+    // "ALL" status-filter pill, and tolerates the pending-count badge suffix
+    // ("All 1") that renders when the tab has pending bookings.
+    await page.getByRole('button', { name: /^All(\s|$)/ }).first().click()
     await page.screenshot({
       path: `e2e/screenshots/admin/bookings-all-${testInfo.project.name}.png`,
       fullPage: true,

@@ -3,9 +3,16 @@ import { test, expect } from '@playwright/test'
 test.describe('Admin hard delete', () => {
   test('bulk-select and delete bookings', async ({ page }) => {
     await page.goto('/admin/bookings')
-    await page.getByRole('button', { name: 'All' }).click()
+    // Anchored + case-sensitive regex avoids matching "Installation" (contains
+    // "all") or the uppercase "ALL" status-filter pill, and tolerates the
+    // pending-count badge suffix ("All 1") on the tab label.
+    await page.getByRole('button', { name: /^All(\s|$)/ }).click()
 
-    const firstCheckbox = page.locator('[data-slot="checkbox"]').first()
+    // Scoped by aria-label, not generic [data-slot="checkbox"] position — the
+    // desktop/tablet layout also renders a "Show map view" toggle and a
+    // "Select all visible bookings" checkbox earlier in the DOM, which
+    // .first() would grab instead of an actual booking row.
+    const firstCheckbox = page.getByRole('checkbox', { name: /^Select booking for/ }).first()
     await firstCheckbox.click()
 
     await expect(page.getByRole('button', { name: /Delete \d+ Selected/ })).toBeVisible()
